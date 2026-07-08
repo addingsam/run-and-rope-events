@@ -3,6 +3,7 @@ import { APP_NAME } from "@/lib/constants";
 
 const navLinks = [
   { href: "/events", label: "Events" },
+  { href: "/submit", label: "Submit" },
   { href: "/subscription", label: "Plans" },
 ];
 

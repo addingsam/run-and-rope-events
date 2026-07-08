@@ -44,6 +44,34 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Cloudflare R2 (flyer uploads)
+
+Event flyer uploads are stored in Cloudflare R2 when a user selects a file on `/submit`.
+
+1. Create an R2 bucket in the [Cloudflare dashboard](https://dash.cloudflare.com/).
+2. Create an R2 API token with read/write access to that bucket.
+3. Enable public access for the bucket (custom domain or `r2.dev` URL).
+4. Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Description |
+| -------- | ----------- |
+| `R2_ACCOUNT_ID` | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | R2 API token access key |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret |
+| `R2_BUCKET_NAME` | Bucket name for flyer storage |
+| `R2_PUBLIC_URL` | Public base URL for uploaded files (no trailing slash) |
+
+Upload flow:
+
+1. User selects a flyer on `/submit`
+2. The file is sent to `POST /api/events/upload-flyer`
+3. The API uploads to R2 and returns `{ url, key }`
+4. The form stores `flyerUrl` and includes it in the final event submission
+
 ## Connect to GitHub
 
 Git requires **Xcode Command Line Tools** on macOS. Install them first:
