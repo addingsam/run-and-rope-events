@@ -1,0 +1,40 @@
+import type { RodeoEvent } from "@/types/event";
+
+export const sampleEvents: RodeoEvent[] = [
+  {
+    id: "1",
+    title: "Spring Barrel Bash",
+    discipline: "barrel-racing",
+    status: "registration-open",
+    startDate: "2026-04-12",
+    venue: "Triple R Arena",
+    city: "Stephenville",
+    state: "TX",
+    entryFee: 45,
+    description: "Open 4D barrel race with added money in all divisions.",
+  },
+  {
+    id: "2",
+    title: "High Plains Team Roping",
+    discipline: "team-roping",
+    status: "upcoming",
+    startDate: "2026-05-03",
+    venue: "High Plains Event Center",
+    city: "Amarillo",
+    state: "TX",
+    entryFee: 60,
+    description: "Number 9 and under header / heeler roping with jackpot payout.",
+  },
+  {
+    id: "3",
+    title: "Mountain Breakaway Classic",
+    discipline: "breakaway",
+    status: "registration-open",
+    startDate: "2026-06-21",
+    venue: "Rocky Ridge Arena",
+    city: "Casper",
+    state: "WY",
+    entryFee: 35,
+    description: "Two-go breakaway roping with youth and open divisions.",
+  },
+];
