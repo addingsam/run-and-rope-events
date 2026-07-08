@@ -72,6 +72,51 @@ Upload flow:
 3. The API uploads to R2 and returns `{ url, key }`
 4. The form stores `flyerUrl` and includes it in the final event submission
 
+## Resend (confirmation emails)
+
+When a submitter provides an email on `/submit`, the app sends a confirmation that their event was received and is under review.
+
+1. Create an account at [Resend](https://resend.com/).
+2. Generate an API key.
+3. Add these values to `.env.local`:
+
+| Variable | Description |
+| -------- | ----------- |
+| `RESEND_API_KEY` | Resend API key |
+| `RESEND_FROM_EMAIL` | Verified sender address (use `onboarding@resend.dev` for testing) |
+
+The confirmation email includes the submitted event name and start date.
+
+## Supabase (event storage)
+
+Submitted events are saved to a Supabase `events` table when the form is posted.
+
+1. Create a project at [Supabase](https://supabase.com/).
+2. Run the migration in `supabase/migrations/20260708220000_create_events_table.sql` from the Supabase SQL editor.
+3. Add these values to `.env.local`:
+
+| Variable | Description |
+| -------- | ----------- |
+| `SUPABASE_URL` | Project URL from Supabase settings |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-side only, never expose to the client) |
+
+Form field mapping:
+
+| Form field | Database column |
+| ---------- | --------------- |
+| Event name | `event_name` |
+| Event type | `event_type` |
+| Start date | `event_date` |
+| Venue | `venue_name` |
+| Street / city / state / zip | `address_street`, `address_city`, `address_state`, `address_zip` |
+| Producer name | `contact_name` |
+| Contact email / phone | `contact_email`, `contact_phone` |
+| Producer website | `website_link` |
+| Entry fee / prize info | `entry_fee`, `prize_info` |
+| Description / flyer / submitter email | `description`, `flyer_url`, `submitter_email` |
+
+End date, entry deadline, and class/division info are appended to `description` when provided. `latitude` and `longitude` are left null for now.
+
 ## Connect to GitHub
 
 Git requires **Xcode Command Line Tools** on macOS. Install them first:
