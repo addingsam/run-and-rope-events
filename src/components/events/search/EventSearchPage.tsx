@@ -682,27 +682,31 @@ export function EventSearchPage({
           </div>
         )}
 
-        {!loading && results && (
+        {!loading && hasSearched && !error && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-2">
-            <p className="text-sm font-semibold text-amber-950">
-              {results.counts.total} result{results.counts.total === 1 ? "" : "s"}
-              {results.counts.proRodeos > 0 && (
-                <span className="font-normal text-amber-900/70">
-                  {" "}
-                  ({results.counts.events} listing
-                  {results.counts.events === 1 ? "" : "s"}, {results.counts.proRodeos} pro rodeo
-                  {results.counts.proRodeos === 1 ? "" : "s"})
-                </span>
-              )}
-            </p>
-            {routeMeta && (
-              <p className="text-sm text-amber-900/70">
-                Driving route: {routeMeta.distanceMiles.toFixed(1)} miles ·{" "}
-                {Math.round(routeMeta.durationMinutes)} min
-              </p>
+            {results ? (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-amber-950">
+                  {results.counts.total} result{results.counts.total === 1 ? "" : "s"}
+                  {results.counts.proRodeos > 0 && (
+                    <span className="font-normal text-amber-900/70">
+                      {" "}
+                      ({results.counts.events} listing
+                      {results.counts.events === 1 ? "" : "s"}, {results.counts.proRodeos} pro rodeo
+                      {results.counts.proRodeos === 1 ? "" : "s"})
+                    </span>
+                  )}
+                </p>
+                {routeMeta && (
+                  <p className="text-sm text-amber-900/70">
+                    Driving route: {routeMeta.distanceMiles.toFixed(1)} miles ·{" "}
+                    {Math.round(routeMeta.durationMinutes)} min
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div />
             )}
-            </div>
 
             {canSaveSearch && (
               <button

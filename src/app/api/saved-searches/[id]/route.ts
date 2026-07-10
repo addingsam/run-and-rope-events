@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireSubscriberUser } from "@/lib/saved-searches/notifications";
+import {
+  baselineSavedSearchKnownEvents,
+  requireSubscriberUser,
+} from "@/lib/saved-searches/notifications";
 import {
   deleteSavedSearch,
+  getSavedSearchById,
   updateSavedSearchAlerts,
 } from "@/lib/saved-searches/repository";
+import type { SavedSearchParams } from "@/types/saved-search";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -19,7 +24,21 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "alertsEnabled is required." }, { status: 400 });
     }
 
-    const search = await updateSavedSearchAlerts(user.id, id, body.alertsEnabled);
+    let knownEventIds: string[] | undefined;
+    if (body.alertsEnabled) {
+      const existing = await getSavedSearchById(user.id, id);
+      knownEventIds = await baselineSavedSearchKnownEvents(
+        id,
+        existing.search_params as SavedSearchParams,
+      );
+    }
+
+    const search = await updateSavedSearchAlerts(
+      user.id,
+      id,
+      body.alertsEnabled,
+      knownEventIds,
+    );
     return NextResponse.json({ search });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update saved search.";

@@ -21,11 +21,11 @@ export async function sendSavedSearchAlertEmail({
     subject: `New events for "${searchName}"`,
     html: `
       <h2>New matching events</h2>
-      <p>Your saved search <strong>${searchName}</strong> has ${eventNames.length} new event${eventNames.length === 1 ? "" : "s"}:</p>
+      <p>Your saved search <strong>${searchName}</strong> has ${eventNames.length} new approved event${eventNames.length === 1 ? "" : "s"}:</p>
       <ul>${listHtml}</ul>
       <p><a href="${searchUrl}">View your search</a></p>
     `,
-    text: `New events for "${searchName}": ${eventNames.join(", ")}. View: ${searchUrl}`,
+    text: `New approved events for "${searchName}": ${eventNames.join(", ")}. View: ${searchUrl}`,
   });
 }
 

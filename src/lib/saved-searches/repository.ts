@@ -1,6 +1,37 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { SavedMapOverlay, SavedSearchParams, SavedSearchRecord } from "@/types/saved-search";
 
+export async function getSavedSearchById(userId: string, searchId: string) {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("saved_searches")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", searchId)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as SavedSearchRecord;
+}
+
+export async function getProfileEmail(userId: string) {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.email ?? null;
+}
+
 export async function listSavedSearches(userId: string) {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
@@ -56,11 +87,25 @@ export async function updateSavedSearchAlerts(
   userId: string,
   searchId: string,
   alertsEnabled: boolean,
+  knownEventIds?: string[],
 ) {
   const supabase = getSupabaseAdminClient();
+  const updatePayload: {
+    alerts_enabled: boolean;
+    updated_at: string;
+    known_event_ids?: string[];
+  } = {
+    alerts_enabled: alertsEnabled,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (knownEventIds) {
+    updatePayload.known_event_ids = knownEventIds;
+  }
+
   const { data, error } = await supabase
     .from("saved_searches")
-    .update({ alerts_enabled: alertsEnabled, updated_at: new Date().toISOString() })
+    .update(updatePayload)
     .eq("user_id", userId)
     .eq("id", searchId)
     .select("*")

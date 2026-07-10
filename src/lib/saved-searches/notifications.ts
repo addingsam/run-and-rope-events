@@ -2,7 +2,7 @@ import { getAuthUserProfile } from "@/lib/auth/get-user";
 import { getIsSubscriber } from "@/lib/subscription/status";
 import { runSavedSearch } from "@/lib/saved-searches/run-saved-search";
 import {
-  listSavedSearches,
+  getProfileEmail,
   updateSavedSearchKnownEvents,
 } from "@/lib/saved-searches/repository";
 import { savedSearchToQueryString } from "@/lib/saved-searches/run-saved-search";
@@ -12,11 +12,19 @@ import type { SavedSearchParams } from "@/types/saved-search";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+function getCurrentEventIds(params: SavedSearchParams) {
+  return runSavedSearch(params).then((response) =>
+    response.results
+      .filter((entry) => entry.kind === "event")
+      .map((entry) => entry.item.id),
+  );
+}
+
 export async function processSavedSearchAlerts() {
   const supabase = getSupabaseAdminClient();
   const { data: searches, error } = await supabase
     .from("saved_searches")
-    .select("id, user_id, name, search_params, known_event_ids, alerts_enabled, profiles(email)")
+    .select("id, user_id, name, search_params, known_event_ids, alerts_enabled")
     .eq("alerts_enabled", true);
 
   if (error) {
@@ -38,8 +46,7 @@ export async function processSavedSearchAlerts() {
       continue;
     }
 
-    const profile = Array.isArray(search.profiles) ? search.profiles[0] : search.profiles;
-    const email = profile?.email;
+    const email = await getProfileEmail(search.user_id);
     if (!email) {
       continue;
     }
@@ -68,9 +75,7 @@ export async function processArchivedEventNotifications() {
   const supabase = getSupabaseAdminClient();
   const { data: savedRows, error } = await supabase
     .from("saved_events")
-    .select(
-      "id, user_id, event_id, archive_notified_at, profiles(email), events(event_name, event_date, address_city, address_state, status)",
-    )
+    .select("id, user_id, event_id, archive_notified_at, events(event_name, event_date, address_city, address_state, status)")
     .is("archive_notified_at", null);
 
   if (error) {
@@ -86,8 +91,7 @@ export async function processArchivedEventNotifications() {
       continue;
     }
 
-    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-    const email = profile?.email;
+    const email = await getProfileEmail(row.user_id);
     if (!email) {
       continue;
     }
@@ -105,6 +109,12 @@ export async function processArchivedEventNotifications() {
   }
 
   return { sent };
+}
+
+export async function baselineSavedSearchKnownEvents(searchId: string, params: SavedSearchParams) {
+  const currentEventIds = await getCurrentEventIds(params);
+  await updateSavedSearchKnownEvents(searchId, currentEventIds);
+  return currentEventIds;
 }
 
 export async function requireAuthenticatedUser() {

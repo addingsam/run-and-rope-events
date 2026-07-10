@@ -1,11 +1,17 @@
 import { Suspense } from "react";
 import { EventSearchPage } from "@/components/events/search/EventSearchPage";
+import { getIsAuthenticated, getIsSubscriber } from "@/lib/auth/get-user";
 
 export const metadata = {
   title: "Events",
 };
 
-export default function EventsPage() {
+export default async function EventsPage() {
+  const [isSubscriber, isAuthenticated] = await Promise.all([
+    getIsSubscriber(),
+    getIsAuthenticated(),
+  ]);
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <div className="mb-10 max-w-2xl">
@@ -23,8 +29,8 @@ export default function EventsPage() {
         }
       >
         <EventSearchPage
-          isSubscriber
-          isAuthenticated
+          isSubscriber={isSubscriber}
+          isAuthenticated={isAuthenticated}
           mapboxToken={process.env.MAPBOX_ACCESS_TOKEN ?? ""}
         />
       </Suspense>
