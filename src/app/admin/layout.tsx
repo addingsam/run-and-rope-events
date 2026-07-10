@@ -20,10 +20,7 @@ export default async function AdminLayout({
           </div>
           <div className="flex items-center gap-4 text-sm font-medium">
             <Link href="/admin" className="text-stone-300 hover:text-white">
-              Event queue
-            </Link>
-            <Link href="/admin/pro-rodeos/new" className="text-stone-300 hover:text-white">
-              Add pro rodeo
+              Dashboard
             </Link>
             <Link href="/" className="text-stone-300 hover:text-white">
               Back to site

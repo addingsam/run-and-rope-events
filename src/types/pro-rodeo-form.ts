@@ -1,6 +1,6 @@
 export type SanctioningBody = "WPRA" | "PRCA";
 
-export interface ProRodeoFormInput {
+export interface ProRodeoInput {
   rodeoName: string;
   sanctioningBody: SanctioningBody;
   city: string;
@@ -8,10 +8,13 @@ export interface ProRodeoFormInput {
   startDate: string;
   endDate: string;
   externalLink: string;
+}
+
+export interface ProRodeoFormInput extends ProRodeoInput {
   adminPassword: string;
 }
 
-export const EMPTY_PRO_RODEO_FORM: Omit<ProRodeoFormInput, "adminPassword"> = {
+export const EMPTY_PRO_RODEO_FORM: ProRodeoInput = {
   rodeoName: "",
   sanctioningBody: "WPRA",
   city: "",

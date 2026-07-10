@@ -1,28 +1,30 @@
-import { AdminEventPanel } from "@/components/admin/AdminEventPanel";
+import { AdminPanel } from "@/components/admin/AdminPanel";
 import { getAdminDashboardStats } from "@/lib/admin/stats";
 import {
   APPROVED_STATUSES,
   listEventsByStatus,
 } from "@/lib/events/admin-repository";
+import { listProRodeos } from "@/lib/pro-rodeos/repository";
 
 export const metadata = {
   title: "Admin",
 };
 
 export default async function AdminPage() {
-  const [stats, pendingEvents, approvedEvents, rejectedEvents] = await Promise.all([
-    getAdminDashboardStats(),
-    listEventsByStatus("pending"),
-    listEventsByStatus(APPROVED_STATUSES),
-    listEventsByStatus("rejected"),
-  ]);
+  const [stats, pendingEvents, approvedEvents, rejectedEvents, proRodeos] =
+    await Promise.all([
+      getAdminDashboardStats(),
+      listEventsByStatus("pending"),
+      listEventsByStatus(APPROVED_STATUSES),
+      listEventsByStatus("rejected"),
+      listProRodeos(),
+    ]);
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-stone-900">Event moderation</h1>
+      <h1 className="text-3xl font-bold text-stone-900">Admin panel</h1>
       <p className="mt-2 max-w-3xl text-stone-700">
-        Review submitted events, approve listings for subscribers, or reject submissions
-        that do not meet listing guidelines.
+        Review submitted events and manage WPRA/PRCA pro rodeo listings.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -41,10 +43,11 @@ export default async function AdminPage() {
       </div>
 
       <div className="mt-10">
-        <AdminEventPanel
+        <AdminPanel
           pendingEvents={pendingEvents}
           approvedEvents={approvedEvents}
           rejectedEvents={rejectedEvents}
+          proRodeos={proRodeos}
         />
       </div>
     </div>
