@@ -1,4 +1,7 @@
 import Stripe from "stripe";
+import { getAppUrl } from "@/lib/env/app-url";
+
+export { getAppUrl };
 
 let stripeClient: Stripe | null = null;
 
@@ -23,8 +26,4 @@ export function getStripeWebhookSecret() {
     throw new Error("Missing STRIPE_WEBHOOK_SECRET.");
   }
   return secret;
-}
-
-export function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 }

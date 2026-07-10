@@ -1,3 +1,4 @@
+import { getAppUrl } from "@/lib/env/app-url";
 import { getAuthUserProfile } from "@/lib/auth/get-user";
 import { getIsSubscriber } from "@/lib/subscription/status";
 import { runSavedSearch } from "@/lib/saved-searches/run-saved-search";
@@ -10,7 +11,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendEventPassedEmail, sendSavedSearchAlertEmail } from "@/lib/email/saved-notifications";
 import type { SavedSearchParams } from "@/types/saved-search";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const APP_URL = getAppUrl();
 
 function getCurrentEventIds(params: SavedSearchParams) {
   return runSavedSearch(params).then((response) =>
