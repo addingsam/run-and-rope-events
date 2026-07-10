@@ -3,10 +3,23 @@ import { NextResponse } from "next/server";
 import { hasActiveSubscription } from "./lib/subscribers/repository";
 
 const isEventsRoute = createRouteMatcher(["/events", "/events/(.*)"]);
+const isAdminRoute = createRouteMatcher(["/admin", "/admin/(.*)"]);
 const isWebhookRoute = createRouteMatcher(["/api/webhooks(.*)"]);
 
 export default clerkMiddleware(async (auth, request) => {
   if (isWebhookRoute(request)) {
+    return;
+  }
+
+  if (isAdminRoute(request)) {
+    const { userId } = await auth();
+
+    if (!userId) {
+      const redirectUrl = new URL("/sign-in", request.url);
+      redirectUrl.searchParams.set("redirect_url", request.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+
     return;
   }
 
