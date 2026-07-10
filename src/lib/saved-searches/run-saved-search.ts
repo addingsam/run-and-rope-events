@@ -1,4 +1,4 @@
-import type { SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
 import type {
   SearchBufferMiles,
   SearchFormat,
@@ -71,8 +71,40 @@ export function savedSearchParamsFromFormState(state: {
   return { ...state };
 }
 
+export const PENDING_SAVED_SEARCH_KEY = "run-and-rope:pending-saved-search";
+export const SEARCH_RUN_PARAM = "run";
+
+interface PendingSavedSearch {
+  params: SavedSearchParams;
+  mapOverlay?: SavedMapOverlay | null;
+}
+
+export function storePendingSavedSearch(
+  params: SavedSearchParams,
+  mapOverlay?: SavedMapOverlay | null,
+) {
+  const payload: PendingSavedSearch = { params, mapOverlay };
+  sessionStorage.setItem(PENDING_SAVED_SEARCH_KEY, JSON.stringify(payload));
+}
+
+export function consumePendingSavedSearch(): PendingSavedSearch | null {
+  const raw = sessionStorage.getItem(PENDING_SAVED_SEARCH_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  sessionStorage.removeItem(PENDING_SAVED_SEARCH_KEY);
+
+  try {
+    return JSON.parse(raw) as PendingSavedSearch;
+  } catch {
+    return null;
+  }
+}
+
 export function savedSearchToQueryString(params: SavedSearchParams) {
   const search = new URLSearchParams();
+  search.set(SEARCH_RUN_PARAM, "1");
   if (params.mode === "route") {
     search.set("mode", "route");
   }

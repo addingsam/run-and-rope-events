@@ -1,13 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   deleteSavedSearch,
   updateSavedSearchAlerts,
 } from "@/lib/saved/client";
-import { savedSearchToQueryString } from "@/lib/saved-searches/run-saved-search";
+import {
+  storePendingSavedSearch,
+} from "@/lib/saved-searches/run-saved-search";
 import type { SavedSearchRecord } from "@/types/saved-search";
 
 interface SavedSearchesPanelProps {
@@ -69,7 +70,6 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
       )}
 
       {searches.map((search) => {
-        const query = savedSearchToQueryString(search.search_params);
         const modeLabel = search.search_params.mode === "route" ? "Route" : "Radius";
 
         return (
@@ -90,12 +90,16 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Link
-                  href={`/events?${query}`}
+                <button
+                  type="button"
+                  onClick={() => {
+                    storePendingSavedSearch(search.search_params, search.map_overlay);
+                    router.push("/events");
+                  }}
                   className="rounded-full border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
                 >
                   Run search
-                </Link>
+                </button>
                 <button
                   type="button"
                   disabled={pendingId === search.id}

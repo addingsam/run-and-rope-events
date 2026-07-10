@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import MapboxDraw from "@mapbox/mapbox-gl-draw";
-import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MapDrawingToolbar, type DrawingTool } from "@/components/events/search/MapDrawingToolbar";
 import { MapSelectionPanel } from "@/components/events/search/MapSelectionPanel";
@@ -58,7 +56,6 @@ function getBounds(
   routeCoordinates?: [number, number][],
   origin?: RouteEndpoint | null,
   destination?: RouteEndpoint | null,
-  searchCenter?: { lat: number; lng: number } | null,
 ) {
   const bounds = new mapboxgl.LngLatBounds();
 
@@ -68,10 +65,6 @@ function getBounds(
 
   if (destination) {
     bounds.extend([destination.lng, destination.lat]);
-  }
-
-  if (searchCenter) {
-    bounds.extend([searchCenter.lng, searchCenter.lat]);
   }
 
   for (const coordinate of routeCoordinates ?? []) {
@@ -86,6 +79,161 @@ function getBounds(
   }
 
   return bounds;
+}
+
+function syncPreviewLayer(map: mapboxgl.Map, features: GeoJSON.Feature[]) {
+  if (!map.isStyleLoaded()) {
+    return;
+  }
+
+  const collection: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features,
+  };
+
+  if (map.getSource("draw-preview")) {
+    (map.getSource("draw-preview") as mapboxgl.GeoJSONSource).setData(collection);
+    return;
+  }
+
+  if (features.length === 0) {
+    return;
+  }
+
+  map.addSource("draw-preview", { type: "geojson", data: collection });
+  map.addLayer({
+    id: "draw-preview-fill",
+    type: "fill",
+    source: "draw-preview",
+    paint: { "fill-color": "#2563eb", "fill-opacity": 0.15 },
+  });
+  map.addLayer({
+    id: "draw-preview-outline",
+    type: "line",
+    source: "draw-preview",
+    paint: { "line-color": "#1d4ed8", "line-width": 2 },
+  });
+}
+
+function syncCompletedShapesLayer(map: mapboxgl.Map, features: GeoJSON.Feature[]) {
+  if (!map.isStyleLoaded()) {
+    return;
+  }
+
+  const collection: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features,
+  };
+
+  if (map.getSource("completed-shapes")) {
+    (map.getSource("completed-shapes") as mapboxgl.GeoJSONSource).setData(collection);
+    return;
+  }
+
+  if (features.length === 0) {
+    return;
+  }
+
+  map.addSource("completed-shapes", { type: "geojson", data: collection });
+  map.addLayer({
+    id: "completed-shapes-fill",
+    type: "fill",
+    source: "completed-shapes",
+    paint: { "fill-color": "#2563eb", "fill-opacity": 0.15 },
+  });
+  map.addLayer({
+    id: "completed-shapes-outline",
+    type: "line",
+    source: "completed-shapes",
+    paint: { "line-color": "#1d4ed8", "line-width": 2 },
+  });
+}
+
+function createRectangleFeature(rectStart: mapboxgl.LngLat, rectEnd: mapboxgl.LngLat): GeoJSON.Feature {
+  const west = Math.min(rectStart.lng, rectEnd.lng);
+  const east = Math.max(rectStart.lng, rectEnd.lng);
+  const south = Math.min(rectStart.lat, rectEnd.lat);
+  const north = Math.max(rectStart.lat, rectEnd.lat);
+
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [west, south],
+          [east, south],
+          [east, north],
+          [west, north],
+          [west, south],
+        ],
+      ],
+    },
+  };
+}
+
+function createFreehandFeature(points: [number, number][]): GeoJSON.Feature | null {
+  if (points.length < 3) {
+    return null;
+  }
+
+  const ring = closeFreehandRing(points);
+
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "Polygon",
+      coordinates: [ring],
+    },
+  };
+}
+
+function closeFreehandRing(points: [number, number][]): [number, number][] {
+  const ring = [...points];
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+
+  if (first[0] !== last[0] || first[1] !== last[1]) {
+    ring.push(first);
+  }
+
+  return ring;
+}
+
+function createFreehandPreviewFeature(points: [number, number][]): GeoJSON.Feature | null {
+  if (points.length < 2) {
+    return null;
+  }
+
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "LineString",
+      coordinates: points,
+    },
+  };
+}
+
+function appendFreehandPoint(
+  points: [number, number][],
+  lng: number,
+  lat: number,
+): [number, number][] {
+  const last = points[points.length - 1];
+  if (!last) {
+    return [[lng, lat]];
+  }
+
+  const dx = last[0] - lng;
+  const dy = last[1] - lat;
+  if (dx * dx + dy * dy < 0.000001) {
+    return points;
+  }
+
+  return [...points, [lng, lat]];
 }
 
 export function EventsSearchMap({
@@ -103,8 +251,15 @@ export function EventsSearchMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const drawRef = useRef<MapboxDraw | null>(null);
   const freehandPointsRef = useRef<[number, number][]>([]);
+  const activeToolRef = useRef<DrawingTool>("none");
+  const isSubscriberRef = useRef(isSubscriber);
+  const pinRadiusMilesRef = useRef(25);
+  const drawingRef = useRef(false);
+  const rectangleStartRef = useRef<mapboxgl.LngLat | null>(null);
+  const rectangleEndRef = useRef<mapboxgl.LngLat | null>(null);
+  const completedShapesRef = useRef<GeoJSON.Feature[]>([]);
+  const lastBoundsFitKeyRef = useRef<string | null>(null);
 
   const [mapReady, setMapReady] = useState(false);
   const [activeTool, setActiveTool] = useState<DrawingTool>("none");
@@ -117,6 +272,34 @@ export function EventsSearchMap({
   const [completedShapes, setCompletedShapes] = useState<GeoJSON.Feature[]>([]);
 
   const selection = useMemo(() => selectionFromKey(selectedKey), [selectedKey]);
+
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+  }, [activeTool]);
+
+  const handleToolChange = useCallback((tool: DrawingTool) => {
+    activeToolRef.current = tool;
+    setActiveTool(tool);
+  }, []);
+
+  useEffect(() => {
+    isSubscriberRef.current = isSubscriber;
+  }, [isSubscriber]);
+
+  useEffect(() => {
+    pinRadiusMilesRef.current = pinRadiusMiles;
+  }, [pinRadiusMiles]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) {
+      return;
+    }
+
+    const canvas = map.getCanvas();
+    canvas.style.cursor =
+      isSubscriber && activeTool !== "none" ? "crosshair" : "";
+  }, [activeTool, isSubscriber, mapReady]);
 
   const clearMarkers = useCallback(() => {
     for (const marker of markersRef.current) {
@@ -131,8 +314,13 @@ export function EventsSearchMap({
     setRectangleStart(null);
     setRectangleEnd(null);
     setCompletedShapes([]);
-    drawRef.current?.deleteAll();
+    completedShapesRef.current = [];
+    drawingRef.current = false;
+    rectangleStartRef.current = null;
+    rectangleEndRef.current = null;
+    freehandPointsRef.current = [];
     setActiveTool("none");
+    activeToolRef.current = "none";
 
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) {
@@ -204,6 +392,41 @@ export function EventsSearchMap({
     });
   }, []);
 
+  const commitCompletedShape = useCallback((feature: GeoJSON.Feature) => {
+    const map = mapRef.current;
+    const nextShapes = [...completedShapesRef.current, feature];
+    completedShapesRef.current = nextShapes;
+    setCompletedShapes(nextShapes);
+
+    if (map) {
+      syncCompletedShapesLayer(map, nextShapes);
+    }
+  }, []);
+
+  const clearPreviewLayer = useCallback(() => {
+    const map = mapRef.current;
+    setFreehandPoints([]);
+    setRectangleStart(null);
+    setRectangleEnd(null);
+    freehandPointsRef.current = [];
+    rectangleStartRef.current = null;
+    rectangleEndRef.current = null;
+
+    if (map) {
+      syncPreviewLayer(map, []);
+    }
+  }, []);
+
+  const commitCompletedShapeRef = useRef(commitCompletedShape);
+  const clearPreviewLayerRef = useRef(clearPreviewLayer);
+  const updatePinRadiusLayerRef = useRef(updatePinRadiusLayer);
+
+  useEffect(() => {
+    commitCompletedShapeRef.current = commitCompletedShape;
+    clearPreviewLayerRef.current = clearPreviewLayer;
+    updatePinRadiusLayerRef.current = updatePinRadiusLayer;
+  }, [commitCompletedShape, clearPreviewLayer, updatePinRadiusLayer]);
+
   useEffect(() => {
     if (!containerRef.current || !mapboxToken || mapRef.current) {
       return;
@@ -220,14 +443,117 @@ export function EventsSearchMap({
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
-    const draw = new MapboxDraw({
-      displayControlsDefault: false,
-      controls: {},
-      defaultMode: "simple_select",
-    });
+    function handleMouseDown(event: mapboxgl.MapMouseEvent) {
+      if (!isSubscriberRef.current) {
+        return;
+      }
 
-    map.addControl(draw);
-    drawRef.current = draw;
+      const tool = activeToolRef.current;
+      if (tool === "none") {
+        return;
+      }
+
+      if (tool === "pin-radius") {
+        const drawing = {
+          lng: event.lngLat.lng,
+          lat: event.lngLat.lat,
+          radiusMiles: pinRadiusMilesRef.current,
+        };
+        setPinRadiusDrawing(drawing);
+        updatePinRadiusLayerRef.current(drawing);
+        return;
+      }
+
+      if (tool === "freehand") {
+        drawingRef.current = true;
+        map.dragPan.disable();
+        const point: [number, number] = [event.lngLat.lng, event.lngLat.lat];
+        freehandPointsRef.current = [point];
+        setFreehandPoints([point]);
+        return;
+      }
+
+      if (tool === "rectangle") {
+        drawingRef.current = true;
+        map.dragPan.disable();
+        rectangleStartRef.current = event.lngLat;
+        rectangleEndRef.current = event.lngLat;
+        setRectangleStart(event.lngLat);
+        setRectangleEnd(event.lngLat);
+      }
+    }
+
+    function handleMouseMove(event: mapboxgl.MapMouseEvent) {
+      if (isSubscriberRef.current && activeToolRef.current !== "none") {
+        map.getCanvas().style.cursor = "crosshair";
+      }
+
+      if (!drawingRef.current || !isSubscriberRef.current) {
+        return;
+      }
+
+      const tool = activeToolRef.current;
+
+      if (tool === "freehand") {
+        const next = appendFreehandPoint(
+          freehandPointsRef.current,
+          event.lngLat.lng,
+          event.lngLat.lat,
+        );
+        if (next !== freehandPointsRef.current) {
+          freehandPointsRef.current = next;
+          setFreehandPoints(next);
+        }
+        return;
+      }
+
+      if (tool === "rectangle") {
+        rectangleEndRef.current = event.lngLat;
+        setRectangleEnd(event.lngLat);
+      }
+    }
+
+    function finishDrawing() {
+      if (!drawingRef.current || !isSubscriberRef.current) {
+        return;
+      }
+
+      drawingRef.current = false;
+      map.dragPan.enable();
+
+      const tool = activeToolRef.current;
+
+      if (tool === "freehand") {
+        const feature = createFreehandFeature(freehandPointsRef.current);
+        if (feature) {
+          commitCompletedShapeRef.current(feature);
+        }
+        clearPreviewLayerRef.current();
+        return;
+      }
+
+      if (tool === "rectangle") {
+        const rectStart = rectangleStartRef.current;
+        const rectEnd = rectangleEndRef.current;
+        if (rectStart && rectEnd) {
+          commitCompletedShapeRef.current(createRectangleFeature(rectStart, rectEnd));
+        }
+        clearPreviewLayerRef.current();
+      }
+    }
+
+    function handleMouseUp() {
+      finishDrawing();
+    }
+
+    function handleWindowMouseUp() {
+      finishDrawing();
+    }
+
+    map.on("mousedown", handleMouseDown);
+    map.on("mousemove", handleMouseMove);
+    map.on("mouseup", handleMouseUp);
+    window.addEventListener("mouseup", handleWindowMouseUp);
 
     map.on("load", () => {
       setMapReady(true);
@@ -236,23 +562,17 @@ export function EventsSearchMap({
     mapRef.current = map;
 
     return () => {
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+      map.off("mousedown", handleMouseDown);
+      map.off("mousemove", handleMouseMove);
+      map.off("mouseup", handleMouseUp);
       clearMarkers();
       map.remove();
       mapRef.current = null;
-      drawRef.current = null;
+      lastBoundsFitKeyRef.current = null;
       setMapReady(false);
     };
   }, [mapboxToken, clearMarkers]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const draw = drawRef.current;
-    if (!map || !draw || !mapReady) {
-      return;
-    }
-
-    draw.changeMode("simple_select");
-  }, [activeTool, mapReady]);
 
   const updatePreviewShapes = useCallback(
     (
@@ -261,69 +581,22 @@ export function EventsSearchMap({
       rectEnd: mapboxgl.LngLat | null,
     ) => {
       const map = mapRef.current;
-      if (!map?.isStyleLoaded()) {
+      if (!map) {
         return;
       }
 
       const features: GeoJSON.Feature[] = [];
 
-      if (freehand.length >= 3) {
-        features.push({
-          type: "Feature",
-          properties: {},
-          geometry: {
-            type: "Polygon",
-            coordinates: [[...freehand, freehand[0]]],
-          },
-        });
+      const freehandPreview = createFreehandPreviewFeature(freehand);
+      if (freehandPreview) {
+        features.push(freehandPreview);
       }
 
       if (rectStart && rectEnd) {
-        const west = Math.min(rectStart.lng, rectEnd.lng);
-        const east = Math.max(rectStart.lng, rectEnd.lng);
-        const south = Math.min(rectStart.lat, rectEnd.lat);
-        const north = Math.max(rectStart.lat, rectEnd.lat);
-        features.push({
-          type: "Feature",
-          properties: {},
-          geometry: {
-            type: "Polygon",
-            coordinates: [
-              [
-                [west, south],
-                [east, south],
-                [east, north],
-                [west, north],
-                [west, south],
-              ],
-            ],
-          },
-        });
+        features.push(createRectangleFeature(rectStart, rectEnd));
       }
 
-      const collection: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features,
-      };
-
-      if (map.getSource("draw-preview")) {
-        (map.getSource("draw-preview") as mapboxgl.GeoJSONSource).setData(collection);
-        return;
-      }
-
-      map.addSource("draw-preview", { type: "geojson", data: collection });
-      map.addLayer({
-        id: "draw-preview-fill",
-        type: "fill",
-        source: "draw-preview",
-        paint: { "fill-color": "#2563eb", "fill-opacity": 0.15 },
-      });
-      map.addLayer({
-        id: "draw-preview-outline",
-        type: "line",
-        source: "draw-preview",
-        paint: { "line-color": "#1d4ed8", "line-width": 2 },
-      });
+      syncPreviewLayer(map, features);
     },
     [],
   );
@@ -333,38 +606,14 @@ export function EventsSearchMap({
   }, [freehandPoints, rectangleStart, rectangleEnd, updatePreviewShapes, mapReady]);
 
   useEffect(() => {
+    completedShapesRef.current = completedShapes;
+
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) {
       return;
     }
 
-    const collection: GeoJSON.FeatureCollection = {
-      type: "FeatureCollection",
-      features: completedShapes,
-    };
-
-    if (map.getSource("completed-shapes")) {
-      (map.getSource("completed-shapes") as mapboxgl.GeoJSONSource).setData(collection);
-      return;
-    }
-
-    if (completedShapes.length === 0) {
-      return;
-    }
-
-    map.addSource("completed-shapes", { type: "geojson", data: collection });
-    map.addLayer({
-      id: "completed-shapes-fill",
-      type: "fill",
-      source: "completed-shapes",
-      paint: { "fill-color": "#2563eb", "fill-opacity": 0.15 },
-    });
-    map.addLayer({
-      id: "completed-shapes-outline",
-      type: "line",
-      source: "completed-shapes",
-      paint: { "line-color": "#1d4ed8", "line-width": 2 },
-    });
+    syncCompletedShapesLayer(map, completedShapes);
   }, [completedShapes, mapReady]);
 
   useEffect(() => {
@@ -378,144 +627,6 @@ export function EventsSearchMap({
       );
     }
   }, [pinRadiusMiles]);
-
-  useEffect(() => {
-    if (!mapRef.current || !mapReady) {
-      return;
-    }
-
-    const mapInstance = mapRef.current;
-
-    let drawing = false;
-
-    function handleMouseDown(event: mapboxgl.MapMouseEvent) {
-      if (!isSubscriber) {
-        return;
-      }
-
-      if (activeTool === "freehand") {
-        drawing = true;
-        mapInstance.dragPan.disable();
-        const point: [number, number] = [event.lngLat.lng, event.lngLat.lat];
-        freehandPointsRef.current = [point];
-        setFreehandPoints([point]);
-        return;
-      }
-
-      if (activeTool === "rectangle") {
-        drawing = true;
-        mapInstance.dragPan.disable();
-        setRectangleStart(event.lngLat);
-        setRectangleEnd(event.lngLat);
-      }
-    }
-
-    function handleMouseMove(event: mapboxgl.MapMouseEvent) {
-      if (!drawing || !isSubscriber) {
-        return;
-      }
-
-      if (activeTool === "freehand") {
-        setFreehandPoints((current) => {
-          const last = current[current.length - 1];
-          if (!last) {
-            return current;
-          }
-
-          const dx = last[0] - event.lngLat.lng;
-          const dy = last[1] - event.lngLat.lat;
-          if (dx * dx + dy * dy < 0.000001) {
-            return current;
-          }
-
-          const next = [...current, [event.lngLat.lng, event.lngLat.lat] as [number, number]];
-          freehandPointsRef.current = next;
-          return next;
-        });
-        return;
-      }
-
-      if (activeTool === "rectangle") {
-        setRectangleEnd(event.lngLat);
-      }
-    }
-
-    function handleMouseUp() {
-      if (!drawing || !isSubscriber) {
-        return;
-      }
-
-      drawing = false;
-      mapInstance.dragPan.enable();
-
-      if (activeTool === "freehand" && freehandPointsRef.current.length >= 3) {
-        const points = freehandPointsRef.current;
-        setCompletedShapes((current) => [
-          ...current,
-          {
-            type: "Feature",
-            properties: {},
-            geometry: {
-              type: "Polygon",
-              coordinates: [[...points, points[0]]],
-            },
-          },
-        ]);
-        setFreehandPoints([]);
-        freehandPointsRef.current = [];
-      }
-
-      if (activeTool === "rectangle" && rectangleStart && rectangleEnd) {
-        const west = Math.min(rectangleStart.lng, rectangleEnd.lng);
-        const east = Math.max(rectangleStart.lng, rectangleEnd.lng);
-        const south = Math.min(rectangleStart.lat, rectangleEnd.lat);
-        const north = Math.max(rectangleStart.lat, rectangleEnd.lat);
-        setCompletedShapes((current) => [
-          ...current,
-          {
-            type: "Feature",
-            properties: {},
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [
-                  [west, south],
-                  [east, south],
-                  [east, north],
-                  [west, north],
-                  [west, south],
-                ],
-              ],
-            },
-          },
-        ]);
-        setRectangleStart(null);
-        setRectangleEnd(null);
-      }
-    }
-
-    function handleMapClick(event: mapboxgl.MapMouseEvent) {
-      if (activeTool === "pin-radius" && isSubscriber) {
-        setPinRadiusDrawing({
-          lng: event.lngLat.lng,
-          lat: event.lngLat.lat,
-          radiusMiles: pinRadiusMiles,
-        });
-      }
-    }
-
-    mapInstance.on("mousedown", handleMouseDown);
-    mapInstance.on("mousemove", handleMouseMove);
-    mapInstance.on("mouseup", handleMouseUp);
-    mapInstance.on("click", handleMapClick);
-
-    return () => {
-      mapInstance.off("mousedown", handleMouseDown);
-      mapInstance.off("mousemove", handleMouseMove);
-      mapInstance.off("mouseup", handleMouseUp);
-      mapInstance.off("click", handleMapClick);
-    };
-  }, [activeTool, isSubscriber, pinRadiusMiles, mapReady, rectangleStart, rectangleEnd]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -717,18 +828,29 @@ export function EventsSearchMap({
       return;
     }
 
-    const bounds = getBounds(
-      results,
-      routeMeta?.coordinates,
-      origin,
-      destination,
-      searchCenter,
-    );
+    const boundsFitKey = JSON.stringify({
+      resultCount: results.length,
+      routePointCount: routeMeta?.coordinates?.length ?? 0,
+      originLat: origin?.lat ?? null,
+      originLng: origin?.lng ?? null,
+      destinationLat: destination?.lat ?? null,
+      destinationLng: destination?.lng ?? null,
+    });
 
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
+    if (lastBoundsFitKeyRef.current === boundsFitKey) {
+      return;
     }
-  }, [results, routeMeta, origin, destination, searchCenter, mapReady]);
+
+    const bounds = getBounds(results, routeMeta?.coordinates, origin, destination);
+
+    if (bounds.isEmpty()) {
+      lastBoundsFitKeyRef.current = boundsFitKey;
+      return;
+    }
+
+    lastBoundsFitKeyRef.current = boundsFitKey;
+    map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
+  }, [results, routeMeta, origin, destination, mapReady]);
 
   useEffect(() => {
     if (!onMapOverlayChange) {
@@ -766,7 +888,7 @@ export function EventsSearchMap({
         isSubscriber={isSubscriber}
         pinRadiusMiles={pinRadiusMiles}
         hasDrawings={hasDrawings}
-        onToolChange={setActiveTool}
+        onToolChange={handleToolChange}
         onPinRadiusChange={setPinRadiusMiles}
         onClear={clearDrawings}
         onLockedClick={() => setShowSubscribePrompt(true)}

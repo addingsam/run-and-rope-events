@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckboxGroup, SelectInput } from "@/components/submit/FormField";
 import { EventsSearchMap } from "@/components/events/search/EventsSearchMap";
@@ -34,7 +34,11 @@ import type {
   SearchRodeoLevel,
 } from "@/types/event-search";
 import { SaveSearchDialog } from "@/components/saved/SaveSearchDialog";
-import { savedSearchParamsFromFormState } from "@/lib/saved-searches/run-saved-search";
+import {
+  consumePendingSavedSearch,
+  savedSearchParamsFromFormState,
+  SEARCH_RUN_PARAM,
+} from "@/lib/saved-searches/run-saved-search";
 import type { SavedMapOverlay } from "@/types/saved-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
 
@@ -62,6 +66,28 @@ interface SearchFormState {
   bufferMiles: SearchBufferMiles;
   startDate: string;
   endDate: string;
+}
+
+function createDefaultSearchFormState(): SearchFormState {
+  return {
+    mode: "radius",
+    format: "either",
+    rodeoLevel: "",
+    disciplines: [],
+    locationLabel: "",
+    lat: null,
+    lng: null,
+    radiusMiles: DEFAULT_SEARCH_RADIUS,
+    originLabel: "",
+    originLat: null,
+    originLng: null,
+    destinationLabel: "",
+    destinationLat: null,
+    destinationLng: null,
+    bufferMiles: DEFAULT_SEARCH_BUFFER,
+    startDate: "",
+    endDate: "",
+  };
 }
 
 function parseDisciplines(value: string | null): SubmissionDiscipline[] {
@@ -194,10 +220,20 @@ function isRouteSearchResponse(
 
 function canAutoSearch(state: SearchFormState) {
   if (state.mode === "route") {
-    return Boolean(state.originLabel.trim() && state.destinationLabel.trim());
+    return (
+      Boolean(state.originLabel.trim() && state.destinationLabel.trim()) &&
+      state.originLat !== null &&
+      state.originLng !== null &&
+      state.destinationLat !== null &&
+      state.destinationLng !== null
+    );
   }
 
-  return Boolean(state.locationLabel.trim());
+  return (
+    Boolean(state.locationLabel.trim()) &&
+    state.lat !== null &&
+    state.lng !== null
+  );
 }
 
 function getSelectionKey(entry: SearchResultEntry, isSubscriber: boolean) {
@@ -217,12 +253,7 @@ export function EventSearchPage({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const initialState = useMemo(
-    () => stateFromSearchParams(searchParams),
-    [searchParams],
-  );
-
-  const [formState, setFormState] = useState<SearchFormState>(initialState);
+  const [formState, setFormState] = useState<SearchFormState>(createDefaultSearchFormState);
   const [results, setResults] = useState<EventSearchResponse | null>(null);
   const [routeMeta, setRouteMeta] = useState<RouteSearchResponse["route"] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -238,6 +269,7 @@ export function EventSearchPage({
   });
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const resultRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const didInitializeFromUrl = useRef(false);
 
   const rodeoLevelEnabled =
     formState.format === "rodeo" || formState.format === "either";
@@ -252,6 +284,14 @@ export function EventSearchPage({
         return;
       }
 
+      if (state.originLat === null || state.originLng === null) {
+        setOriginError("Select a starting point from the suggestions.");
+        setResults(null);
+        setRouteMeta(null);
+        setSelectedKey(null);
+        return;
+      }
+
       if (!state.destinationLabel.trim()) {
         setDestinationError("Enter a destination.");
         setResults(null);
@@ -259,8 +299,20 @@ export function EventSearchPage({
         setSelectedKey(null);
         return;
       }
-    } else if (!state.locationLabel.trim()) {
-      setLocationError("Enter a city, state, or zip code.");
+
+      if (state.destinationLat === null || state.destinationLng === null) {
+        setDestinationError("Select a destination from the suggestions.");
+        setResults(null);
+        setRouteMeta(null);
+        setSelectedKey(null);
+        return;
+      }
+    } else if (
+      !state.locationLabel.trim() ||
+      state.lat === null ||
+      state.lng === null
+    ) {
+      setLocationError("Select a location from the suggestions.");
       setResults(null);
       setRouteMeta(null);
       setSelectedKey(null);
@@ -299,12 +351,50 @@ export function EventSearchPage({
   }, []);
 
   useEffect(() => {
-    setFormState(initialState);
-
-    if (canAutoSearch(initialState)) {
-      void runSearch(initialState);
+    if (didInitializeFromUrl.current) {
+      if (searchParams.toString() === "") {
+        setFormState(createDefaultSearchFormState());
+        setResults(null);
+        setRouteMeta(null);
+        setHasSearched(false);
+        setSelectedKey(null);
+        setError(null);
+        setLocationError(null);
+        setOriginError(null);
+        setDestinationError(null);
+        setMapOverlay({ pinRadius: null, shapes: [] });
+      }
+      return;
     }
-  }, [initialState, runSearch]);
+
+    didInitializeFromUrl.current = true;
+
+    const pendingSavedSearch = consumePendingSavedSearch();
+    if (pendingSavedSearch) {
+      const nextState = { ...createDefaultSearchFormState(), ...pendingSavedSearch.params };
+      setFormState(nextState);
+      if (pendingSavedSearch.mapOverlay) {
+        setMapOverlay(pendingSavedSearch.mapOverlay);
+      }
+      void runSearch(nextState);
+      const params = buildSearchParams(nextState);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      return;
+    }
+
+    const urlState = stateFromSearchParams(searchParams);
+    if (searchParams.get(SEARCH_RUN_PARAM) === "1" && canAutoSearch(urlState)) {
+      setFormState(urlState);
+      void runSearch(urlState);
+      const params = buildSearchParams(urlState);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      return;
+    }
+
+    if (searchParams.toString()) {
+      router.replace(pathname, { scroll: false });
+    }
+  }, [pathname, router, runSearch, searchParams]);
 
   useEffect(() => {
     if (!selectedKey) {
@@ -338,17 +428,32 @@ export function EventSearchPage({
         return;
       }
 
+      if (formState.originLat === null || formState.originLng === null) {
+        setOriginError("Select a starting point from the suggestions.");
+        return;
+      }
+
       if (!formState.destinationLabel.trim()) {
         setDestinationError("Enter a destination.");
         return;
       }
-    } else if (!formState.locationLabel.trim()) {
-      setLocationError("Enter a city, state, or zip code.");
+
+      if (formState.destinationLat === null || formState.destinationLng === null) {
+        setDestinationError("Select a destination from the suggestions.");
+        return;
+      }
+    } else if (
+      !formState.locationLabel.trim() ||
+      formState.lat === null ||
+      formState.lng === null
+    ) {
+      setLocationError("Select a location from the suggestions.");
       return;
     }
 
     const params = buildSearchParams(formState);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    void runSearch(formState);
   }
 
   function renderResultCard(entry: SearchResultEntry) {
