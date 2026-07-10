@@ -1,4 +1,4 @@
-export type EventRecordStatus = "pending" | "approved" | "rejected" | "published";
+export type EventRecordStatus = "pending" | "approved" | "rejected" | "published" | "archived";
 
 export interface EventRecord {
   id: string;
@@ -6,7 +6,12 @@ export interface EventRecord {
   status: EventRecordStatus;
   event_name: string;
   event_type: string;
+  event_format: string | null;
+  rodeo_level: string | null;
+  disciplines: string[];
+  additional_offerings: string[] | null;
   event_date: string;
+  event_end_date: string | null;
   venue_name: string;
   address_street: string;
   address_city: string;
@@ -14,6 +19,7 @@ export interface EventRecord {
   address_zip: string;
   latitude: number | null;
   longitude: number | null;
+  location?: unknown;
   entry_fee: string | null;
   prize_info: string | null;
   contact_name: string;

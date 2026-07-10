@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DISCIPLINE_LABELS } from "@/lib/constants";
+import { getDisciplineLabelFromSlug } from "@/lib/events/submission-options";
 import type { RodeoEvent } from "@/types/event";
 
 interface EventCardProps {
@@ -15,12 +15,17 @@ function formatDate(date: string) {
 }
 
 export function EventCard({ event }: EventCardProps) {
+  const disciplineLabel =
+    event.disciplines.length === 1
+      ? getDisciplineLabelFromSlug(event.disciplines[0])
+      : `${event.disciplines.length} disciplines`;
+
   return (
     <article className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-            {DISCIPLINE_LABELS[event.discipline]}
+            {disciplineLabel}
           </p>
           <h3 className="mt-1 text-lg font-semibold text-amber-950">{event.title}</h3>
         </div>
@@ -39,10 +44,10 @@ export function EventCard({ event }: EventCardProps) {
             {event.venue} · {event.city}, {event.state}
           </dd>
         </div>
-        {event.entryFee != null && (
+        {event.entryFee && (
           <div>
             <dt className="sr-only">Entry fee</dt>
-            <dd>Entry fee: ${event.entryFee}</dd>
+            <dd className="whitespace-pre-line">Entry fee: {event.entryFee}</dd>
           </div>
         )}
       </dl>

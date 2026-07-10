@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { FormSection } from "@/components/submit/FormSection";
-import { SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
+import { AdditionalOfferingsField } from "@/components/submit/AdditionalOfferingsField";
+import { CheckboxGroup, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
+import {
+  DISCIPLINE_OPTIONS,
+  FORMAT_OPTIONS,
+  RODEO_LEVEL_OPTIONS,
+} from "@/lib/events/submission-options";
 import {
   FLYER_ACCEPT_ATTRIBUTE,
   validateFlyerFile,
@@ -11,21 +17,24 @@ import { US_STATES } from "@/lib/us-states";
 import {
   EMPTY_EVENT_SUBMISSION,
   type EventSubmission,
-  type SubmissionEventType,
+  type RodeoLevel,
+  type SubmissionDiscipline,
+  type SubmissionFormat,
 } from "@/types/event-submission";
 
-const EVENT_TYPE_OPTIONS = [
-  { value: "barrel-racing", label: "Barrel Racing" },
-  { value: "team-roping", label: "Team Roping" },
-  { value: "both", label: "Both" },
-] as const;
-
-type FormErrors = Partial<Record<keyof EventSubmission | "flyer", string>>;
+type FormErrors = Partial<Record<keyof EventSubmission | "flyer" | "disciplines", string>>;
 
 function validateForm(data: EventSubmission): FormErrors {
   const errors: FormErrors = {};
 
   if (!data.eventName.trim()) errors.eventName = "Event name is required.";
+  if (!data.format) errors.format = "Format is required.";
+  if (data.format === "rodeo" && !data.rodeoLevel) {
+    errors.rodeoLevel = "Rodeo level is required for rodeo events.";
+  }
+  if (data.disciplines.length === 0) {
+    errors.disciplines = "Select at least one discipline.";
+  }
   if (!data.startDate) errors.startDate = "Start date is required.";
   if (!data.venueName.trim()) errors.venueName = "Venue name is required.";
   if (!data.streetAddress.trim()) errors.streetAddress = "Street address is required.";
@@ -72,6 +81,32 @@ export function EventSubmissionForm() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function handleFormatChange(format: SubmissionFormat) {
+    setFormData((current) => ({
+      ...current,
+      format,
+      rodeoLevel: format === "rodeo" ? current.rodeoLevel : "",
+      additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
+    }));
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.format;
+      if (format !== "rodeo") {
+        delete next.rodeoLevel;
+      }
+      return next;
+    });
+  }
+
+  function handleDisciplinesChange(disciplines: SubmissionDiscipline[]) {
+    updateField("disciplines", disciplines);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.disciplines;
+      return next;
+    });
+  }
 
   function updateField<K extends keyof EventSubmission>(field: K, value: EventSubmission[K]) {
     setFormData((current) => ({ ...current, [field]: value }));
@@ -174,6 +209,14 @@ export function EventSubmissionForm() {
     try {
       const body = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value
+            .map((item) => (typeof item === "string" ? item.trim() : item))
+            .filter(Boolean)
+            .forEach((item) => body.append(key, String(item)));
+          return;
+        }
+
         if (value) body.append(key, value);
       });
 
@@ -242,13 +285,41 @@ export function EventSubmissionForm() {
           placeholder="Spring Barrel Bash"
         />
         <SelectInput
-          name="eventType"
-          label="Event Type"
+          name="format"
+          label="Format"
           required
-          value={formData.eventType}
-          onChange={(e) => updateField("eventType", e.target.value as SubmissionEventType)}
-          options={EVENT_TYPE_OPTIONS}
+          value={formData.format}
+          onChange={(e) => handleFormatChange(e.target.value as SubmissionFormat)}
+          options={FORMAT_OPTIONS}
+          error={errors.format}
         />
+        {formData.format === "rodeo" && (
+          <SelectInput
+            name="rodeoLevel"
+            label="Rodeo Level"
+            required
+            value={formData.rodeoLevel}
+            onChange={(e) => updateField("rodeoLevel", e.target.value as RodeoLevel)}
+            options={RODEO_LEVEL_OPTIONS}
+            placeholder="Select rodeo level"
+            error={errors.rodeoLevel}
+          />
+        )}
+        <CheckboxGroup
+          label="Discipline(s)"
+          required
+          hint="Select all disciplines that apply to this event."
+          options={DISCIPLINE_OPTIONS}
+          values={formData.disciplines}
+          onChange={(values) => handleDisciplinesChange(values as SubmissionDiscipline[])}
+          error={errors.disciplines}
+        />
+        {formData.format === "rodeo" && (
+          <AdditionalOfferingsField
+            values={formData.additionalOfferings}
+            onChange={(values) => updateField("additionalOfferings", values)}
+          />
+        )}
         <TextArea
           name="description"
           label="Description"
@@ -403,13 +474,13 @@ export function EventSubmissionForm() {
 
       <FormSection title="Entry & Prizes">
         <div className="grid gap-5 sm:grid-cols-2">
-          <TextInput
+          <TextArea
             name="entryFee"
             label="Entry Fee"
-            inputMode="decimal"
             value={formData.entryFee}
             onChange={(e) => updateField("entryFee", e.target.value)}
-            placeholder="$45"
+            placeholder="e.g. $45 per event, $10 office fee, $75 for the open division."
+            className="min-h-24"
           />
           <TextArea
             name="prizePayoutInfo"

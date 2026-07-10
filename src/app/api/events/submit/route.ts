@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { saveEventSubmission } from "@/lib/events/save-submission";
 import { sendSubmissionConfirmation } from "@/lib/email/send-submission-confirmation";
-import type { EventSubmission, SubmissionEventType } from "@/types/event-submission";
+import type {
+  EventSubmission,
+  RodeoLevel,
+  SubmissionDiscipline,
+  SubmissionFormat,
+} from "@/types/event-submission";
 
 export const runtime = "nodejs";
 
@@ -9,10 +14,23 @@ function getString(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function getRawString(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value : "";
+}
+
 function parseSubmission(formData: FormData): EventSubmission {
   return {
     eventName: getString(formData.get("eventName")),
-    eventType: getString(formData.get("eventType")) as SubmissionEventType,
+    format: getString(formData.get("format")) as SubmissionFormat,
+    rodeoLevel: getString(formData.get("rodeoLevel")) as RodeoLevel | "",
+    disciplines: formData
+      .getAll("disciplines")
+      .map((value) => getString(value))
+      .filter(Boolean) as SubmissionDiscipline[],
+    additionalOfferings: formData
+      .getAll("additionalOfferings")
+      .map((value) => getString(value))
+      .filter(Boolean),
     startDate: getString(formData.get("startDate")),
     endDate: getString(formData.get("endDate")),
     entryDeadline: getString(formData.get("entryDeadline")),
@@ -26,7 +44,7 @@ function parseSubmission(formData: FormData): EventSubmission {
     producerWebsite: getString(formData.get("producerWebsite")),
     contactEmail: getString(formData.get("contactEmail")),
     contactPhone: getString(formData.get("contactPhone")),
-    entryFee: getString(formData.get("entryFee")),
+    entryFee: getRawString(formData.get("entryFee")),
     prizePayoutInfo: getString(formData.get("prizePayoutInfo")),
     description: getString(formData.get("description")),
     submitterEmail: getString(formData.get("submitterEmail")),

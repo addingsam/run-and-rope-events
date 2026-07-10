@@ -26,7 +26,7 @@ export default function Home() {
               Browse events
             </Link>
             <Link
-              href="/subscription"
+              href="/subscribe"
               className="rounded-full border border-amber-300 bg-white px-6 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-50"
             >
               View subscription plans

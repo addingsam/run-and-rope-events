@@ -1,8 +1,21 @@
-export type SubmissionEventType = "barrel-racing" | "team-roping" | "both";
+export type SubmissionFormat = "jackpot" | "rodeo";
+
+export type RodeoLevel = "youth" | "open" | "amateur";
+
+export type SubmissionDiscipline =
+  | "barrel_racing"
+  | "team_roping"
+  | "calf_roping"
+  | "breakaway_roping"
+  | "steer_roping"
+  | "steer_wrestling";
 
 export interface EventSubmission {
   eventName: string;
-  eventType: SubmissionEventType;
+  format: SubmissionFormat;
+  rodeoLevel: RodeoLevel | "";
+  disciplines: SubmissionDiscipline[];
+  additionalOfferings: string[];
   startDate: string;
   endDate: string;
   entryDeadline: string;
@@ -25,7 +38,10 @@ export interface EventSubmission {
 
 export const EMPTY_EVENT_SUBMISSION: EventSubmission = {
   eventName: "",
-  eventType: "barrel-racing",
+  format: "jackpot",
+  rodeoLevel: "",
+  disciplines: [],
+  additionalOfferings: [],
   startDate: "",
   endDate: "",
   entryDeadline: "",

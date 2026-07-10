@@ -1,18 +1,28 @@
-export type EventDiscipline = "barrel-racing" | "team-roping" | "calf-roping" | "breakaway";
+export type EventDiscipline =
+  | "barrel_racing"
+  | "team_roping"
+  | "calf_roping"
+  | "breakaway_roping"
+  | "steer_roping"
+  | "steer_wrestling";
+
+export type EventFormat = "jackpot" | "rodeo";
 
 export type EventStatus = "upcoming" | "registration-open" | "sold-out" | "completed";
 
 export interface RodeoEvent {
   id: string;
   title: string;
-  discipline: EventDiscipline;
+  format: EventFormat;
+  disciplines: EventDiscipline[];
+  additionalOfferings?: string[];
   status: EventStatus;
   startDate: string;
   endDate?: string;
   venue: string;
   city: string;
   state: string;
-  entryFee?: number;
+  entryFee?: string;
   description?: string;
   organizerName?: string;
   websiteUrl?: string;

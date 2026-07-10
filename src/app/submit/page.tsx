@@ -16,8 +16,9 @@ export default function SubmitPage() {
             Submit an event
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-amber-900/75 sm:text-lg">
-            Add your barrel racing or roping event to the directory. Fill out the details below
-            and we&apos;ll get it in front of riders looking for their next run.
+            List your rodeo or jackpot across barrel racing, team roping, calf roping, breakaway
+            roping, steer roping, and steer wrestling. Fill out the details below and we&apos;ll
+            get it in front of riders looking for their next run.
           </p>
         </div>
       </div>
