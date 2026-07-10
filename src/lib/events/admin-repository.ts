@@ -1,6 +1,7 @@
 import {
   mapSubmissionToEventRecord,
 } from "@/lib/events/save-submission";
+import { DUPLICATE_CHECK_STATUSES } from "@/lib/events/duplicate-detection";
 import { geocodeCityState } from "@/lib/geocoding/geocode-city-state";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { EventRecord, EventRecordStatus } from "@/types/event-record";
@@ -85,6 +86,20 @@ export async function updateEventFromSubmission(eventId: string, submission: Eve
   }
 
   return data as EventRecord;
+}
+
+export async function listEventsForDuplicateCheck() {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .in("status", [...DUPLICATE_CHECK_STATUSES]);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as EventRecord[];
 }
 
 export async function countEventsByStatus(status: EventRecordStatus | EventRecordStatus[]) {

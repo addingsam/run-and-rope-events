@@ -3,7 +3,9 @@ import { getAdminDashboardStats } from "@/lib/admin/stats";
 import {
   APPROVED_STATUSES,
   listEventsByStatus,
+  listEventsForDuplicateCheck,
 } from "@/lib/events/admin-repository";
+import { buildPendingEventReviews } from "@/lib/events/duplicate-detection";
 import { listProRodeos } from "@/lib/pro-rodeos/repository";
 
 export const metadata = {
@@ -11,14 +13,17 @@ export const metadata = {
 };
 
 export default async function AdminPage() {
-  const [stats, pendingEvents, approvedEvents, rejectedEvents, proRodeos] =
+  const [stats, pendingEvents, approvedEvents, rejectedEvents, duplicateCandidates, proRodeos] =
     await Promise.all([
       getAdminDashboardStats(),
       listEventsByStatus("pending"),
       listEventsByStatus(APPROVED_STATUSES),
       listEventsByStatus("rejected"),
+      listEventsForDuplicateCheck(),
       listProRodeos(),
     ]);
+
+  const pendingEventReviews = buildPendingEventReviews(pendingEvents, duplicateCandidates);
 
   return (
     <div>
@@ -44,7 +49,7 @@ export default async function AdminPage() {
 
       <div className="mt-10">
         <AdminPanel
-          pendingEvents={pendingEvents}
+          pendingEventReviews={pendingEventReviews}
           approvedEvents={approvedEvents}
           rejectedEvents={rejectedEvents}
           proRodeos={proRodeos}

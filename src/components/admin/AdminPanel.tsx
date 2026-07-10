@@ -3,20 +3,21 @@
 import { useState } from "react";
 import { AdminEventPanel } from "@/components/admin/AdminEventPanel";
 import { AdminProRodeoPanel } from "@/components/admin/AdminProRodeoPanel";
+import type { PendingEventReview } from "@/lib/events/duplicate-detection";
 import type { EventRecord } from "@/types/event-record";
 import type { ProRodeoRecord } from "@/types/pro-rodeo-record";
 
 type AdminSection = "submissions" | "pro-rodeos";
 
 interface AdminPanelProps {
-  pendingEvents: EventRecord[];
+  pendingEventReviews: PendingEventReview[];
   approvedEvents: EventRecord[];
   rejectedEvents: EventRecord[];
   proRodeos: ProRodeoRecord[];
 }
 
 export function AdminPanel({
-  pendingEvents,
+  pendingEventReviews,
   approvedEvents,
   rejectedEvents,
   proRodeos,
@@ -52,7 +53,7 @@ export function AdminPanel({
       <div className="mt-8">
         {activeSection === "submissions" ? (
           <AdminEventPanel
-            pendingEvents={pendingEvents}
+            pendingEventReviews={pendingEventReviews}
             approvedEvents={approvedEvents}
             rejectedEvents={rejectedEvents}
           />
