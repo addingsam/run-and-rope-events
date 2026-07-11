@@ -1,17 +1,19 @@
 import { getAppUrl } from "@/lib/env/app-url";
 import { getAuthUserProfile } from "@/lib/auth/get-user";
 import { getIsSubscriber } from "@/lib/subscription/status";
-import { runSavedSearch } from "@/lib/saved-searches/run-saved-search";
+import { sendSavedSearchConfirmationEmail } from "@/lib/email/saved-notifications";
+import { runSavedSearch, savedSearchToQueryString } from "@/lib/saved-searches/run-saved-search";
 import {
   getProfileEmail,
   updateSavedSearchKnownEvents,
+  updateSavedSearchLastAlertSent,
 } from "@/lib/saved-searches/repository";
-import { savedSearchToQueryString } from "@/lib/saved-searches/run-saved-search";
-import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendEventPassedEmail, sendSavedSearchAlertEmail } from "@/lib/email/saved-notifications";
-import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams } from "@/types/saved-search";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 const APP_URL = getAppUrl();
+const WEEKLY_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getCurrentEventIds(params: SavedSearchParams, mapOverlay?: SavedMapOverlay | null) {
   return runSavedSearch(params, mapOverlay).then((response) =>
@@ -21,12 +23,58 @@ function getCurrentEventIds(params: SavedSearchParams, mapOverlay?: SavedMapOver
   );
 }
 
+function isDueForDigest(
+  frequency: SavedSearchAlertFrequency,
+  lastAlertSentAt: string | null,
+  now = Date.now(),
+) {
+  if (frequency === "off") {
+    return false;
+  }
+
+  if (frequency === "daily") {
+    return true;
+  }
+
+  if (!lastAlertSentAt) {
+    return true;
+  }
+
+  return now - new Date(lastAlertSentAt).getTime() >= WEEKLY_MS;
+}
+
+export async function sendSavedSearchSavedConfirmation({
+  to,
+  searchName,
+  searchParams,
+  mapOverlay,
+  alertFrequency,
+}: {
+  to: string;
+  searchName: string;
+  searchParams: SavedSearchParams;
+  mapOverlay?: SavedMapOverlay | null;
+  alertFrequency: SavedSearchAlertFrequency;
+}) {
+  const searchUrl = `${APP_URL}/events?${savedSearchToQueryString(searchParams)}`;
+  await sendSavedSearchConfirmationEmail({
+    to,
+    searchName,
+    searchParams,
+    mapOverlay,
+    alertFrequency,
+    searchUrl,
+  });
+}
+
 export async function processSavedSearchAlerts() {
   const supabase = getSupabaseAdminClient();
   const { data: searches, error } = await supabase
     .from("saved_searches")
-    .select("id, user_id, name, search_params, map_overlay, known_event_ids, alerts_enabled")
-    .eq("alerts_enabled", true);
+    .select(
+      "id, user_id, name, search_params, map_overlay, known_event_ids, alert_frequency, last_alert_sent_at",
+    )
+    .in("alert_frequency", ["daily", "weekly"]);
 
   if (error) {
     throw new Error(error.message);
@@ -35,6 +83,11 @@ export async function processSavedSearchAlerts() {
   let sent = 0;
 
   for (const search of searches ?? []) {
+    const frequency = search.alert_frequency as SavedSearchAlertFrequency;
+    if (!isDueForDigest(frequency, search.last_alert_sent_at)) {
+      continue;
+    }
+
     const params = search.search_params as SavedSearchParams;
     const mapOverlay = (search.map_overlay as SavedMapOverlay | null) ?? null;
     const knownIds = new Set((search.known_event_ids ?? []) as string[]);
@@ -57,6 +110,10 @@ export async function processSavedSearchAlerts() {
       (entry) => entry.kind === "event" && newEventIds.includes(entry.item.id),
     );
 
+    if (frequency !== "daily" && frequency !== "weekly") {
+      continue;
+    }
+
     await sendSavedSearchAlertEmail({
       to: email,
       searchName: search.name,
@@ -64,9 +121,11 @@ export async function processSavedSearchAlerts() {
         entry.kind === "event" ? entry.item.title : "",
       ),
       searchUrl: `${APP_URL}/events?${savedSearchToQueryString(params)}`,
+      alertFrequency: frequency,
     });
 
     await updateSavedSearchKnownEvents(search.id, currentEventIds);
+    await updateSavedSearchLastAlertSent(search.id);
     sent += 1;
   }
 

@@ -8,7 +8,10 @@ export type SubmissionDiscipline =
   | "calf_roping"
   | "breakaway_roping"
   | "steer_roping"
-  | "steer_wrestling";
+  | "steer_wrestling"
+  | "cowboy_mounted_shooting"
+  | "ranch_horse"
+  | "obstacle_trail";
 
 export interface EventSubmission {
   eventName: string;

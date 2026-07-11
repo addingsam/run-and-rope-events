@@ -1,4 +1,4 @@
-import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams } from "@/types/saved-search";
 
 export async function fetchSavedEventIds(): Promise<string[]> {
   const response = await fetch("/api/saved-events");
@@ -44,17 +44,17 @@ export async function createSavedSearch({
   name,
   searchParams,
   mapOverlay,
-  alertsEnabled = false,
+  alertFrequency = "off",
 }: {
   name: string;
   searchParams: SavedSearchParams;
   mapOverlay: SavedMapOverlay | null;
-  alertsEnabled?: boolean;
+  alertFrequency?: SavedSearchAlertFrequency;
 }) {
   const response = await fetch("/api/saved-searches", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, searchParams, mapOverlay, alertsEnabled }),
+    body: JSON.stringify({ name, searchParams, mapOverlay, alertFrequency }),
   });
 
   const data = (await response.json()) as { error?: string };
@@ -65,19 +65,26 @@ export async function createSavedSearch({
   return data;
 }
 
-export async function updateSavedSearchAlerts(searchId: string, alertsEnabled: boolean) {
+export async function updateSavedSearchAlertFrequency(
+  searchId: string,
+  alertFrequency: SavedSearchAlertFrequency,
+) {
   const response = await fetch(`/api/saved-searches/${searchId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ alertsEnabled }),
+    body: JSON.stringify({ alertFrequency }),
   });
 
   const data = (await response.json()) as { error?: string };
   if (!response.ok) {
-    throw new Error(data.error ?? "Failed to update alerts.");
+    throw new Error(data.error ?? "Failed to update alert settings.");
   }
 
   return data;
+}
+
+export async function updateSavedSearchAlerts(searchId: string, alertsEnabled: boolean) {
+  return updateSavedSearchAlertFrequency(searchId, alertsEnabled ? "daily" : "off");
 }
 
 export async function deleteSavedSearch(searchId: string) {

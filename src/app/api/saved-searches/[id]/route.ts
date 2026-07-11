@@ -3,41 +3,61 @@ import {
   baselineSavedSearchKnownEvents,
   requireSubscriberUser,
 } from "@/lib/saved-searches/notifications";
+import { isSavedSearchAlertFrequency } from "@/lib/saved-searches/format-saved-search-criteria";
 import {
   deleteSavedSearch,
   getSavedSearchById,
-  updateSavedSearchAlerts,
+  updateSavedSearchAlertFrequency,
 } from "@/lib/saved-searches/repository";
-import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams } from "@/types/saved-search";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+function resolveAlertFrequency(body: {
+  alertFrequency?: SavedSearchAlertFrequency;
+  alertsEnabled?: boolean;
+}): SavedSearchAlertFrequency | null {
+  if (body.alertFrequency && isSavedSearchAlertFrequency(body.alertFrequency)) {
+    return body.alertFrequency;
+  }
+
+  if (typeof body.alertsEnabled === "boolean") {
+    return body.alertsEnabled ? "daily" : "off";
+  }
+
+  return null;
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const user = await requireSubscriberUser();
     const { id } = await context.params;
-    const body = (await request.json()) as { alertsEnabled?: boolean };
+    const body = (await request.json()) as {
+      alertFrequency?: SavedSearchAlertFrequency;
+      alertsEnabled?: boolean;
+    };
 
-    if (typeof body.alertsEnabled !== "boolean") {
-      return NextResponse.json({ error: "alertsEnabled is required." }, { status: 400 });
+    const alertFrequency = resolveAlertFrequency(body);
+    if (!alertFrequency) {
+      return NextResponse.json({ error: "alertFrequency is required." }, { status: 400 });
     }
 
     let knownEventIds: string[] | undefined;
-    if (body.alertsEnabled) {
+    if (alertFrequency !== "off") {
       const existing = await getSavedSearchById(user.id, id);
       knownEventIds = await baselineSavedSearchKnownEvents(
         id,
         existing.search_params as SavedSearchParams,
-        existing.map_overlay,
+        existing.map_overlay as SavedMapOverlay | null,
       );
     }
 
-    const search = await updateSavedSearchAlerts(
+    const search = await updateSavedSearchAlertFrequency(
       user.id,
       id,
-      body.alertsEnabled,
+      alertFrequency,
       knownEventIds,
     );
     return NextResponse.json({ search });

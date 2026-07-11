@@ -19,7 +19,7 @@ Use this when deploying **Jackpot & Rodeo Events** to Vercel.
 3. Build command: `npm run build` (default).
 4. `vercel.json` already configures cron jobs:
    - `/api/cron/archive-events` — daily at midnight UTC
-   - `/api/cron/notifications` — hourly
+   - `/api/cron/notifications` — daily (saved search digests)
 
 ## Environment variables (Vercel → Settings → Environment Variables)
 

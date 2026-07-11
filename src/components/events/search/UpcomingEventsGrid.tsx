@@ -23,8 +23,6 @@ interface UpcomingEventsGridProps {
   hasMapOverlayFilter?: boolean;
   filterState: UpcomingEventFilterState;
   onFilterChange: (filters: UpcomingEventFilterState) => void;
-  canSaveFilters: boolean;
-  onSaveFilters: () => void;
   isSubscriber: boolean;
   selectedKey: string | null;
   onSelectCard: (key: string) => void;
@@ -45,8 +43,6 @@ export function UpcomingEventsGrid({
   hasMapOverlayFilter = false,
   filterState,
   onFilterChange,
-  canSaveFilters,
-  onSaveFilters,
   isSubscriber,
   selectedKey,
   onSelectCard,
@@ -115,15 +111,6 @@ export function UpcomingEventsGrid({
           <h2 className="text-xl font-semibold text-amber-950">Upcoming events</h2>
           <p className="mt-1 text-sm text-amber-900/70">{countLabel}</p>
         </div>
-        {canSaveFilters && (
-          <button
-            type="button"
-            onClick={onSaveFilters}
-            className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
-          >
-            Save &amp; get alerts
-          </button>
-        )}
       </div>
 
       <div className="space-y-6 rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:p-6">
@@ -139,8 +126,8 @@ export function UpcomingEventsGrid({
 
         {showDisciplineFilter && (
           <CheckboxGroup
-            label="Jackpot disciplines"
-            hint="Select one or more disciplines. Leave unchecked to include all jackpot disciplines."
+            label="Jackpot structure"
+            hint="Select one or more structures. Leave unchecked to include all jackpot structures."
             options={DISCIPLINE_OPTIONS}
             values={selectedDisciplines}
             onChange={(values) =>

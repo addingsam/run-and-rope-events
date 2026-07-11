@@ -334,6 +334,15 @@ export function EventsSearchMap({
   }, []);
 
   const clearDrawings = useCallback(() => {
+    onSelect(null);
+    setActiveTool("none");
+    activeToolRef.current = "none";
+    drawingRef.current = false;
+
+    if (!isSubscriber) {
+      return;
+    }
+
     overlayHydratedRef.current = false;
     setPinRadiusDrawing(null);
     setFreehandPoints([]);
@@ -341,12 +350,9 @@ export function EventsSearchMap({
     setRectangleEnd(null);
     setCompletedShapes([]);
     completedShapesRef.current = [];
-    drawingRef.current = false;
     rectangleStartRef.current = null;
     rectangleEndRef.current = null;
     freehandPointsRef.current = [];
-    setActiveTool("none");
-    activeToolRef.current = "none";
 
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) {
@@ -371,7 +377,7 @@ export function EventsSearchMap({
         map.removeSource(sourceId);
       }
     }
-  }, []);
+  }, [isSubscriber, onSelect]);
 
   const updatePinRadiusLayer = useCallback((drawing: PinRadiusDrawing | null) => {
     const map = mapRef.current;
@@ -1000,12 +1006,6 @@ export function EventsSearchMap({
     });
   }, [completedShapes, pinRadiusDrawing, onMapOverlayChange]);
 
-  const hasDrawings =
-    Boolean(pinRadiusDrawing) ||
-    completedShapes.length > 0 ||
-    freehandPoints.length > 0 ||
-    Boolean(rectangleStart);
-
   return (
     <div className="relative h-[480px] w-full overflow-hidden rounded-2xl border border-amber-200 shadow-sm">
       <div ref={containerRef} className="h-full w-full" />
@@ -1014,7 +1014,6 @@ export function EventsSearchMap({
         activeTool={activeTool}
         isSubscriber={isSubscriber}
         pinRadiusMiles={pinRadiusMiles}
-        hasDrawings={hasDrawings}
         onToolChange={handleToolChange}
         onPinRadiusChange={setPinRadiusMiles}
         onClear={clearDrawings}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckboxGroup, SelectInput } from "@/components/submit/FormField";
 import { EventsSearchMap } from "@/components/events/search/EventsSearchMap";
@@ -59,7 +60,6 @@ import type { SubmissionDiscipline } from "@/types/event-submission";
 
 interface EventSearchPageProps {
   isSubscriber: boolean;
-  isAuthenticated: boolean;
   mapboxToken: string;
   initialUpcomingEvents: EventSearchResultItem[];
   initialMapResults: SearchResultEntry[];
@@ -263,7 +263,6 @@ function getSelectionKey(entry: SearchResultEntry, isSubscriber: boolean) {
 
 export function EventSearchPage({
   isSubscriber,
-  isAuthenticated,
   mapboxToken,
   initialUpcomingEvents,
   initialMapResults,
@@ -271,6 +270,7 @@ export function EventSearchPage({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
 
   const [formState, setFormState] = useState<SearchFormState>(createDefaultSearchFormState);
   const [results, setResults] = useState<EventSearchResponse | null>(null);
@@ -288,7 +288,7 @@ export function EventSearchPage({
     shapes: [],
   });
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [saveDialogSource, setSaveDialogSource] = useState<"location" | "upcoming">("upcoming");
+  const [saveDialogSource, setSaveDialogSource] = useState<"map" | "search">("search");
   const [upcomingFilters, setUpcomingFilters] = useState<UpcomingEventFilterState>(
     DEFAULT_UPCOMING_EVENT_FILTERS,
   );
@@ -580,13 +580,28 @@ export function EventSearchPage({
       ? { lat: formState.lat, lng: formState.lng }
       : null;
 
-  const canSaveSearch =
-    isSubscriber &&
-    isAuthenticated &&
-    hasSearched &&
-    (canAutoSearch(formState) ||
-      Boolean(mapOverlay.pinRadius) ||
-      mapOverlay.shapes.length > 0);
+  const saveSearchButtonClassName =
+    "rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50";
+
+  const canUseSaveSearch = authLoaded && isSignedIn && isSubscriber;
+  const searchCriteriaReady = canAutoSearch(formState);
+
+  const canSaveMapActivity = canUseSaveSearch && hasMapOverlayFilter;
+
+  const canSaveSearchActivity = canUseSaveSearch && searchCriteriaReady;
+
+  function getSaveParamsForSource(source: "map" | "search") {
+    if (source === "search" || (source === "map" && hasSearched && searchCriteriaReady)) {
+      return savedSearchParamsFromFormState(formState);
+    }
+
+    return savedUpcomingSearchParams(upcomingFilters);
+  }
+
+  function openSaveDialog(source: "map" | "search") {
+    setSaveDialogSource(source);
+    setSaveDialogOpen(true);
+  }
 
   const handleMapOverlayChange = useCallback((overlay: SavedMapOverlay) => {
     setMapOverlay(overlay);
@@ -612,11 +627,6 @@ export function EventSearchPage({
         hasMapOverlayFilter={hasMapOverlayFilter}
         filterState={upcomingFilters}
         onFilterChange={setUpcomingFilters}
-        canSaveFilters={isSubscriber && isAuthenticated}
-        onSaveFilters={() => {
-          setSaveDialogSource("upcoming");
-          setSaveDialogOpen(true);
-        }}
         isSubscriber={isSubscriber}
         selectedKey={selectedKey}
         onSelectCard={setSelectedKey}
@@ -627,23 +637,42 @@ export function EventSearchPage({
 
       {mapboxToken && (
         <section className="space-y-3">
-          <div>
-            <h2 className="text-xl font-semibold text-amber-950">Event map</h2>
-            <p className="mt-1 text-sm text-amber-900/70">
-              {!hasSearched
-                ? hasMapOverlayFilter
-                  ? `Showing ${overlayFilteredMapResults.length} event${
-                      overlayFilteredMapResults.length === 1 ? "" : "s"
-                    } inside your drawn area (${mapResults.length} total on map). Use search below to filter further.`
-                  : `Showing ${defaultMapResults.length} geocoded upcoming event${
-                      defaultMapResults.length === 1 ? "" : "s"
-                    } on the map. Use search below to filter by location, format, or date.`
-                : hasMapOverlayFilter
-                  ? `Showing ${overlayFilteredMapResults.length} event${
-                      overlayFilteredMapResults.length === 1 ? "" : "s"
-                    } inside your drawn area (${mapResults.length} search results on map).`
-                  : "Search results shown on the map below."}
-            </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-amber-950">Event map</h2>
+              <p className="mt-1 text-sm text-amber-900/70">
+                {!hasSearched
+                  ? hasMapOverlayFilter
+                    ? `Showing ${overlayFilteredMapResults.length} event${
+                        overlayFilteredMapResults.length === 1 ? "" : "s"
+                      } inside your drawn area (${mapResults.length} total on map). Use search below to filter further.`
+                    : `Showing ${defaultMapResults.length} geocoded upcoming event${
+                        defaultMapResults.length === 1 ? "" : "s"
+                      } on the map. Use search below to filter by location, format, or date.`
+                  : hasMapOverlayFilter
+                    ? `Showing ${overlayFilteredMapResults.length} event${
+                        overlayFilteredMapResults.length === 1 ? "" : "s"
+                      } inside your drawn area (${mapResults.length} search results on map).`
+                    : "Search results shown on the map below."}
+              </p>
+            </div>
+            {canSaveMapActivity ? (
+              <button
+                type="button"
+                onClick={() => openSaveDialog("map")}
+                className={saveSearchButtonClassName}
+              >
+                Save &amp; get alerts
+              </button>
+            ) : canUseSaveSearch ? (
+              <p className="text-sm text-amber-900/70">
+                Draw on the map to save this area filter.
+              </p>
+            ) : authLoaded && isSignedIn && !isSubscriber ? (
+              <p className="text-sm text-amber-900/70">
+                An active subscription is required to save searches.
+              </p>
+            ) : null}
           </div>
 
           <EventsSearchMap
@@ -688,11 +717,30 @@ export function EventSearchPage({
       )}
 
       <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold text-amber-950">Search events</h2>
-          <p className="mt-1 text-sm text-amber-900/70">
-            Filter by radius or route to find events near a location or along your drive.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-amber-950">Search events</h2>
+            <p className="mt-1 text-sm text-amber-900/70">
+              Filter by radius or route to find events near a location or along your drive.
+            </p>
+          </div>
+          {canSaveSearchActivity ? (
+            <button
+              type="button"
+              onClick={() => openSaveDialog("search")}
+              className={saveSearchButtonClassName}
+            >
+              Save &amp; get alerts
+            </button>
+          ) : canUseSaveSearch ? (
+            <p className="text-sm text-amber-900/70">
+              Select a location from the suggestions to save this search.
+            </p>
+          ) : authLoaded && isSignedIn && !isSubscriber ? (
+            <p className="text-sm text-amber-900/70">
+              An active subscription is required to save searches.
+            </p>
+          ) : null}
         </div>
 
         <SearchModeToggle
@@ -743,8 +791,8 @@ export function EventSearchPage({
 
           <div className="lg:col-span-2">
             <CheckboxGroup
-              label="Discipline"
-              hint="Leave unchecked to include all disciplines."
+            label="Jackpot structure"
+              hint="Leave unchecked to include all jackpot structures."
               options={DISCIPLINE_OPTIONS}
               values={formState.disciplines}
               onChange={(disciplines) =>
@@ -865,6 +913,23 @@ export function EventSearchPage({
           >
             {formState.mode === "route" ? "Search along route" : "Search events"}
           </button>
+          {canSaveSearchActivity ? (
+            <button
+              type="button"
+              onClick={() => openSaveDialog("search")}
+              className={saveSearchButtonClassName}
+            >
+              Save &amp; get alerts
+            </button>
+          ) : canUseSaveSearch ? (
+            <p className="text-sm text-amber-900/70">
+              Select a location from the suggestions to save this search.
+            </p>
+          ) : authLoaded && isSignedIn && !isSubscriber ? (
+            <p className="text-sm text-amber-900/70">
+              An active subscription is required to save searches.
+            </p>
+          ) : null}
           {!isSubscriber && (
             <p className="text-sm text-amber-900/70">
               Pro rodeo listings are free to browse. Full event details require a subscription.
@@ -931,18 +996,15 @@ export function EventSearchPage({
               <div />
             )}
 
-            {canSaveSearch && (
+            {canSaveSearchActivity ? (
               <button
                 type="button"
-                onClick={() => {
-                  setSaveDialogSource("location");
-                  setSaveDialogOpen(true);
-                }}
-                className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
+                onClick={() => openSaveDialog("search")}
+                className={saveSearchButtonClassName}
               >
-                Save this search
+                Save &amp; get alerts
               </button>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -1005,11 +1067,7 @@ export function EventSearchPage({
 
       <SaveSearchDialog
         open={saveDialogOpen}
-        searchParams={
-          saveDialogSource === "upcoming"
-            ? savedUpcomingSearchParams(upcomingFilters)
-            : savedSearchParamsFromFormState(formState)
-        }
+        searchParams={getSaveParamsForSource(saveDialogSource)}
         mapOverlay={
           mapOverlay.pinRadius || mapOverlay.shapes.length > 0 ? mapOverlay : null
         }

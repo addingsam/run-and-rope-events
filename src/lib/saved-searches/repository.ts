@@ -1,5 +1,9 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import type { SavedMapOverlay, SavedSearchParams, SavedSearchRecord } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams, SavedSearchRecord } from "@/types/saved-search";
+
+function alertsEnabledFromFrequency(frequency: SavedSearchAlertFrequency) {
+  return frequency !== "off";
+}
 
 export async function getSavedSearchById(userId: string, searchId: string) {
   const supabase = getSupabaseAdminClient();
@@ -52,14 +56,14 @@ export async function createSavedSearch({
   name,
   searchParams,
   mapOverlay,
-  alertsEnabled = false,
+  alertFrequency = "off",
   knownEventIds = [],
 }: {
   userId: string;
   name: string;
   searchParams: SavedSearchParams;
   mapOverlay: SavedMapOverlay | null;
-  alertsEnabled?: boolean;
+  alertFrequency?: SavedSearchAlertFrequency;
   knownEventIds?: string[];
 }) {
   const supabase = getSupabaseAdminClient();
@@ -70,7 +74,8 @@ export async function createSavedSearch({
       name,
       search_params: searchParams,
       map_overlay: mapOverlay,
-      alerts_enabled: alertsEnabled,
+      alert_frequency: alertFrequency,
+      alerts_enabled: alertsEnabledFromFrequency(alertFrequency),
       known_event_ids: knownEventIds,
     })
     .select("*")
@@ -83,24 +88,31 @@ export async function createSavedSearch({
   return data as SavedSearchRecord;
 }
 
-export async function updateSavedSearchAlerts(
+export async function updateSavedSearchAlertFrequency(
   userId: string,
   searchId: string,
-  alertsEnabled: boolean,
+  alertFrequency: SavedSearchAlertFrequency,
   knownEventIds?: string[],
 ) {
   const supabase = getSupabaseAdminClient();
   const updatePayload: {
+    alert_frequency: SavedSearchAlertFrequency;
     alerts_enabled: boolean;
     updated_at: string;
     known_event_ids?: string[];
+    last_alert_sent_at?: string | null;
   } = {
-    alerts_enabled: alertsEnabled,
+    alert_frequency: alertFrequency,
+    alerts_enabled: alertsEnabledFromFrequency(alertFrequency),
     updated_at: new Date().toISOString(),
   };
 
   if (knownEventIds) {
     updatePayload.known_event_ids = knownEventIds;
+  }
+
+  if (alertFrequency === "off") {
+    updatePayload.last_alert_sent_at = null;
   }
 
   const { data, error } = await supabase
@@ -116,6 +128,36 @@ export async function updateSavedSearchAlerts(
   }
 
   return data as SavedSearchRecord;
+}
+
+/** @deprecated Use updateSavedSearchAlertFrequency */
+export async function updateSavedSearchAlerts(
+  userId: string,
+  searchId: string,
+  alertsEnabled: boolean,
+  knownEventIds?: string[],
+) {
+  return updateSavedSearchAlertFrequency(
+    userId,
+    searchId,
+    alertsEnabled ? "daily" : "off",
+    knownEventIds,
+  );
+}
+
+export async function updateSavedSearchLastAlertSent(searchId: string, sentAt = new Date()) {
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase
+    .from("saved_searches")
+    .update({
+      last_alert_sent_at: sentAt.toISOString(),
+      updated_at: sentAt.toISOString(),
+    })
+    .eq("id", searchId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function deleteSavedSearch(userId: string, searchId: string) {

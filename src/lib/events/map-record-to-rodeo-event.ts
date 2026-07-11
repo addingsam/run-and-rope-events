@@ -14,6 +14,9 @@ function isEventDiscipline(value: string): value is EventDiscipline {
     "breakaway_roping",
     "steer_roping",
     "steer_wrestling",
+    "cowboy_mounted_shooting",
+    "ranch_horse",
+    "obstacle_trail",
   ].includes(value);
 }
 

@@ -42,6 +42,8 @@ export interface SavedMapOverlay {
   }[];
 }
 
+export type SavedSearchAlertFrequency = "off" | "daily" | "weekly";
+
 export interface SavedSearchRecord {
   id: string;
   user_id: string;
@@ -49,6 +51,8 @@ export interface SavedSearchRecord {
   search_params: SavedSearchParams;
   map_overlay: SavedMapOverlay | null;
   alerts_enabled: boolean;
+  alert_frequency: SavedSearchAlertFrequency;
+  last_alert_sent_at: string | null;
   known_event_ids: string[];
   created_at: string;
   updated_at: string;

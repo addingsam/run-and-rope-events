@@ -4,17 +4,20 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   deleteSavedSearch,
-  updateSavedSearchAlerts,
+  updateSavedSearchAlertFrequency,
 } from "@/lib/saved/client";
+import { getAlertFrequencyLabel } from "@/lib/saved-searches/format-saved-search-criteria";
 import {
   isUpcomingSavedSearch,
   storePendingSavedSearch,
 } from "@/lib/saved-searches/run-saved-search";
-import type { SavedSearchRecord } from "@/types/saved-search";
+import type { SavedSearchAlertFrequency, SavedSearchRecord } from "@/types/saved-search";
 
 interface SavedSearchesPanelProps {
   initialSearches: SavedSearchRecord[];
 }
+
+const FREQUENCY_CYCLE: SavedSearchAlertFrequency[] = ["off", "daily", "weekly"];
 
 function getSavedSearchTypeLabel(search: SavedSearchRecord) {
   if (isUpcomingSavedSearch(search.search_params)) {
@@ -24,25 +27,47 @@ function getSavedSearchTypeLabel(search: SavedSearchRecord) {
   return search.search_params.mode === "route" ? "Route search" : "Radius search";
 }
 
+function normalizeAlertFrequency(search: SavedSearchRecord): SavedSearchAlertFrequency {
+  if (search.alert_frequency) {
+    return search.alert_frequency;
+  }
+
+  return search.alerts_enabled ? "daily" : "off";
+}
+
+function nextAlertFrequency(current: SavedSearchAlertFrequency): SavedSearchAlertFrequency {
+  const index = FREQUENCY_CYCLE.indexOf(current);
+  return FREQUENCY_CYCLE[(index + 1) % FREQUENCY_CYCLE.length];
+}
+
 export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps) {
   const router = useRouter();
   const [searches, setSearches] = useState(initialSearches);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  async function handleToggleAlerts(search: SavedSearchRecord) {
+  async function handleCycleAlerts(search: SavedSearchRecord) {
     setError(null);
     setPendingId(search.id);
     try {
-      const nextValue = !search.alerts_enabled;
-      await updateSavedSearchAlerts(search.id, nextValue);
-      setSearches((current) =>
-        current.map((item) =>
-          item.id === search.id ? { ...item, alerts_enabled: nextValue } : item,
+      const current = normalizeAlertFrequency(search);
+      const nextValue = nextAlertFrequency(current);
+      await updateSavedSearchAlertFrequency(search.id, nextValue);
+      setSearches((currentSearches) =>
+        currentSearches.map((item) =>
+          item.id === search.id
+            ? {
+                ...item,
+                alert_frequency: nextValue,
+                alerts_enabled: nextValue !== "off",
+              }
+            : item,
         ),
       );
     } catch (toggleError) {
-      setError(toggleError instanceof Error ? toggleError.message : "Failed to update alerts.");
+      setError(
+        toggleError instanceof Error ? toggleError.message : "Failed to update alert settings.",
+      );
     } finally {
       setPendingId(null);
     }
@@ -80,6 +105,7 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
 
       {searches.map((search) => {
         const typeLabel = getSavedSearchTypeLabel(search);
+        const alertFrequency = normalizeAlertFrequency(search);
 
         return (
           <article
@@ -92,11 +118,9 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
                 <p className="mt-1 text-sm text-amber-900/70">
                   {typeLabel} · saved {new Date(search.updated_at).toLocaleDateString()}
                 </p>
-                {search.alerts_enabled && (
-                  <p className="mt-1 text-xs font-medium text-amber-800">
-                    Email alerts on — you&apos;ll be notified when new events match.
-                  </p>
-                )}
+                <p className="mt-1 text-xs font-medium text-amber-800">
+                  Updates: {getAlertFrequencyLabel(alertFrequency)}
+                </p>
                 {search.map_overlay &&
                   (search.map_overlay.pinRadius || search.map_overlay.shapes.length > 0) && (
                     <p className="mt-1 text-xs text-amber-800/70">Includes map drawings</p>
@@ -117,14 +141,15 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
                 <button
                   type="button"
                   disabled={pendingId === search.id}
-                  onClick={() => void handleToggleAlerts(search)}
+                  onClick={() => void handleCycleAlerts(search)}
                   className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
-                    search.alerts_enabled
+                    alertFrequency !== "off"
                       ? "bg-amber-950 text-white hover:bg-amber-900"
                       : "border border-amber-300 text-amber-950 hover:bg-amber-50"
                   }`}
+                  title="Cycle: off → daily → weekly"
                 >
-                  {search.alerts_enabled ? "Alerts on" : "Alerts off"}
+                  {getAlertFrequencyLabel(alertFrequency)}
                 </button>
                 <button
                   type="button"

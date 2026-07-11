@@ -37,8 +37,8 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-amber-900/75 sm:text-lg">
             List your jackpots and rodeos across barrel racing, team roping, calf roping, breakaway
-            roping, steer roping, and steer wrestling. No account is required. You can optionally
-            add paid homepage featuring during submission.
+            roping, steer roping, steer wrestling, cowboy mounted shooting, ranch horse, obstacle
+            &amp; trail, and more. No account is required. You can optionally add paid homepage featuring during submission.
           </p>
         </div>
       </div>

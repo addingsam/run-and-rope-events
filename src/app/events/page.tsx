@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { EventSearchPage } from "@/components/events/search/EventSearchPage";
-import { getIsAuthenticated, getIsSubscriber } from "@/lib/auth/get-user";
+import { getIsSubscriber } from "@/lib/auth/get-user";
 import {
   listFutureMapEvents,
   listUpcomingEvents,
@@ -11,9 +11,8 @@ export const metadata = {
 };
 
 export default async function EventsPage() {
-  const [isSubscriber, isAuthenticated, upcomingEvents, mapResults] = await Promise.all([
+  const [isSubscriber, upcomingEvents, mapResults] = await Promise.all([
     getIsSubscriber(),
-    getIsAuthenticated(),
     listUpcomingEvents(),
     listFutureMapEvents(),
   ]);
@@ -37,7 +36,6 @@ export default async function EventsPage() {
       >
         <EventSearchPage
           isSubscriber={isSubscriber}
-          isAuthenticated={isAuthenticated}
           mapboxToken={process.env.MAPBOX_ACCESS_TOKEN ?? ""}
           initialUpcomingEvents={upcomingEvents}
           initialMapResults={mapResults}

@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { ensureClerkProfile } from "@/lib/clerk/device-session";
-import { requireSubscriberUser } from "@/lib/saved-searches/notifications";
+import {
+  requireSubscriberUser,
+  sendSavedSearchSavedConfirmation,
+} from "@/lib/saved-searches/notifications";
 import {
   createSavedSearch,
   listSavedSearches,
 } from "@/lib/saved-searches/repository";
+import { isSavedSearchAlertFrequency } from "@/lib/saved-searches/format-saved-search-criteria";
 import { runSavedSearch } from "@/lib/saved-searches/run-saved-search";
-import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams } from "@/types/saved-search";
 
 export async function GET() {
   try {
@@ -27,6 +31,8 @@ export async function POST(request: Request) {
       name?: string;
       searchParams?: SavedSearchParams;
       mapOverlay?: SavedMapOverlay | null;
+      alertFrequency?: SavedSearchAlertFrequency;
+      /** @deprecated Use alertFrequency */
       alertsEnabled?: boolean;
     };
 
@@ -37,6 +43,13 @@ export async function POST(request: Request) {
     if (!body.searchParams) {
       return NextResponse.json({ error: "Search parameters are required." }, { status: 400 });
     }
+
+    const alertFrequency: SavedSearchAlertFrequency =
+      body.alertFrequency && isSavedSearchAlertFrequency(body.alertFrequency)
+        ? body.alertFrequency
+        : body.alertsEnabled
+          ? "daily"
+          : "off";
 
     await ensureClerkProfile({ userId: user.id, email: user.email });
 
@@ -50,9 +63,21 @@ export async function POST(request: Request) {
       name: body.name.trim(),
       searchParams: body.searchParams,
       mapOverlay: body.mapOverlay ?? null,
-      alertsEnabled: body.alertsEnabled ?? false,
+      alertFrequency,
       knownEventIds,
     });
+
+    if (user.email) {
+      await sendSavedSearchSavedConfirmation({
+        to: user.email,
+        searchName: saved.name,
+        searchParams: body.searchParams,
+        mapOverlay: body.mapOverlay ?? null,
+        alertFrequency,
+      }).catch((emailError) => {
+        console.error("Failed to send saved search confirmation email:", emailError);
+      });
+    }
 
     return NextResponse.json({ search: saved });
   } catch (error) {

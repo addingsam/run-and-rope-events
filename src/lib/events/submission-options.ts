@@ -18,6 +18,9 @@ export const DISCIPLINE_OPTIONS = [
   { value: "breakaway_roping", label: "Breakaway Roping" },
   { value: "steer_roping", label: "Steer Roping" },
   { value: "steer_wrestling", label: "Steer Wrestling / Bull Dogging" },
+  { value: "cowboy_mounted_shooting", label: "Cowboy Mounted Shooting" },
+  { value: "ranch_horse", label: "Ranch Horse" },
+  { value: "obstacle_trail", label: "Obstacle & Trail" },
 ] as const satisfies readonly { value: SubmissionDiscipline; label: string }[];
 
 const formatLabelMap = Object.fromEntries(
@@ -51,6 +54,9 @@ const legacyDisciplineLabelMap: Record<string, string> = {
   breakaway_roping: "Breakaway Roping",
   steer_roping: "Steer Roping",
   steer_wrestling: "Steer Wrestling / Bull Dogging",
+  cowboy_mounted_shooting: "Cowboy Mounted Shooting",
+  ranch_horse: "Ranch Horse",
+  obstacle_trail: "Obstacle & Trail",
   "barrel-racing": "Barrel Racing",
   "team-roping": "Team Roping",
   "calf-roping": "Calf Roping",

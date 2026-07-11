@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createSavedSearch } from "@/lib/saved/client";
-import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams } from "@/types/saved-search";
 
 interface SaveSearchDialogProps {
   open: boolean;
@@ -12,6 +12,24 @@ interface SaveSearchDialogProps {
   onSaved?: () => void;
 }
 
+const ALERT_OPTIONS: { value: SavedSearchAlertFrequency; label: string; description: string }[] = [
+  {
+    value: "off",
+    label: "No update emails",
+    description: "Save only — you'll still get a confirmation email with your criteria.",
+  },
+  {
+    value: "daily",
+    label: "Daily digest",
+    description: "Email once a day when new approved events match this filter.",
+  },
+  {
+    value: "weekly",
+    label: "Weekly digest",
+    description: "Email once a week when new approved events match this filter.",
+  },
+];
+
 export function SaveSearchDialog({
   open,
   searchParams,
@@ -20,7 +38,7 @@ export function SaveSearchDialog({
   onSaved,
 }: SaveSearchDialogProps) {
   const [name, setName] = useState("");
-  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [alertFrequency, setAlertFrequency] = useState<SavedSearchAlertFrequency>("off");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -39,16 +57,16 @@ export function SaveSearchDialog({
         name: name.trim(),
         searchParams,
         mapOverlay,
-        alertsEnabled,
+        alertFrequency,
       });
       setSuccess(true);
       onSaved?.();
       window.setTimeout(() => {
         setName("");
-        setAlertsEnabled(false);
+        setAlertFrequency("off");
         setSuccess(false);
         onClose();
-      }, 1200);
+      }, 1400);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Failed to save search.");
     } finally {
@@ -70,8 +88,8 @@ export function SaveSearchDialog({
               Save your filters
             </h2>
             <p className="mt-1 text-sm text-amber-900/70">
-              Store your event parameters and optional map drawings. Turn on alerts to get emailed
-              when new approved events match.
+              We&apos;ll email you a confirmation with your saved criteria. Optionally choose daily
+              or weekly updates when new approved events match.
             </p>
           </div>
           <button
@@ -99,17 +117,32 @@ export function SaveSearchDialog({
             />
           </div>
 
-          <label className="flex items-start gap-3 text-sm text-amber-900/80">
-            <input
-              type="checkbox"
-              checked={alertsEnabled}
-              onChange={(changeEvent) => setAlertsEnabled(changeEvent.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-700 focus:ring-amber-500"
-            />
-            <span>
-              Email me when new approved events are added that match these parameters.
-            </span>
-          </label>
+          <fieldset>
+            <legend className="mb-2 text-sm font-semibold text-amber-950">Update emails</legend>
+            <div className="space-y-2">
+              {ALERT_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-[#fffaf3] px-3 py-3 text-sm text-amber-900/80"
+                >
+                  <input
+                    type="radio"
+                    name="alertFrequency"
+                    value={option.value}
+                    checked={alertFrequency === option.value}
+                    onChange={() => setAlertFrequency(option.value)}
+                    className="mt-1 h-4 w-4 border-amber-300 text-amber-700 focus:ring-amber-500"
+                  />
+                  <span>
+                    <span className="font-semibold text-amber-950">{option.label}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-amber-800/75">
+                      {option.description}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           {error && (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -119,7 +152,7 @@ export function SaveSearchDialog({
 
           {success && (
             <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              Search saved. Manage alerts from your dashboard.
+              Search saved. Check your inbox for a confirmation email.
             </p>
           )}
 

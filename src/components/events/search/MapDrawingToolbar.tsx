@@ -8,7 +8,6 @@ interface MapDrawingToolbarProps {
   activeTool: DrawingTool;
   isSubscriber: boolean;
   pinRadiusMiles: number;
-  hasDrawings: boolean;
   onToolChange: (tool: DrawingTool) => void;
   onPinRadiusChange: (miles: number) => void;
   onClear: () => void;
@@ -25,7 +24,6 @@ export function MapDrawingToolbar({
   activeTool,
   isSubscriber,
   pinRadiusMiles,
-  hasDrawings,
   onToolChange,
   onPinRadiusChange,
   onClear,
@@ -63,15 +61,8 @@ export function MapDrawingToolbar({
         ))}
         <button
           type="button"
-          onClick={() => {
-            if (!isSubscriber) {
-              onLockedClick();
-              return;
-            }
-            onClear();
-          }}
-          disabled={!hasDrawings}
-          className="rounded-full border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-900 enabled:hover:bg-amber-50 disabled:opacity-40"
+          onClick={onClear}
+          className="rounded-full border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-50"
         >
           Clear
         </button>

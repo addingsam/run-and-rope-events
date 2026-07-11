@@ -367,9 +367,13 @@ export function EventSubmissionForm() {
           />
         )}
         <CheckboxGroup
-          label="Discipline(s)"
+          label={formData.format === "jackpot" ? "Jackpot structure" : "Discipline(s)"}
           required
-          hint="Select all disciplines that apply to this event."
+          hint={
+            formData.format === "jackpot"
+              ? "Select all jackpot structures that apply to this event."
+              : "Select all disciplines that apply to this event."
+          }
           options={DISCIPLINE_OPTIONS}
           values={formData.disciplines}
           onChange={(values) => handleDisciplinesChange(values as SubmissionDiscipline[])}

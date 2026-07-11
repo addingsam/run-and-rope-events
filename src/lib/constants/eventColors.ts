@@ -14,6 +14,9 @@ export const DISCIPLINE_COLORS: Record<SubmissionDiscipline, string> = {
   team_roping: "#22C55E",
   steer_wrestling: "#F97316",
   steer_roping: "#EC4899",
+  cowboy_mounted_shooting: "#92400E",
+  ranch_horse: "#84CC16",
+  obstacle_trail: "#06B6D4",
 };
 
 /**
@@ -40,6 +43,13 @@ const legacyDisciplineAliases: Record<string, SubmissionDiscipline> = {
   "steer-wrestling": "steer_wrestling",
   steer_roping: "steer_roping",
   "steer-roping": "steer_roping",
+  cowboy_mounted_shooting: "cowboy_mounted_shooting",
+  "cowboy-mounted-shooting": "cowboy_mounted_shooting",
+  ranch_horse: "ranch_horse",
+  "ranch-horse": "ranch_horse",
+  obstacle_trail: "obstacle_trail",
+  "obstacle-trail": "obstacle_trail",
+  "obstacle-and-trail": "obstacle_trail",
 };
 
 function normalizeSlug(value: string) {
