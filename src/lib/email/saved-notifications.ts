@@ -1,4 +1,5 @@
 import { getResendClient, getResendFromAddress } from "@/lib/email/resend";
+import { APP_NAME } from "@/lib/constants";
 import { getAppUrl } from "@/lib/env/app-url";
 import {
   formatSavedSearchCriteriaLines,
@@ -12,6 +13,14 @@ function escapeHtml(value: string) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function emailFooterHtml() {
+  return `<p style="margin-top: 24px; font-size: 13px; color: #92400e;">— ${APP_NAME}</p>`;
+}
+
+function emailFooterText() {
+  return `— ${APP_NAME}`;
 }
 
 export async function sendSavedSearchConfirmationEmail({
@@ -46,10 +55,11 @@ export async function sendSavedSearchConfirmationEmail({
     subject: `Saved filter confirmed: ${searchName}`,
     html: `
       <h2>Your saved filter is ready</h2>
-      <p>We saved <strong>${escapeHtml(searchName)}</strong> to your account with these criteria:</p>
+      <p>We saved <strong>${escapeHtml(searchName)}</strong> to your ${escapeHtml(APP_NAME)} account with these criteria:</p>
       <ul>${criteriaHtml}</ul>
       <p>${escapeHtml(digestLine)}</p>
       <p><a href="${searchUrl}">Run this search</a> · <a href="${dashboardUrl}">Manage saved filters</a></p>
+      ${emailFooterHtml()}
     `,
     text: [
       `Your saved filter "${searchName}" is ready.`,
@@ -59,6 +69,7 @@ export async function sendSavedSearchConfirmationEmail({
       "",
       digestLine,
       `Run search: ${searchUrl}`,
+      emailFooterText(),
     ].join("\n"),
   });
 }
@@ -87,11 +98,12 @@ export async function sendSavedSearchAlertEmail({
     subject: `${digestLabel} update: new events for "${searchName}"`,
     html: `
       <h2>${digestLabel} saved filter update</h2>
-      <p>Your saved search <strong>${escapeHtml(searchName)}</strong> has ${eventNames.length} new approved event${eventNames.length === 1 ? "" : "s"}:</p>
+      <p>Your saved search <strong>${escapeHtml(searchName)}</strong> on ${escapeHtml(APP_NAME)} has ${eventNames.length} new approved event${eventNames.length === 1 ? "" : "s"}:</p>
       <ul>${listHtml}</ul>
       <p><a href="${searchUrl}">View your search</a></p>
+      ${emailFooterHtml()}
     `,
-    text: `${digestLabel} update for "${searchName}": ${eventNames.join(", ")}. View: ${searchUrl}`,
+    text: `${digestLabel} update for "${searchName}" on ${APP_NAME}: ${eventNames.join(", ")}. View: ${searchUrl}\n${emailFooterText()}`,
   });
 }
 
@@ -115,10 +127,11 @@ export async function sendEventPassedEmail({
     subject: `Event passed: ${eventName}`,
     html: `
       <h2>An event you saved has passed</h2>
-      <p><strong>${eventName}</strong> on ${eventDate} in ${location} has ended and was removed from your saved events list.</p>
+      <p><strong>${eventName}</strong> on ${eventDate} in ${location} has ended and was removed from your saved events list on ${escapeHtml(APP_NAME)}.</p>
       <p>It is no longer shown in search results, but the listing remains in our records.</p>
+      ${emailFooterHtml()}
     `,
-    text: `${eventName} (${eventDate}, ${location}) has passed and was removed from your saved events.`,
+    text: `${eventName} (${eventDate}, ${location}) has passed and was removed from your saved events on ${APP_NAME}.\n${emailFooterText()}`,
   });
 }
 

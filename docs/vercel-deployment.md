@@ -60,6 +60,8 @@ Add every **required** variable for **Production**. Use test/sandbox keys in **P
 | `STRIPE_WEBHOOK_SECRET` | **Yes** | Stripe → Webhooks → signing secret (`whsec_...`) | For `/api/webhooks/stripe`. |
 | `STRIPE_PRICE_MONTHLY_ID` | **Yes** | Stripe → Products → Monthly price ID (`price_...`) | $9.99/mo recurring. |
 | `STRIPE_PRICE_ANNUAL_ID` | **Yes** | Stripe → Products → Annual price ID (`price_...`) | $79.99/yr recurring. |
+| `STRIPE_PRICE_FEATURED_ID` | **Yes** | Stripe → Products → Featured one-time price ID (`price_...`) | $15 / 30 days homepage featuring. |
+| `STRIPE_PRICE_FEATURED_RECURRING_ID` | **Yes** | Stripe → Products → Featured recurring price ID (`price_...`) | $15 every 30 days until canceled. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | No | Stripe → Publishable key (`pk_live_...`) | **Not used** — checkout uses server-side Stripe Checkout Sessions. |
 
 ### Resend
