@@ -1,4 +1,4 @@
-import { getDisciplineLabelFromSlug } from "@/lib/events/submission-options";
+import { DisciplineColorBadge } from "@/components/events/EventTypeBadge";
 
 interface DisciplineBadgesProps {
   disciplines: string[];
@@ -12,12 +12,7 @@ export function DisciplineBadges({ disciplines }: DisciplineBadgesProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {disciplines.map((discipline) => (
-        <span
-          key={discipline}
-          className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900"
-        >
-          {getDisciplineLabelFromSlug(discipline)}
-        </span>
+        <DisciplineColorBadge key={discipline} discipline={discipline} />
       ))}
     </div>
   );

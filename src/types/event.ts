@@ -26,6 +26,7 @@ export interface RodeoEvent {
   description?: string;
   organizerName?: string;
   websiteUrl?: string;
+  featured?: boolean;
 }
 
 export interface EventFilters {

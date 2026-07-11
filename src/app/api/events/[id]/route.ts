@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireActiveEventAccess } from "@/lib/auth/event-access";
+import {
+  getAuthenticatedClerkUserId,
+  requireActiveEventAccess,
+  userHasActiveEventAccess,
+} from "@/lib/auth/event-access";
+import { isPublicFeaturedEvent } from "@/lib/events/is-public-featured-event";
 import { mapEventRecordToFlyerLightbox } from "@/lib/events/flyer-lightbox";
-import { getPublishedEventById } from "@/lib/events/get-event-by-id";
+import { getPubliclyViewableEventById } from "@/lib/events/get-event-by-id";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -11,9 +16,15 @@ export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    await requireActiveEventAccess();
+    const isFeatured = await isPublicFeaturedEvent(id).catch(() => false);
+    const userId = await getAuthenticatedClerkUserId();
+    const hasSubscription = await userHasActiveEventAccess(userId);
 
-    const record = await getPublishedEventById(id);
+    if (!isFeatured && !hasSubscription) {
+      await requireActiveEventAccess();
+    }
+
+    const record = await getPubliclyViewableEventById(id);
 
     if (!record) {
       return NextResponse.json({ error: "Event not found." }, { status: 404 });

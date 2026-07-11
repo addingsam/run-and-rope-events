@@ -1,6 +1,6 @@
 # Clerk authentication
 
-Run & Rope Events uses [Clerk](https://clerk.com) for authentication with persistent device sessions, subscription-gated event access, and device/session limits.
+Jackpot & Rodeo Events uses [Clerk](https://clerk.com) for authentication with persistent device sessions, subscription-gated event access, and device/session limits.
 
 ## Environment variables
 

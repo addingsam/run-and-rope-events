@@ -1,4 +1,5 @@
 import type { EventDetailView } from "@/types/event-detail";
+import { APP_NAME } from "@/lib/constants";
 
 function formatIcsDate(date: string) {
   return date.replaceAll("-", "");
@@ -30,9 +31,9 @@ export function buildIcsFileContent(event: EventDetailView) {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Run & Rope Events//EN",
+    `PRODID:-//${APP_NAME}//EN`,
     "BEGIN:VEVENT",
-    `UID:${event.id}@runandrope.events`,
+    `UID:${event.id}@jackpotandrodeo.events`,
     `DTSTAMP:${formatIcsDate(new Date().toISOString().slice(0, 10))}T000000Z`,
     `DTSTART;VALUE=DATE:${start}`,
     `DTEND;VALUE=DATE:${end}`,

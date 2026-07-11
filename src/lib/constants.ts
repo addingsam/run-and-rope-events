@@ -1,9 +1,15 @@
 import type { SubscriptionPlan } from "@/types/subscription";
 
-export const APP_NAME = "Run & Rope Events";
+export const APP_NAME = "Jackpot & Rodeo Events";
 
 export const APP_DESCRIPTION =
-  "The subscription-based event directory for barrel racing and roping events across the country.";
+  "The subscription-based event directory for jackpot and rodeo events across the country.";
+
+export const APP_TAGLINE = "Jackpots & rodeos, all in one place.";
+
+export const APP_HOME_EYEBROW = "Jackpots & rodeos";
+
+export const APP_HOME_HEADLINE = "Find your next jackpot. Discover your next rodeo.";
 
 export const DISCIPLINE_LABELS = {
   "barrel-racing": "Barrel Racing",
@@ -36,10 +42,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     id: "organizer",
     name: "Organizer",
     priceMonthly: 29,
-    description: "List and promote your rodeo events.",
+    description: "List and promote your jackpot and rodeo events.",
     features: [
       "Unlimited event listings",
-      "Featured placement",
+      "Paid homepage featuring",
       "Registration link tracking",
       "Organizer dashboard",
     ],

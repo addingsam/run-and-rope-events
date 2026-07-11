@@ -29,9 +29,16 @@ export function EventCard({ event }: EventCardProps) {
           </p>
           <h3 className="mt-1 text-lg font-semibold text-amber-950">{event.title}</h3>
         </div>
-        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
-          {event.status.replace("-", " ")}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          {event.featured && (
+            <span className="rounded-full bg-amber-700 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+              Featured
+            </span>
+          )}
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+            {event.status.replace("-", " ")}
+          </span>
+        </div>
       </div>
       <dl className="space-y-1 text-sm text-amber-900/75">
         <div>

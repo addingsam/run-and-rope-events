@@ -1,3 +1,16 @@
+import { filterEventItemsByMapOverlay } from "@/lib/events/filter-results-by-map-overlay";
+import {
+  filterUpcomingEvents,
+  type UpcomingEventFilterState,
+} from "@/lib/events/filter-upcoming-events";
+import { listUpcomingEvents } from "@/lib/events/list-future-map-events";
+import {
+  DEFAULT_SEARCH_BUFFER,
+  DEFAULT_SEARCH_RADIUS,
+} from "@/lib/events/search-options";
+import { searchAlongRoute } from "@/lib/events/search-along-route";
+import { searchEvents } from "@/lib/events/search-events";
+import type { EventSearchResponse } from "@/types/event-search";
 import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
 import type {
   SearchBufferMiles,
@@ -7,10 +20,80 @@ import type {
   SearchRodeoLevel,
 } from "@/types/event-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
-import { searchAlongRoute } from "@/lib/events/search-along-route";
-import { searchEvents } from "@/lib/events/search-events";
 
-export async function runSavedSearch(params: SavedSearchParams) {
+export function createEmptySavedSearchParams(): SavedSearchParams {
+  return {
+    mode: "radius",
+    format: "either",
+    rodeoLevel: "",
+    disciplines: [],
+    locationLabel: "",
+    lat: null,
+    lng: null,
+    radiusMiles: DEFAULT_SEARCH_RADIUS,
+    originLabel: "",
+    originLat: null,
+    originLng: null,
+    destinationLabel: "",
+    destinationLat: null,
+    destinationLng: null,
+    bufferMiles: DEFAULT_SEARCH_BUFFER,
+    startDate: "",
+    endDate: "",
+  };
+}
+
+export function upcomingFiltersFromSavedParams(
+  params: SavedSearchParams,
+): UpcomingEventFilterState {
+  return {
+    formatFilter: params.upcomingFormatFilter ?? "both",
+    selectedDisciplines: params.upcomingDisciplines ?? [],
+    selectedRodeoLevels: params.upcomingRodeoLevels ?? [],
+  };
+}
+
+export function savedUpcomingSearchParams(
+  filters: UpcomingEventFilterState,
+): SavedSearchParams {
+  return {
+    ...createEmptySavedSearchParams(),
+    mode: "upcoming",
+    upcomingFormatFilter: filters.formatFilter,
+    upcomingDisciplines: filters.selectedDisciplines,
+    upcomingRodeoLevels: filters.selectedRodeoLevels,
+  };
+}
+
+async function runUpcomingSavedSearch(
+  params: SavedSearchParams,
+  mapOverlay?: SavedMapOverlay | null,
+): Promise<EventSearchResponse> {
+  const events = await listUpcomingEvents();
+  const filtered = filterUpcomingEvents(events, upcomingFiltersFromSavedParams(params));
+  const overlayFiltered = filterEventItemsByMapOverlay(
+    filtered,
+    mapOverlay ?? { pinRadius: null, shapes: [] },
+  );
+
+  return {
+    results: overlayFiltered.map((item) => ({ kind: "event", item })),
+    counts: {
+      events: overlayFiltered.length,
+      proRodeos: 0,
+      total: overlayFiltered.length,
+    },
+  };
+}
+
+export async function runSavedSearch(
+  params: SavedSearchParams,
+  mapOverlay?: SavedMapOverlay | null,
+) {
+  if (params.mode === "upcoming") {
+    return runUpcomingSavedSearch(params, mapOverlay);
+  }
+
   if (params.mode === "route") {
     if (
       params.originLat === null ||
@@ -71,8 +154,9 @@ export function savedSearchParamsFromFormState(state: {
   return { ...state };
 }
 
-export const PENDING_SAVED_SEARCH_KEY = "run-and-rope:pending-saved-search";
+export const PENDING_SAVED_SEARCH_KEY = "jackpot-rodeo:pending-saved-search";
 export const SEARCH_RUN_PARAM = "run";
+export const SAVED_UPCOMING_PARAM = "savedUpcoming";
 
 interface PendingSavedSearch {
   params: SavedSearchParams;
@@ -102,7 +186,51 @@ export function consumePendingSavedSearch(): PendingSavedSearch | null {
   }
 }
 
+export function savedUpcomingSearchToQueryString(params: SavedSearchParams) {
+  const search = new URLSearchParams();
+  search.set(SAVED_UPCOMING_PARAM, "1");
+
+  if (params.upcomingFormatFilter && params.upcomingFormatFilter !== "both") {
+    search.set("upcomingFormat", params.upcomingFormatFilter);
+  }
+
+  if (params.upcomingDisciplines && params.upcomingDisciplines.length > 0) {
+    search.set("upcomingDisciplines", params.upcomingDisciplines.join(","));
+  }
+
+  if (params.upcomingRodeoLevels && params.upcomingRodeoLevels.length > 0) {
+    search.set("upcomingLevels", params.upcomingRodeoLevels.join(","));
+  }
+
+  return search.toString();
+}
+
+export function upcomingFiltersFromQueryString(searchParams: URLSearchParams): UpcomingEventFilterState | null {
+  if (searchParams.get(SAVED_UPCOMING_PARAM) !== "1") {
+    return null;
+  }
+
+  const format = searchParams.get("upcomingFormat");
+  const disciplines = searchParams.get("upcomingDisciplines");
+  const levels = searchParams.get("upcomingLevels");
+
+  return {
+    formatFilter:
+      format === "jackpot" || format === "rodeo" || format === "both" ? format : "both",
+    selectedDisciplines: disciplines
+      ? (disciplines.split(",").map((item) => item.trim()).filter(Boolean) as SubmissionDiscipline[])
+      : [],
+    selectedRodeoLevels: levels
+      ? levels.split(",").map((item) => item.trim()).filter(Boolean)
+      : [],
+  };
+}
+
 export function savedSearchToQueryString(params: SavedSearchParams) {
+  if (params.mode === "upcoming") {
+    return savedUpcomingSearchToQueryString(params);
+  }
+
   const search = new URLSearchParams();
   search.set(SEARCH_RUN_PARAM, "1");
   if (params.mode === "route") {
@@ -138,4 +266,8 @@ export function savedSearchToQueryString(params: SavedSearchParams) {
   if (params.startDate) search.set("startDate", params.startDate);
   if (params.endDate) search.set("endDate", params.endDate);
   return search.toString();
+}
+
+export function isUpcomingSavedSearch(params: SavedSearchParams) {
+  return params.mode === "upcoming";
 }

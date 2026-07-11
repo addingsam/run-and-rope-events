@@ -67,10 +67,11 @@ export function SaveSearchDialog({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="save-search-title" className="text-xl font-semibold text-amber-950">
-              Save this search
+              Save your filters
             </h2>
             <p className="mt-1 text-sm text-amber-900/70">
-              Store your filters and map drawings for quick access later.
+              Store your event parameters and optional map drawings. Turn on alerts to get emailed
+              when new approved events match.
             </p>
           </div>
           <button
@@ -86,7 +87,7 @@ export function SaveSearchDialog({
         <form onSubmit={(submitEvent) => void handleSubmit(submitEvent)} className="mt-5 space-y-4">
           <div>
             <label htmlFor="saved-search-name" className="mb-2 block text-sm font-semibold text-amber-950">
-              Search name
+              Saved filter name
             </label>
             <input
               id="saved-search-name"
@@ -106,7 +107,7 @@ export function SaveSearchDialog({
               className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-700 focus:ring-amber-500"
             />
             <span>
-              Email me when new approved events match this search.
+              Email me when new approved events are added that match these parameters.
             </span>
           </label>
 
@@ -118,7 +119,7 @@ export function SaveSearchDialog({
 
           {success && (
             <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              Search saved. View it in your dashboard.
+              Search saved. Manage alerts from your dashboard.
             </p>
           )}
 

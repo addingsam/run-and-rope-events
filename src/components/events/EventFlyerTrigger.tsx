@@ -37,7 +37,10 @@ export function EventFlyerTrigger({
     <>
       <button
         type="button"
-        onClick={() => void handleOpen()}
+        onClick={(clickEvent) => {
+          clickEvent.stopPropagation();
+          void handleOpen();
+        }}
         aria-label={ariaLabel}
         className={className}
         disabled={loading}

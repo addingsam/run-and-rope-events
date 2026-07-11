@@ -8,7 +8,7 @@ import {
   getSavedSearchById,
   updateSavedSearchAlerts,
 } from "@/lib/saved-searches/repository";
-import type { SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -30,6 +30,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       knownEventIds = await baselineSavedSearchKnownEvents(
         id,
         existing.search_params as SavedSearchParams,
+        existing.map_overlay,
       );
     }
 

@@ -7,12 +7,21 @@ import {
   updateSavedSearchAlerts,
 } from "@/lib/saved/client";
 import {
+  isUpcomingSavedSearch,
   storePendingSavedSearch,
 } from "@/lib/saved-searches/run-saved-search";
 import type { SavedSearchRecord } from "@/types/saved-search";
 
 interface SavedSearchesPanelProps {
   initialSearches: SavedSearchRecord[];
+}
+
+function getSavedSearchTypeLabel(search: SavedSearchRecord) {
+  if (isUpcomingSavedSearch(search.search_params)) {
+    return "Upcoming filters";
+  }
+
+  return search.search_params.mode === "route" ? "Route search" : "Radius search";
 }
 
 export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps) {
@@ -56,7 +65,7 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
   if (searches.length === 0) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-white p-6 text-sm text-amber-900/70">
-        No saved searches yet. Run a search on the events page and use Save This Search.
+        No saved searches yet. Set your filters on the events page and use Save &amp; get alerts.
       </div>
     );
   }
@@ -70,7 +79,7 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
       )}
 
       {searches.map((search) => {
-        const modeLabel = search.search_params.mode === "route" ? "Route" : "Radius";
+        const typeLabel = getSavedSearchTypeLabel(search);
 
         return (
           <article
@@ -81,8 +90,13 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
               <div>
                 <h3 className="text-lg font-semibold text-amber-950">{search.name}</h3>
                 <p className="mt-1 text-sm text-amber-900/70">
-                  {modeLabel} search · saved {new Date(search.updated_at).toLocaleDateString()}
+                  {typeLabel} · saved {new Date(search.updated_at).toLocaleDateString()}
                 </p>
+                {search.alerts_enabled && (
+                  <p className="mt-1 text-xs font-medium text-amber-800">
+                    Email alerts on — you&apos;ll be notified when new events match.
+                  </p>
+                )}
                 {search.map_overlay &&
                   (search.map_overlay.pinRadius || search.map_overlay.shapes.length > 0) && (
                     <p className="mt-1 text-xs text-amber-800/70">Includes map drawings</p>
@@ -98,7 +112,7 @@ export function SavedSearchesPanel({ initialSearches }: SavedSearchesPanelProps)
                   }}
                   className="rounded-full border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
                 >
-                  Run search
+                  Apply filters
                 </button>
                 <button
                   type="button"

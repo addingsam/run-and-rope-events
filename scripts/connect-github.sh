@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_URL="${1:-}"
 
 if [[ -z "$REPO_URL" ]]; then
-  echo "Usage: ./scripts/connect-github.sh https://github.com/USERNAME/run-and-rope-events.git"
+  echo "Usage: ./scripts/connect-github.sh https://github.com/USERNAME/jackpot-and-rodeo-events.git"
   exit 1
 fi
 

@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { FormSection } from "@/components/submit/FormSection";
 import { AdditionalOfferingsField } from "@/components/submit/AdditionalOfferingsField";
+import {
+  FeaturedPlacementField,
+  type FeaturedPlacementChoice,
+} from "@/components/submit/FeaturedPlacementField";
 import { CheckboxGroup, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import {
   DISCIPLINE_OPTIONS,
@@ -22,9 +26,14 @@ import {
   type SubmissionFormat,
 } from "@/types/event-submission";
 
-type FormErrors = Partial<Record<keyof EventSubmission | "flyer" | "disciplines", string>>;
+type FormErrors = Partial<
+  Record<keyof EventSubmission | "flyer" | "disciplines" | "featurePlacement", string>
+>;
 
-function validateForm(data: EventSubmission): FormErrors {
+function validateForm(
+  data: EventSubmission,
+  featurePlacement: FeaturedPlacementChoice,
+): FormErrors {
   const errors: FormErrors = {};
 
   if (!data.eventName.trim()) errors.eventName = "Event name is required.";
@@ -63,6 +72,16 @@ function validateForm(data: EventSubmission): FormErrors {
     errors.producerWebsite = "Enter a valid URL starting with http:// or https://.";
   }
 
+  if (featurePlacement !== "none") {
+    const email = data.submitterEmail.trim() || data.contactEmail.trim();
+    if (!email) {
+      errors.featurePlacement =
+        "Enter a submitter or contact email to receive your Stripe receipt for featuring.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.featurePlacement = "Enter a valid email for featured placement checkout.";
+    }
+  }
+
   return errors;
 }
 
@@ -75,6 +94,7 @@ function formatFileSize(bytes: number) {
 
 export function EventSubmissionForm() {
   const [formData, setFormData] = useState<EventSubmission>(EMPTY_EVENT_SUBMISSION);
+  const [featurePlacement, setFeaturePlacement] = useState<FeaturedPlacementChoice>("none");
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [isUploadingFlyer, setIsUploadingFlyer] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -198,7 +218,7 @@ export function EventSubmissionForm() {
       return;
     }
 
-    const validationErrors = validateForm(formData);
+    const validationErrors = validateForm(formData, featurePlacement);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -225,17 +245,57 @@ export function EventSubmissionForm() {
         body,
       });
 
-      if (!response.ok) {
-        throw new Error("Submission failed");
+      const data = (await response.json()) as {
+        eventId?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.eventId) {
+        throw new Error(data.error ?? "Submission failed");
+      }
+
+      if (featurePlacement !== "none") {
+        const checkoutEmail = formData.submitterEmail.trim() || formData.contactEmail.trim();
+        const checkoutResponse = await fetch("/api/stripe/feature-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId: data.eventId,
+            billingType: featurePlacement,
+            email: checkoutEmail,
+            fromSubmit: true,
+          }),
+        });
+
+        const checkoutData = (await checkoutResponse.json()) as {
+          url?: string;
+          error?: string;
+        };
+
+        if (!checkoutResponse.ok || !checkoutData.url) {
+          throw new Error(
+            checkoutData.error ??
+              "Your event was saved, but featured checkout could not start. Try again from your confirmation email after approval.",
+          );
+        }
+
+        window.location.href = checkoutData.url;
+        return;
       }
 
       setSubmittedEmail(formData.submitterEmail);
       setSubmitted(true);
       setFormData(EMPTY_EVENT_SUBMISSION);
+      setFeaturePlacement("none");
       setFlyerFile(null);
       setErrors({});
-    } catch {
-      setErrors({ eventName: "Something went wrong. Please try again." });
+    } catch (submitError) {
+      setErrors({
+        eventName:
+          submitError instanceof Error
+            ? submitError.message
+            : "Something went wrong. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -260,6 +320,7 @@ export function EventSubmissionForm() {
           onClick={() => {
             setSubmitted(false);
             setSubmittedEmail("");
+            setFeaturePlacement("none");
           }}
           className="mt-6 rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
         >
@@ -570,17 +631,41 @@ export function EventSubmissionForm() {
         />
       </FormSection>
 
+      <FormSection
+        title="Homepage Featuring"
+        description="Optional paid promotion on the main page."
+      >
+        <FeaturedPlacementField
+          value={featurePlacement}
+          onChange={(value) => {
+            setFeaturePlacement(value);
+            setErrors((current) => {
+              const next = { ...current };
+              delete next.featurePlacement;
+              return next;
+            });
+          }}
+          error={errors.featurePlacement}
+        />
+      </FormSection>
+
       <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 px-4 py-5 sm:px-6">
         <p className="text-sm leading-6 text-amber-900/75">
           Fields marked with <span className="font-semibold text-amber-800">*</span> are required.
-          Producer name will always be displayed on your listing.
+          Producer name will always be displayed on your listing. No account is required to submit.
         </p>
         <button
           type="submit"
           disabled={isSubmitting || isUploadingFlyer}
           className="mt-5 w-full rounded-full bg-amber-800 px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
-          {isSubmitting ? "Submitting..." : "Submit event"}
+          {isSubmitting
+            ? featurePlacement !== "none"
+              ? "Submitting and starting checkout..."
+              : "Submitting..."
+            : featurePlacement !== "none"
+              ? "Submit event and continue to payment"
+              : "Submit event"}
         </button>
       </div>
     </form>

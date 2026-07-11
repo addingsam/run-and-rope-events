@@ -1,6 +1,6 @@
-# Run & Rope Events
+# Jackpot & Rodeo Events
 
-Subscription-based event directory for barrel racing and roping events.
+Subscription-based event directory for jackpot and rodeo events nationwide.
 
 ## Stack
 
@@ -185,12 +185,12 @@ xcode-select --install
 Then connect this project to your GitHub repository:
 
 ```bash
-cd ~/Projects/run-and-rope-events
+cd ~/Projects/jackpot-and-rodeo-events
 git init
 git add .
 git commit -m "Initial commit: Next.js event directory scaffold"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/run-and-rope-events.git
+git remote add origin https://github.com/YOUR_USERNAME/jackpot-and-rodeo-events.git
 git push -u origin main
 ```
 

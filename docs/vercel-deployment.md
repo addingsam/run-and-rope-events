@@ -1,6 +1,6 @@
 # Vercel production deployment checklist
 
-Use this when deploying **Run & Rope Events** to Vercel.
+Use this when deploying **Jackpot & Rodeo Events** to Vercel.
 
 ## Pre-deploy
 
@@ -29,7 +29,7 @@ Add every **required** variable for **Production**. Use test/sandbox keys in **P
 
 | Variable | Required | Where to get it | Notes |
 | -------- | -------- | --------------- | ----- |
-| `NEXT_PUBLIC_APP_URL` | **Yes** | Your Vercel domain, e.g. `https://run-and-rope-events.vercel.app` | No trailing slash. Used for Stripe redirects and email links. |
+| `NEXT_PUBLIC_APP_URL` | **Yes** | Your Vercel domain, e.g. `https://jackpot-and-rodeo-events.vercel.app` | No trailing slash. Used for Stripe redirects and email links. |
 
 ### Supabase
 
@@ -67,7 +67,7 @@ Add every **required** variable for **Production**. Use test/sandbox keys in **P
 | Variable | Required | Where to get it | Notes |
 | -------- | -------- | --------------- | ----- |
 | `RESEND_API_KEY` | **Yes** | Resend → API Keys (`re_...`) | Server only. |
-| `RESEND_FROM_EMAIL` | **Yes** | Your verified sender, e.g. `Run & Rope Events <hello@yourdomain.com>` | Must match a verified domain in Resend. |
+| `RESEND_FROM_EMAIL` | **Yes** | Your verified sender, e.g. `Jackpot & Rodeo Events <hello@yourdomain.com>` | Must match a verified domain in Resend. |
 
 ### Mapbox
 

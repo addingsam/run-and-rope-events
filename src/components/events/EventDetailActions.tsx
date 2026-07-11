@@ -5,6 +5,7 @@ import {
   buildGoogleCalendarUrl,
 } from "@/lib/events/event-actions";
 import { EventBookmarkButton } from "@/components/saved/EventBookmarkButton";
+import { APP_NAME } from "@/lib/constants";
 import type { EventDetailView } from "@/types/event-detail";
 
 interface EventDetailActionsProps {
@@ -18,7 +19,7 @@ export function EventDetailActions({ event }: EventDetailActionsProps) {
     const url = window.location.href;
     const shareData = {
       title: event.title,
-      text: `Check out ${event.title} on Run & Rope Events`,
+      text: `Check out ${event.title} on ${APP_NAME}`,
       url,
     };
 

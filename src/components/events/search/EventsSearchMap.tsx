@@ -6,11 +6,17 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { MapDrawingToolbar, type DrawingTool } from "@/components/events/search/MapDrawingToolbar";
 import { MapSelectionPanel } from "@/components/events/search/MapSelectionPanel";
 import {
-  createJackpotMarkerElement,
   createProRodeoMarkerElement,
-  createRodeoMarkerElement,
   createStateClusterElement,
 } from "@/lib/mapbox/map-markers";
+import {
+  bindEventClusterInteractions,
+  buildEventsGeoJson,
+  ensureEventClusterLayers,
+  removeEventClusterLayers,
+  syncEventSelection,
+  updateEventsGeoJsonSource,
+} from "@/lib/mapbox/event-cluster-layers";
 import {
   aggregateEventCountsByState,
   getStateCentroid,
@@ -19,7 +25,6 @@ import {
 import {
   createCircleGeoJson,
   getResultKey,
-  getRodeoLevelBadge,
   selectionFromKey,
   type MapSelection,
 } from "@/lib/mapbox/search-map-utils";
@@ -38,12 +43,17 @@ interface EventsSearchMapProps {
   isSubscriber: boolean;
   selectedKey: string | null;
   onSelect: (key: string | null) => void;
+  viewMode?: "default" | "search";
   routeMeta?: RouteSearchResponse["route"] | null;
   origin?: RouteEndpoint | null;
   destination?: RouteEndpoint | null;
   searchCenter?: { lat: number; lng: number } | null;
+  initialMapOverlay?: SavedMapOverlay | null;
   onMapOverlayChange?: (overlay: SavedMapOverlay) => void;
 }
+
+const US_MAP_CENTER: [number, number] = [-98.5795, 39.8283];
+const US_MAP_ZOOM = 3.5;
 
 interface PinRadiusDrawing {
   lng: number;
@@ -56,8 +66,13 @@ function getBounds(
   routeCoordinates?: [number, number][],
   origin?: RouteEndpoint | null,
   destination?: RouteEndpoint | null,
+  userLocation?: { lat: number; lng: number } | null,
 ) {
   const bounds = new mapboxgl.LngLatBounds();
+
+  if (userLocation) {
+    bounds.extend([userLocation.lng, userLocation.lat]);
+  }
 
   if (origin) {
     bounds.extend([origin.lng, origin.lat]);
@@ -242,10 +257,12 @@ export function EventsSearchMap({
   isSubscriber,
   selectedKey,
   onSelect,
+  viewMode = "search",
   routeMeta,
   origin,
   destination,
   searchCenter,
+  initialMapOverlay,
   onMapOverlayChange,
 }: EventsSearchMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -260,6 +277,9 @@ export function EventsSearchMap({
   const rectangleEndRef = useRef<mapboxgl.LngLat | null>(null);
   const completedShapesRef = useRef<GeoJSON.Feature[]>([]);
   const lastBoundsFitKeyRef = useRef<string | null>(null);
+  const onSelectRef = useRef(onSelect);
+  const clusterCleanupRef = useRef<(() => void) | null>(null);
+  const overlayHydratedRef = useRef(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [activeTool, setActiveTool] = useState<DrawingTool>("none");
@@ -270,6 +290,7 @@ export function EventsSearchMap({
   const [rectangleStart, setRectangleStart] = useState<mapboxgl.LngLat | null>(null);
   const [rectangleEnd, setRectangleEnd] = useState<mapboxgl.LngLat | null>(null);
   const [completedShapes, setCompletedShapes] = useState<GeoJSON.Feature[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const selection = useMemo(() => selectionFromKey(selectedKey), [selectedKey]);
 
@@ -285,6 +306,10 @@ export function EventsSearchMap({
   useEffect(() => {
     isSubscriberRef.current = isSubscriber;
   }, [isSubscriber]);
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
 
   useEffect(() => {
     pinRadiusMilesRef.current = pinRadiusMiles;
@@ -309,6 +334,7 @@ export function EventsSearchMap({
   }, []);
 
   const clearDrawings = useCallback(() => {
+    overlayHydratedRef.current = false;
     setPinRadiusDrawing(null);
     setFreehandPoints([]);
     setRectangleStart(null);
@@ -437,8 +463,8 @@ export function EventsSearchMap({
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/outdoors-v12",
-      center: [-98.5795, 39.8283],
-      zoom: 3.5,
+      center: US_MAP_CENTER,
+      zoom: US_MAP_ZOOM,
     });
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
@@ -452,6 +478,8 @@ export function EventsSearchMap({
       if (tool === "none") {
         return;
       }
+
+      event.preventDefault();
 
       if (tool === "pin-radius") {
         const drawing = {
@@ -566,6 +594,9 @@ export function EventsSearchMap({
       map.off("mousedown", handleMouseDown);
       map.off("mousemove", handleMouseMove);
       map.off("mouseup", handleMouseUp);
+      clusterCleanupRef.current?.();
+      clusterCleanupRef.current = null;
+      removeEventClusterLayers(map);
       clearMarkers();
       map.remove();
       mapRef.current = null;
@@ -573,6 +604,71 @@ export function EventsSearchMap({
       setMapReady(false);
     };
   }, [mapboxToken, clearMarkers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) {
+      return;
+    }
+
+    if (!isSubscriber) {
+      clusterCleanupRef.current?.();
+      clusterCleanupRef.current = null;
+      if (map.isStyleLoaded()) {
+        removeEventClusterLayers(map);
+      }
+      return;
+    }
+
+    const setupLayers = () => {
+      ensureEventClusterLayers(map);
+      if (!clusterCleanupRef.current) {
+        clusterCleanupRef.current = bindEventClusterInteractions(map, {
+          onSelect: (key) => onSelectRef.current(key),
+        });
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      setupLayers();
+      return;
+    }
+
+    map.once("load", setupLayers);
+  }, [mapReady, isSubscriber]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !isSubscriber) {
+      return;
+    }
+
+    if (!map.isStyleLoaded() || !map.getSource("events")) {
+      return;
+    }
+
+    updateEventsGeoJsonSource(map, buildEventsGeoJson(results));
+    syncEventSelection(map, selectedKey, results);
+  }, [results, selectedKey, mapReady, isSubscriber]);
+
+  useEffect(() => {
+    if (!mapReady || typeof navigator === "undefined" || !navigator.geolocation) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        setUserLocation(null);
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 },
+    );
+  }, [mapReady]);
 
   const updatePreviewShapes = useCallback(
     (
@@ -706,35 +802,6 @@ export function EventsSearchMap({
           .addTo(map);
         markersRef.current.push(marker);
       }
-    } else {
-      for (const entry of results) {
-        if (entry.kind !== "event") {
-          continue;
-        }
-
-        const { latitude, longitude, format, rodeoLevel } = entry.item;
-        if (latitude == null || longitude == null) {
-          continue;
-        }
-
-        const key = getResultKey(entry);
-        const selected = selectedKey === key;
-        const element =
-          format === "rodeo"
-            ? createRodeoMarkerElement(getRodeoLevelBadge(rodeoLevel), selected)
-            : createJackpotMarkerElement(selected);
-
-        element.style.cursor = "pointer";
-        element.addEventListener("click", (clickEvent) => {
-          clickEvent.stopPropagation();
-          onSelect(key);
-        });
-
-        const marker = new mapboxgl.Marker({ element, anchor: "center" })
-          .setLngLat([longitude, latitude])
-          .addTo(map);
-        markersRef.current.push(marker);
-      }
     }
 
     for (const entry of results) {
@@ -829,28 +896,88 @@ export function EventsSearchMap({
     }
 
     const boundsFitKey = JSON.stringify({
+      viewMode,
       resultCount: results.length,
       routePointCount: routeMeta?.coordinates?.length ?? 0,
       originLat: origin?.lat ?? null,
       originLng: origin?.lng ?? null,
       destinationLat: destination?.lat ?? null,
       destinationLng: destination?.lng ?? null,
+      userLat: userLocation?.lat ?? null,
+      userLng: userLocation?.lng ?? null,
     });
 
     if (lastBoundsFitKeyRef.current === boundsFitKey) {
       return;
     }
 
-    const bounds = getBounds(results, routeMeta?.coordinates, origin, destination);
+    const bounds = getBounds(
+      results,
+      routeMeta?.coordinates,
+      origin,
+      destination,
+      viewMode === "default" ? userLocation : null,
+    );
 
     if (bounds.isEmpty()) {
       lastBoundsFitKeyRef.current = boundsFitKey;
+      if (viewMode === "default") {
+        if (userLocation) {
+          map.flyTo({
+            center: [userLocation.lng, userLocation.lat],
+            zoom: 5,
+            duration: 0,
+          });
+        } else {
+          map.flyTo({
+            center: US_MAP_CENTER,
+            zoom: US_MAP_ZOOM,
+            duration: 0,
+          });
+        }
+      }
       return;
     }
 
     lastBoundsFitKeyRef.current = boundsFitKey;
-    map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
-  }, [results, routeMeta, origin, destination, mapReady]);
+    map.fitBounds(bounds, {
+      padding: 72,
+      maxZoom: viewMode === "default" ? 5 : 10,
+      duration: 0,
+    });
+  }, [results, routeMeta, origin, destination, mapReady, viewMode, userLocation]);
+
+  useEffect(() => {
+    if (!mapReady || overlayHydratedRef.current || !initialMapOverlay) {
+      return;
+    }
+
+    if (!initialMapOverlay.pinRadius && initialMapOverlay.shapes.length === 0) {
+      return;
+    }
+
+    overlayHydratedRef.current = true;
+
+    if (initialMapOverlay.pinRadius) {
+      setPinRadiusDrawing(initialMapOverlay.pinRadius);
+      updatePinRadiusLayer(initialMapOverlay.pinRadius);
+    }
+
+    if (initialMapOverlay.shapes.length > 0) {
+      const features: GeoJSON.Feature[] = initialMapOverlay.shapes.map((shape) => ({
+        type: "Feature",
+        properties: {},
+        geometry: shape,
+      }));
+      completedShapesRef.current = features;
+      setCompletedShapes(features);
+
+      const map = mapRef.current;
+      if (map) {
+        syncCompletedShapesLayer(map, features);
+      }
+    }
+  }, [initialMapOverlay, mapReady, updatePinRadiusLayer]);
 
   useEffect(() => {
     if (!onMapOverlayChange) {

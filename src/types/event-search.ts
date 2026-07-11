@@ -7,7 +7,7 @@ export type SearchRodeoLevel = "youth" | "open" | "amateur" | "pro";
 
 export type SearchRadiusMiles = 25 | 50 | 100 | 200;
 
-export type SearchBufferMiles = 5 | 10 | 25;
+export type SearchBufferMiles = 5 | 10 | 25 | 50 | 100;
 
 export type SearchMode = "radius" | "route";
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensureClerkProfile } from "@/lib/clerk/device-session";
 import { requireSubscriberUser } from "@/lib/saved-searches/notifications";
 import {
   createSavedSearch,
@@ -37,7 +38,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Search parameters are required." }, { status: 400 });
     }
 
-    const currentResults = await runSavedSearch(body.searchParams);
+    await ensureClerkProfile({ userId: user.id, email: user.email });
+
+    const currentResults = await runSavedSearch(body.searchParams, body.mapOverlay ?? null);
     const knownEventIds = currentResults.results
       .filter((entry) => entry.kind === "event")
       .map((entry) => entry.item.id);
@@ -54,7 +57,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ search: saved });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save search.";
-    const status = message.includes("Authentication") ? 401 : message.includes("Subscription") ? 403 : 500;
-    return NextResponse.json({ error: message }, { status });
+    const status = message.includes("Authentication")
+      ? 401
+      : message.includes("Subscription")
+        ? 403
+        : message.includes("invalid input syntax for type uuid")
+          ? 503
+          : 500;
+    const publicMessage = message.includes("invalid input syntax for type uuid")
+      ? "Saved searches are temporarily unavailable while a database update is applied. Please try again shortly."
+      : message;
+    return NextResponse.json({ error: publicMessage }, { status });
   }
 }

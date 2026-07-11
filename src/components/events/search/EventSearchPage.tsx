@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckboxGroup, SelectInput } from "@/components/submit/FormField";
 import { EventsSearchMap } from "@/components/events/search/EventsSearchMap";
@@ -13,6 +13,7 @@ import {
 } from "@/components/events/search/RouteSearchResultList";
 import { SearchModeToggle } from "@/components/events/search/SearchModeToggle";
 import { SubscriberEventCard } from "@/components/events/search/SubscriberEventCard";
+import { UpcomingEventsGrid } from "@/components/events/search/UpcomingEventsGrid";
 import { getResultKey } from "@/lib/mapbox/search-map-utils";
 import {
   DEFAULT_SEARCH_BUFFER,
@@ -23,8 +24,19 @@ import {
   SEARCH_RODEO_LEVEL_OPTIONS,
 } from "@/lib/events/search-options";
 import { DISCIPLINE_OPTIONS } from "@/lib/events/submission-options";
+import {
+  filterEventItemsByMapOverlay,
+  filterResultsByMapOverlay,
+  hasActiveMapOverlay,
+} from "@/lib/events/filter-results-by-map-overlay";
+import {
+  DEFAULT_UPCOMING_EVENT_FILTERS,
+  filterUpcomingEvents,
+  type UpcomingEventFilterState,
+} from "@/lib/events/filter-upcoming-events";
 import type {
   EventSearchResponse,
+  EventSearchResultItem,
   RouteSearchResponse,
   SearchBufferMiles,
   SearchFormat,
@@ -37,7 +49,10 @@ import { SaveSearchDialog } from "@/components/saved/SaveSearchDialog";
 import {
   consumePendingSavedSearch,
   savedSearchParamsFromFormState,
+  savedUpcomingSearchParams,
   SEARCH_RUN_PARAM,
+  upcomingFiltersFromQueryString,
+  upcomingFiltersFromSavedParams,
 } from "@/lib/saved-searches/run-saved-search";
 import type { SavedMapOverlay } from "@/types/saved-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
@@ -46,6 +61,8 @@ interface EventSearchPageProps {
   isSubscriber: boolean;
   isAuthenticated: boolean;
   mapboxToken: string;
+  initialUpcomingEvents: EventSearchResultItem[];
+  initialMapResults: SearchResultEntry[];
 }
 
 interface SearchFormState {
@@ -112,7 +129,7 @@ function parseRadius(value: string | null): SearchRadiusMiles {
 
 function parseBuffer(value: string | null): SearchBufferMiles {
   const parsed = Number(value ?? DEFAULT_SEARCH_BUFFER);
-  if (parsed === 5 || parsed === 10 || parsed === 25) {
+  if (parsed === 5 || parsed === 10 || parsed === 25 || parsed === 50 || parsed === 100) {
     return parsed;
   }
 
@@ -248,6 +265,8 @@ export function EventSearchPage({
   isSubscriber,
   isAuthenticated,
   mapboxToken,
+  initialUpcomingEvents,
+  initialMapResults,
 }: EventSearchPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -262,17 +281,57 @@ export function EventSearchPage({
   const [originError, setOriginError] = useState<string | null>(null);
   const [destinationError, setDestinationError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [defaultMapResults] = useState<SearchResultEntry[]>(initialMapResults);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [mapOverlay, setMapOverlay] = useState<SavedMapOverlay>({
     pinRadius: null,
     shapes: [],
   });
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveDialogSource, setSaveDialogSource] = useState<"location" | "upcoming">("upcoming");
+  const [upcomingFilters, setUpcomingFilters] = useState<UpcomingEventFilterState>(
+    DEFAULT_UPCOMING_EVENT_FILTERS,
+  );
   const resultRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const didInitializeFromUrl = useRef(false);
 
   const rodeoLevelEnabled =
     formState.format === "rodeo" || formState.format === "either";
+
+  const mapResults = useMemo(() => {
+    if (hasSearched) {
+      return results?.results ?? [];
+    }
+
+    const eventItems = defaultMapResults
+      .filter((entry) => entry.kind === "event")
+      .map((entry) => entry.item);
+    const filteredItems = filterUpcomingEvents(eventItems, upcomingFilters);
+    const allowedIds = new Set(filteredItems.map((item) => item.id));
+
+    return defaultMapResults.filter(
+      (entry) => entry.kind !== "event" || allowedIds.has(entry.item.id),
+    );
+  }, [hasSearched, results, defaultMapResults, upcomingFilters]);
+  const hasMapOverlayFilter = hasActiveMapOverlay(mapOverlay);
+
+  const overlayFilteredMapResults = useMemo(
+    () => filterResultsByMapOverlay(mapResults, mapOverlay),
+    [mapResults, mapOverlay],
+  );
+
+  const overlayFilteredUpcomingEvents = useMemo(
+    () => filterEventItemsByMapOverlay(initialUpcomingEvents, mapOverlay),
+    [initialUpcomingEvents, mapOverlay],
+  );
+
+  const overlayFilteredSearchResults = useMemo(() => {
+    if (!results) {
+      return [];
+    }
+
+    return filterResultsByMapOverlay(results.results, mapOverlay);
+  }, [results, mapOverlay]);
 
   const runSearch = useCallback(async (state: SearchFormState) => {
     if (state.mode === "route") {
@@ -371,7 +430,35 @@ export function EventSearchPage({
 
     const pendingSavedSearch = consumePendingSavedSearch();
     if (pendingSavedSearch) {
-      const nextState = { ...createDefaultSearchFormState(), ...pendingSavedSearch.params };
+      if (pendingSavedSearch.params.mode === "upcoming") {
+        setUpcomingFilters(upcomingFiltersFromSavedParams(pendingSavedSearch.params));
+        if (pendingSavedSearch.mapOverlay) {
+          setMapOverlay(pendingSavedSearch.mapOverlay);
+        }
+        router.replace(pathname, { scroll: false });
+        return;
+      }
+
+      const nextState: SearchFormState = {
+        ...createDefaultSearchFormState(),
+        mode: pendingSavedSearch.params.mode === "route" ? "route" : "radius",
+        format: pendingSavedSearch.params.format,
+        rodeoLevel: pendingSavedSearch.params.rodeoLevel,
+        disciplines: pendingSavedSearch.params.disciplines,
+        locationLabel: pendingSavedSearch.params.locationLabel,
+        lat: pendingSavedSearch.params.lat,
+        lng: pendingSavedSearch.params.lng,
+        radiusMiles: pendingSavedSearch.params.radiusMiles,
+        originLabel: pendingSavedSearch.params.originLabel,
+        originLat: pendingSavedSearch.params.originLat,
+        originLng: pendingSavedSearch.params.originLng,
+        destinationLabel: pendingSavedSearch.params.destinationLabel,
+        destinationLat: pendingSavedSearch.params.destinationLat,
+        destinationLng: pendingSavedSearch.params.destinationLng,
+        bufferMiles: pendingSavedSearch.params.bufferMiles,
+        startDate: pendingSavedSearch.params.startDate,
+        endDate: pendingSavedSearch.params.endDate,
+      };
       setFormState(nextState);
       if (pendingSavedSearch.mapOverlay) {
         setMapOverlay(pendingSavedSearch.mapOverlay);
@@ -379,6 +466,13 @@ export function EventSearchPage({
       void runSearch(nextState);
       const params = buildSearchParams(nextState);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      return;
+    }
+
+    const upcomingFromUrl = upcomingFiltersFromQueryString(searchParams);
+    if (upcomingFromUrl) {
+      setUpcomingFilters(upcomingFromUrl);
+      router.replace(pathname, { scroll: false });
       return;
     }
 
@@ -498,17 +592,129 @@ export function EventSearchPage({
     setMapOverlay(overlay);
   }, []);
 
+  function handleResultCardClick(
+    event: React.MouseEvent<HTMLDivElement>,
+    key: string,
+  ) {
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a, input, textarea, select, label")) {
+      return;
+    }
+
+    setSelectedKey(key);
+  }
+
   return (
-    <div className="space-y-8">
-      <SearchModeToggle
-        mode={formState.mode}
-        onChange={(mode) => updateFormState({ mode })}
+    <div className="space-y-6 sm:space-y-8">
+      <UpcomingEventsGrid
+        events={overlayFilteredUpcomingEvents}
+        totalEventCount={initialUpcomingEvents.length}
+        hasMapOverlayFilter={hasMapOverlayFilter}
+        filterState={upcomingFilters}
+        onFilterChange={setUpcomingFilters}
+        canSaveFilters={isSubscriber && isAuthenticated}
+        onSaveFilters={() => {
+          setSaveDialogSource("upcoming");
+          setSaveDialogOpen(true);
+        }}
+        isSubscriber={isSubscriber}
+        selectedKey={selectedKey}
+        onSelectCard={setSelectedKey}
+        onCardRef={(key, element) => {
+          resultRefs.current[key] = element;
+        }}
       />
 
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:p-6"
-      >
+      {mapboxToken && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-xl font-semibold text-amber-950">Event map</h2>
+            <p className="mt-1 text-sm text-amber-900/70">
+              {!hasSearched
+                ? hasMapOverlayFilter
+                  ? `Showing ${overlayFilteredMapResults.length} event${
+                      overlayFilteredMapResults.length === 1 ? "" : "s"
+                    } inside your drawn area (${mapResults.length} total on map). Use search below to filter further.`
+                  : `Showing ${defaultMapResults.length} geocoded upcoming event${
+                      defaultMapResults.length === 1 ? "" : "s"
+                    } on the map. Use search below to filter by location, format, or date.`
+                : hasMapOverlayFilter
+                  ? `Showing ${overlayFilteredMapResults.length} event${
+                      overlayFilteredMapResults.length === 1 ? "" : "s"
+                    } inside your drawn area (${mapResults.length} search results on map).`
+                  : "Search results shown on the map below."}
+            </p>
+          </div>
+
+          <EventsSearchMap
+            mapboxToken={mapboxToken}
+            results={overlayFilteredMapResults}
+            isSubscriber={isSubscriber}
+            selectedKey={selectedKey}
+            onSelect={setSelectedKey}
+            viewMode={hasSearched ? "search" : "default"}
+            routeMeta={hasSearched ? routeMeta : null}
+            searchCenter={hasSearched ? searchCenter : null}
+            initialMapOverlay={
+              mapOverlay.pinRadius || mapOverlay.shapes.length > 0 ? mapOverlay : null
+            }
+            origin={
+              hasSearched &&
+              formState.mode === "route" &&
+              formState.originLat !== null &&
+              formState.originLng !== null
+                ? {
+                    label: formState.originLabel,
+                    lat: formState.originLat,
+                    lng: formState.originLng,
+                  }
+                : null
+            }
+            destination={
+              hasSearched &&
+              formState.mode === "route" &&
+              formState.destinationLat !== null &&
+              formState.destinationLng !== null
+                ? {
+                    label: formState.destinationLabel,
+                    lat: formState.destinationLat,
+                    lng: formState.destinationLng,
+                  }
+                : null
+            }
+            onMapOverlayChange={handleMapOverlayChange}
+          />
+        </section>
+      )}
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold text-amber-950">Search events</h2>
+          <p className="mt-1 text-sm text-amber-900/70">
+            Filter by radius or route to find events near a location or along your drive.
+          </p>
+        </div>
+
+        <SearchModeToggle
+          mode={formState.mode}
+          onChange={(mode) => {
+            if (mode === formState.mode) {
+              return;
+            }
+
+            setResults(null);
+            setRouteMeta(null);
+            setHasSearched(false);
+            setSelectedKey(null);
+            setError(null);
+            updateFormState({ mode });
+          }}
+        />
+
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:p-6"
+        >
         <div className="grid gap-6 lg:grid-cols-2">
           <SelectInput
             label="Format"
@@ -666,8 +872,15 @@ export function EventSearchPage({
           )}
         </div>
       </form>
+      </section>
 
-      <section aria-live="polite">
+      <section aria-live="polite" className="space-y-4">
+        {hasSearched && (
+          <div>
+            <h2 className="text-xl font-semibold text-amber-950">Search results</h2>
+          </div>
+        )}
+
         {loading && (
           <p className="text-sm text-amber-900/70">
             {formState.mode === "route"
@@ -683,12 +896,22 @@ export function EventSearchPage({
         )}
 
         {!loading && hasSearched && !error && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             {results ? (
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-amber-950">
-                  {results.counts.total} result{results.counts.total === 1 ? "" : "s"}
-                  {results.counts.proRodeos > 0 && (
+                  {hasMapOverlayFilter
+                    ? `${overlayFilteredSearchResults.length} result${
+                        overlayFilteredSearchResults.length === 1 ? "" : "s"
+                      } in drawn area`
+                    : `${results.counts.total} result${results.counts.total === 1 ? "" : "s"}`}
+                  {hasMapOverlayFilter && (
+                    <span className="font-normal text-amber-900/70">
+                      {" "}
+                      ({results.counts.total} total from search)
+                    </span>
+                  )}
+                  {!hasMapOverlayFilter && results.counts.proRodeos > 0 && (
                     <span className="font-normal text-amber-900/70">
                       {" "}
                       ({results.counts.events} listing
@@ -711,7 +934,10 @@ export function EventSearchPage({
             {canSaveSearch && (
               <button
                 type="button"
-                onClick={() => setSaveDialogOpen(true)}
+                onClick={() => {
+                  setSaveDialogSource("location");
+                  setSaveDialogOpen(true);
+                }}
                 className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
               >
                 Save this search
@@ -731,87 +957,59 @@ export function EventSearchPage({
           </div>
         )}
 
-        {!loading && hasSearched && mapboxToken && (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <EventsSearchMap
-              mapboxToken={mapboxToken}
-              results={results?.results ?? []}
-              isSubscriber={isSubscriber}
-              selectedKey={selectedKey}
-              onSelect={setSelectedKey}
-              routeMeta={routeMeta}
-              searchCenter={searchCenter}
-              origin={
-                formState.mode === "route" &&
-                formState.originLat !== null &&
-                formState.originLng !== null
-                  ? {
-                      label: formState.originLabel,
-                      lat: formState.originLat,
-                      lng: formState.originLng,
-                    }
-                  : null
-              }
-              destination={
-                formState.mode === "route" &&
-                formState.destinationLat !== null &&
-                formState.destinationLng !== null
-                  ? {
-                      label: formState.destinationLabel,
-                      lat: formState.destinationLat,
-                      lng: formState.destinationLng,
-                    }
-                  : null
-              }
-              onMapOverlayChange={handleMapOverlayChange}
-            />
-
-            <div
-              className={`max-h-[720px] space-y-4 overflow-y-auto pr-1 ${
-                formState.mode === "radius" ? "grid gap-4 md:grid-cols-2 xl:grid-cols-1" : ""
-              }`}
-            >
-              {results?.results.map((entry) => {
-                const key = getSelectionKey(entry, isSubscriber);
-                const isSelected = selectedKey === key;
-
-                return (
-                  <div
-                    key={key}
-                    ref={(element) => {
-                      resultRefs.current[key] = element;
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedKey(key)}
-                    onKeyDown={(keyboardEvent) => {
-                      if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
-                        keyboardEvent.preventDefault();
-                        setSelectedKey(key);
-                      }
-                    }}
-                    className={`rounded-2xl transition-shadow ${
-                      isSelected ? "ring-2 ring-amber-500 ring-offset-2" : ""
-                    }`}
-                  >
-                    {renderResultCard(entry)}
-                  </div>
-                );
-              })}
-
-              {results && results.results.length === 0 && (
-                <div className="rounded-2xl border border-amber-200 bg-white px-5 py-10 text-center">
-                  <p className="text-sm text-amber-900/70">No results to show on the map yet.</p>
-                </div>
-              )}
+        {!loading &&
+          hasSearched &&
+          results &&
+          results.counts.total > 0 &&
+          overlayFilteredSearchResults.length === 0 &&
+          hasMapOverlayFilter && (
+            <div className="rounded-2xl border border-amber-200 bg-white px-5 py-10 text-center">
+              <p className="text-lg font-semibold text-amber-950">No events in drawn area</p>
+              <p className="mt-2 text-sm text-amber-900/70">
+                Your search returned results, but none fall inside the map drawing. Adjust or clear
+                your drawing to see more.
+              </p>
             </div>
+          )}
+
+        {hasSearched && !loading && overlayFilteredSearchResults.length > 0 && (
+          <div
+            className={
+              formState.mode === "radius"
+                ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                : "space-y-4"
+            }
+          >
+            {overlayFilteredSearchResults.map((entry) => {
+              const key = getSelectionKey(entry, isSubscriber);
+              const isSelected = selectedKey === key;
+
+              return (
+                <div
+                  key={key}
+                  ref={(element) => {
+                    resultRefs.current[key] = element;
+                  }}
+                  onClick={(clickEvent) => handleResultCardClick(clickEvent, key)}
+                  className={`rounded-2xl transition-shadow ${
+                    isSelected ? "ring-2 ring-amber-500 ring-offset-2" : ""
+                  }`}
+                >
+                  {renderResultCard(entry)}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
 
       <SaveSearchDialog
         open={saveDialogOpen}
-        searchParams={savedSearchParamsFromFormState(formState)}
+        searchParams={
+          saveDialogSource === "upcoming"
+            ? savedUpcomingSearchParams(upcomingFilters)
+            : savedSearchParamsFromFormState(formState)
+        }
         mapOverlay={
           mapOverlay.pinRadius || mapOverlay.shapes.length > 0 ? mapOverlay : null
         }

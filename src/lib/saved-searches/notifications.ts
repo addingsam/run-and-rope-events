@@ -9,12 +9,12 @@ import {
 import { savedSearchToQueryString } from "@/lib/saved-searches/run-saved-search";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendEventPassedEmail, sendSavedSearchAlertEmail } from "@/lib/email/saved-notifications";
-import type { SavedSearchParams } from "@/types/saved-search";
+import type { SavedMapOverlay, SavedSearchParams } from "@/types/saved-search";
 
 const APP_URL = getAppUrl();
 
-function getCurrentEventIds(params: SavedSearchParams) {
-  return runSavedSearch(params).then((response) =>
+function getCurrentEventIds(params: SavedSearchParams, mapOverlay?: SavedMapOverlay | null) {
+  return runSavedSearch(params, mapOverlay).then((response) =>
     response.results
       .filter((entry) => entry.kind === "event")
       .map((entry) => entry.item.id),
@@ -25,7 +25,7 @@ export async function processSavedSearchAlerts() {
   const supabase = getSupabaseAdminClient();
   const { data: searches, error } = await supabase
     .from("saved_searches")
-    .select("id, user_id, name, search_params, known_event_ids, alerts_enabled")
+    .select("id, user_id, name, search_params, map_overlay, known_event_ids, alerts_enabled")
     .eq("alerts_enabled", true);
 
   if (error) {
@@ -36,8 +36,9 @@ export async function processSavedSearchAlerts() {
 
   for (const search of searches ?? []) {
     const params = search.search_params as SavedSearchParams;
+    const mapOverlay = (search.map_overlay as SavedMapOverlay | null) ?? null;
     const knownIds = new Set((search.known_event_ids ?? []) as string[]);
-    const response = await runSavedSearch(params);
+    const response = await runSavedSearch(params, mapOverlay);
     const currentEventIds = response.results
       .filter((entry) => entry.kind === "event")
       .map((entry) => entry.item.id);
@@ -112,8 +113,12 @@ export async function processArchivedEventNotifications() {
   return { sent };
 }
 
-export async function baselineSavedSearchKnownEvents(searchId: string, params: SavedSearchParams) {
-  const currentEventIds = await getCurrentEventIds(params);
+export async function baselineSavedSearchKnownEvents(
+  searchId: string,
+  params: SavedSearchParams,
+  mapOverlay?: SavedMapOverlay | null,
+) {
+  const currentEventIds = await getCurrentEventIds(params, mapOverlay);
   await updateSavedSearchKnownEvents(searchId, currentEventIds);
   return currentEventIds;
 }

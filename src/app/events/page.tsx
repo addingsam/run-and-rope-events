@@ -1,15 +1,21 @@
 import { Suspense } from "react";
 import { EventSearchPage } from "@/components/events/search/EventSearchPage";
 import { getIsAuthenticated, getIsSubscriber } from "@/lib/auth/get-user";
+import {
+  listFutureMapEvents,
+  listUpcomingEvents,
+} from "@/lib/events/list-future-map-events";
 
 export const metadata = {
   title: "Events",
 };
 
 export default async function EventsPage() {
-  const [isSubscriber, isAuthenticated] = await Promise.all([
+  const [isSubscriber, isAuthenticated, upcomingEvents, mapResults] = await Promise.all([
     getIsSubscriber(),
     getIsAuthenticated(),
+    listUpcomingEvents(),
+    listFutureMapEvents(),
   ]);
 
   return (
@@ -17,7 +23,8 @@ export default async function EventsPage() {
       <div className="mb-10 max-w-2xl">
         <h1 className="text-3xl font-bold text-amber-950">Event directory</h1>
         <p className="mt-3 text-amber-900/75">
-          Search barrel racing and roping events by format, discipline, location, and date.
+          Browse upcoming jackpots and rodeos by date, then search the map by format, discipline,
+          location, and date.
         </p>
       </div>
 
@@ -32,6 +39,8 @@ export default async function EventsPage() {
           isSubscriber={isSubscriber}
           isAuthenticated={isAuthenticated}
           mapboxToken={process.env.MAPBOX_ACCESS_TOKEN ?? ""}
+          initialUpcomingEvents={upcomingEvents}
+          initialMapResults={mapResults}
         />
       </Suspense>
     </div>

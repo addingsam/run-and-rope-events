@@ -30,9 +30,28 @@ export interface EventRecord {
   flyer_url: string | null;
   submitter_email: string | null;
   source: string;
+  featured_until: string | null;
+  featured_paid_at: string | null;
+  featured_stripe_checkout_session_id: string | null;
+  featured_billing_type: string | null;
+  featured_stripe_subscription_id: string | null;
 }
 
-export type EventRecordInsert = Omit<EventRecord, "id" | "created_at"> & {
+export type EventRecordInsert = Omit<
+  EventRecord,
+  | "id"
+  | "created_at"
+  | "featured_until"
+  | "featured_paid_at"
+  | "featured_stripe_checkout_session_id"
+  | "featured_billing_type"
+  | "featured_stripe_subscription_id"
+> & {
   id?: string;
   created_at?: string;
+  featured_until?: string | null;
+  featured_paid_at?: string | null;
+  featured_stripe_checkout_session_id?: string | null;
+  featured_billing_type?: string | null;
+  featured_stripe_subscription_id?: string | null;
 };

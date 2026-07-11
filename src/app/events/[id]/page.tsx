@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { EventDetailContent } from "@/components/events/EventDetailContent";
+import { canPurchaseFeaturedPlacement } from "@/lib/events/featured-events";
 import { mapEventRecordToEventDetail } from "@/lib/events/event-detail";
-import { getPublishedEventById } from "@/lib/events/get-event-by-id";
+import { getPubliclyViewableEventById } from "@/lib/events/get-event-by-id";
 import { sampleEvents } from "@/lib/events/sample-events";
 import type { EventDetailView } from "@/types/event-detail";
 
@@ -31,7 +32,7 @@ function sampleToEventDetail(sample: (typeof sampleEvents)[number]): EventDetail
 
 export async function generateMetadata({ params }: EventDetailPageProps) {
   const { id } = await params;
-  const record = await getPublishedEventById(id).catch(() => null);
+  const record = await getPubliclyViewableEventById(id).catch(() => null);
   const sample = sampleEvents.find((item) => item.id === id);
   const title = record?.event_name ?? sample?.title ?? "Event";
 
@@ -43,11 +44,13 @@ export async function generateMetadata({ params }: EventDetailPageProps) {
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { id } = await params;
 
-  const record = await getPublishedEventById(id).catch(() => null);
+  const record = await getPubliclyViewableEventById(id).catch(() => null);
   let event: EventDetailView | null = null;
+  let showFeaturePlacementCta = false;
 
   if (record) {
     event = mapEventRecordToEventDetail(record);
+    showFeaturePlacementCta = canPurchaseFeaturedPlacement(record);
   } else {
     const sample = sampleEvents.find((item) => item.id === id);
     if (!sample) {
@@ -57,5 +60,5 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     event = sampleToEventDetail(sample);
   }
 
-  return <EventDetailContent event={event} />;
+  return <EventDetailContent event={event} showFeaturePlacementCta={showFeaturePlacementCta} />;
 }

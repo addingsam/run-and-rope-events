@@ -4,6 +4,7 @@ import { getFormatLabel, getRodeoLevelLabel } from "@/lib/events/submission-opti
 import type { EventSearchResultItem, ProRodeoSearchResultItem } from "@/types/event-search";
 import type { RodeoLevel, SubmissionFormat } from "@/types/event-submission";
 import { DisciplineSummary } from "@/components/events/search/SearchBadges";
+import { EventTypeBadge } from "@/components/events/EventTypeBadge";
 import { EventBookmarkButton } from "@/components/saved/EventBookmarkButton";
 
 function formatMilesAlongRoute(distanceMiles: number) {
@@ -57,7 +58,14 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
             {formatMilesAlongRoute(event.distanceMiles)}
           </p>
-          <h3 className="mt-1 text-lg font-semibold text-amber-950">{event.title}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <EventTypeBadge
+              format={event.format}
+              rodeoLevel={event.rodeoLevel}
+              disciplines={event.disciplines}
+            />
+            <h3 className="text-lg font-semibold text-amber-950">{event.title}</h3>
+          </div>
           <dl className="mt-2 space-y-1 text-sm text-amber-900/80">
             <div>
               <dt className="sr-only">Location</dt>

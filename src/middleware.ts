@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { hasActiveSubscription } from "./lib/subscribers/repository";
+import { isPublicFeaturedEvent } from "./lib/events/is-public-featured-event";
 
 const isEventsRoute = createRouteMatcher(["/events", "/events/(.*)"]);
 const isAdminRoute = createRouteMatcher(["/admin", "/admin/(.*)"]);
@@ -25,6 +26,15 @@ export default clerkMiddleware(async (auth, request) => {
 
   if (!isEventsRoute(request)) {
     return;
+  }
+
+  const eventDetailMatch = request.nextUrl.pathname.match(/^\/events\/([^/]+)$/);
+  if (eventDetailMatch) {
+    const eventId = eventDetailMatch[1];
+    const isFeatured = await isPublicFeaturedEvent(eventId).catch(() => false);
+    if (isFeatured) {
+      return;
+    }
   }
 
   const { userId } = await auth();

@@ -41,7 +41,7 @@ async function geocodeWithNominatim(city: string, state: string): Promise<Geocod
   const response = await fetch(
     `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
     {
-      headers: { "User-Agent": "run-and-rope-events/1.0" },
+      headers: { "User-Agent": "jackpot-and-rodeo-events/1.0" },
       next: { revalidate: 0 },
     },
   );

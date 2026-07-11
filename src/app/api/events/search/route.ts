@@ -20,7 +20,7 @@ import { DISCIPLINE_OPTIONS } from "@/lib/events/submission-options";
 const VALID_FORMATS = new Set<SearchFormat>(["jackpot", "rodeo", "either"]);
 const VALID_RODEO_LEVELS = new Set<SearchRodeoLevel>(["youth", "open", "amateur", "pro"]);
 const VALID_RADII = new Set<SearchRadiusMiles>([25, 50, 100, 200]);
-const VALID_BUFFERS = new Set<SearchBufferMiles>([5, 10, 25]);
+const VALID_BUFFERS = new Set<SearchBufferMiles>([5, 10, 25, 50, 100]);
 const VALID_MODES = new Set<SearchMode>(["radius", "route"]);
 const VALID_DISCIPLINES = new Set(
   DISCIPLINE_OPTIONS.map((option) => option.value),

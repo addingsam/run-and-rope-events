@@ -6,9 +6,12 @@ import type {
   SearchRodeoLevel,
 } from "@/types/event-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
+import type { UpcomingFormatFilter } from "@/lib/events/filter-upcoming-events";
+
+export type SavedSearchMode = SearchMode | "upcoming";
 
 export interface SavedSearchParams {
-  mode: SearchMode;
+  mode: SavedSearchMode;
   format: SearchFormat;
   rodeoLevel: SearchRodeoLevel | "";
   disciplines: SubmissionDiscipline[];
@@ -25,6 +28,10 @@ export interface SavedSearchParams {
   bufferMiles: SearchBufferMiles;
   startDate: string;
   endDate: string;
+  /** Used when mode is "upcoming" — upcoming events grid filters. */
+  upcomingFormatFilter?: UpcomingFormatFilter;
+  upcomingDisciplines?: SubmissionDiscipline[];
+  upcomingRodeoLevels?: string[];
 }
 
 export interface SavedMapOverlay {
