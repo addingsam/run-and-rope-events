@@ -24,6 +24,10 @@ function getSavedSearchTypeLabel(search: SavedSearchRecord) {
     return "Upcoming filters";
   }
 
+  if (search.search_params.mode === "map") {
+    return "Map area";
+  }
+
   return search.search_params.mode === "route" ? "Route search" : "Radius search";
 }
 

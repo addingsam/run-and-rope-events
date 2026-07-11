@@ -1,5 +1,10 @@
 import { filterEventItemsByMapOverlay } from "@/lib/events/filter-results-by-map-overlay";
 import {
+  filterEventsBySearchCriteria,
+  searchCriteriaFromFormState,
+  type SearchCriteriaFilter,
+} from "@/lib/events/filter-results-by-search-criteria";
+import {
   filterUpcomingEvents,
   type UpcomingEventFilterState,
 } from "@/lib/events/filter-upcoming-events";
@@ -65,6 +70,47 @@ export function savedUpcomingSearchParams(
   };
 }
 
+function savedParamsToSearchCriteria(params: SavedSearchParams): SearchCriteriaFilter {
+  if (params.mode === "upcoming") {
+    const upcoming = upcomingFiltersFromSavedParams(params);
+    return {
+      format:
+        upcoming.formatFilter === "jackpot"
+          ? "jackpot"
+          : upcoming.formatFilter === "rodeo"
+            ? "rodeo"
+            : "either",
+      rodeoLevel: (upcoming.selectedRodeoLevels[0] as SearchRodeoLevel | undefined) ?? "",
+      disciplines: upcoming.selectedDisciplines,
+      startDate: "",
+      endDate: "",
+    };
+  }
+
+  return searchCriteriaFromFormState(params);
+}
+
+async function runMapAreaSavedSearch(
+  params: SavedSearchParams,
+  mapOverlay?: SavedMapOverlay | null,
+): Promise<EventSearchResponse> {
+  const events = await listUpcomingEvents();
+  const filtered = filterEventsBySearchCriteria(events, savedParamsToSearchCriteria(params));
+  const overlayFiltered = filterEventItemsByMapOverlay(
+    filtered,
+    mapOverlay ?? { pinRadius: null, shapes: [] },
+  );
+
+  return {
+    results: overlayFiltered.map((item) => ({ kind: "event", item })),
+    counts: {
+      events: overlayFiltered.length,
+      proRodeos: 0,
+      total: overlayFiltered.length,
+    },
+  };
+}
+
 async function runUpcomingSavedSearch(
   params: SavedSearchParams,
   mapOverlay?: SavedMapOverlay | null,
@@ -92,6 +138,10 @@ export async function runSavedSearch(
 ) {
   if (params.mode === "upcoming") {
     return runUpcomingSavedSearch(params, mapOverlay);
+  }
+
+  if (params.mode === "map") {
+    return runMapAreaSavedSearch(params, mapOverlay);
   }
 
   if (params.mode === "route") {
@@ -232,9 +282,13 @@ export function savedSearchToQueryString(params: SavedSearchParams) {
   }
 
   const search = new URLSearchParams();
-  search.set(SEARCH_RUN_PARAM, "1");
-  if (params.mode === "route") {
+  if (params.mode === "map") {
+    search.set("mode", "map");
+  } else if (params.mode === "route") {
     search.set("mode", "route");
+    search.set(SEARCH_RUN_PARAM, "1");
+  } else {
+    search.set(SEARCH_RUN_PARAM, "1");
   }
   if (params.format !== "either") {
     search.set("format", params.format);

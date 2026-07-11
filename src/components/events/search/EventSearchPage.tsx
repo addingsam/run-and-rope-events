@@ -31,10 +31,11 @@ import {
   hasActiveMapOverlay,
 } from "@/lib/events/filter-results-by-map-overlay";
 import {
-  DEFAULT_UPCOMING_EVENT_FILTERS,
-  filterUpcomingEvents,
-  type UpcomingEventFilterState,
-} from "@/lib/events/filter-upcoming-events";
+  filterEventsBySearchCriteria,
+  filterResultsBySearchCriteria,
+  hasActiveSearchCriteria,
+  searchCriteriaFromFormState,
+} from "@/lib/events/filter-results-by-search-criteria";
 import type {
   EventSearchResponse,
   EventSearchResultItem,
@@ -50,7 +51,6 @@ import { SaveSearchDialog } from "@/components/saved/SaveSearchDialog";
 import {
   consumePendingSavedSearch,
   savedSearchParamsFromFormState,
-  savedUpcomingSearchParams,
   SEARCH_RUN_PARAM,
   upcomingFiltersFromQueryString,
   upcomingFiltersFromSavedParams,
@@ -87,7 +87,7 @@ interface SearchFormState {
 
 function createDefaultSearchFormState(): SearchFormState {
   return {
-    mode: "radius",
+    mode: "map",
     format: "either",
     rodeoLevel: "",
     disciplines: [],
@@ -137,13 +137,23 @@ function parseBuffer(value: string | null): SearchBufferMiles {
 }
 
 function parseMode(value: string | null): SearchMode {
-  return value === "route" ? "route" : "radius";
+  if (value === "route") {
+    return "route";
+  }
+
+  if (value === "radius") {
+    return "radius";
+  }
+
+  return "map";
 }
 
 function buildSearchParams(state: SearchFormState) {
   const params = new URLSearchParams();
 
-  if (state.mode === "route") {
+  if (state.mode === "map") {
+    params.set("mode", "map");
+  } else if (state.mode === "route") {
     params.set("mode", "route");
   }
 
@@ -179,7 +189,7 @@ function buildSearchParams(state: SearchFormState) {
       params.set("destinationLng", String(state.destinationLng));
     }
     params.set("buffer", String(state.bufferMiles));
-  } else {
+  } else if (state.mode === "radius") {
     if (state.locationLabel) {
       params.set("location", state.locationLabel);
     }
@@ -236,6 +246,10 @@ function isRouteSearchResponse(
 }
 
 function canAutoSearch(state: SearchFormState) {
+  if (state.mode === "map") {
+    return false;
+  }
+
   if (state.mode === "route") {
     return (
       Boolean(state.originLabel.trim() && state.destinationLabel.trim()) &&
@@ -289,40 +303,35 @@ export function EventSearchPage({
   });
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveDialogSource, setSaveDialogSource] = useState<"map" | "search">("search");
-  const [upcomingFilters, setUpcomingFilters] = useState<UpcomingEventFilterState>(
-    DEFAULT_UPCOMING_EVENT_FILTERS,
-  );
   const resultRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const didInitializeFromUrl = useRef(false);
 
   const rodeoLevelEnabled =
     formState.format === "rodeo" || formState.format === "either";
 
+  const showJackpotStructureFilter =
+    formState.format === "jackpot" || formState.format === "either";
+
+  const searchCriteria = useMemo(() => searchCriteriaFromFormState(formState), [formState]);
+  const hasSearchCriteria = hasActiveSearchCriteria(searchCriteria);
+
   const mapResults = useMemo(() => {
     if (hasSearched) {
       return results?.results ?? [];
     }
 
-    const eventItems = defaultMapResults
-      .filter((entry) => entry.kind === "event")
-      .map((entry) => entry.item);
-    const filteredItems = filterUpcomingEvents(eventItems, upcomingFilters);
-    const allowedIds = new Set(filteredItems.map((item) => item.id));
-
-    return defaultMapResults.filter(
-      (entry) => entry.kind !== "event" || allowedIds.has(entry.item.id),
-    );
-  }, [hasSearched, results, defaultMapResults, upcomingFilters]);
+    return filterResultsBySearchCriteria(defaultMapResults, searchCriteria);
+  }, [hasSearched, results, defaultMapResults, searchCriteria]);
   const hasMapOverlayFilter = hasActiveMapOverlay(mapOverlay);
+
+  const matchingEvents = useMemo(() => {
+    const criteriaFiltered = filterEventsBySearchCriteria(initialUpcomingEvents, searchCriteria);
+    return filterEventItemsByMapOverlay(criteriaFiltered, mapOverlay);
+  }, [initialUpcomingEvents, searchCriteria, mapOverlay]);
 
   const overlayFilteredMapResults = useMemo(
     () => filterResultsByMapOverlay(mapResults, mapOverlay),
     [mapResults, mapOverlay],
-  );
-
-  const overlayFilteredUpcomingEvents = useMemo(
-    () => filterEventItemsByMapOverlay(initialUpcomingEvents, mapOverlay),
-    [initialUpcomingEvents, mapOverlay],
   );
 
   const overlayFilteredSearchResults = useMemo(() => {
@@ -431,7 +440,37 @@ export function EventSearchPage({
     const pendingSavedSearch = consumePendingSavedSearch();
     if (pendingSavedSearch) {
       if (pendingSavedSearch.params.mode === "upcoming") {
-        setUpcomingFilters(upcomingFiltersFromSavedParams(pendingSavedSearch.params));
+        const upcoming = upcomingFiltersFromSavedParams(pendingSavedSearch.params);
+        setFormState({
+          ...createDefaultSearchFormState(),
+          mode: "map",
+          format:
+            upcoming.formatFilter === "jackpot"
+              ? "jackpot"
+              : upcoming.formatFilter === "rodeo"
+                ? "rodeo"
+                : "either",
+          rodeoLevel: (upcoming.selectedRodeoLevels[0] as SearchRodeoLevel | undefined) ?? "",
+          disciplines: upcoming.selectedDisciplines,
+        });
+        if (pendingSavedSearch.mapOverlay) {
+          setMapOverlay(pendingSavedSearch.mapOverlay);
+        }
+        router.replace(pathname, { scroll: false });
+        return;
+      }
+
+      if (pendingSavedSearch.params.mode === "map") {
+        const nextState: SearchFormState = {
+          ...createDefaultSearchFormState(),
+          mode: "map",
+          format: pendingSavedSearch.params.format,
+          rodeoLevel: pendingSavedSearch.params.rodeoLevel,
+          disciplines: pendingSavedSearch.params.disciplines,
+          startDate: pendingSavedSearch.params.startDate,
+          endDate: pendingSavedSearch.params.endDate,
+        };
+        setFormState(nextState);
         if (pendingSavedSearch.mapOverlay) {
           setMapOverlay(pendingSavedSearch.mapOverlay);
         }
@@ -471,21 +510,40 @@ export function EventSearchPage({
 
     const upcomingFromUrl = upcomingFiltersFromQueryString(searchParams);
     if (upcomingFromUrl) {
-      setUpcomingFilters(upcomingFromUrl);
+      setFormState({
+        ...createDefaultSearchFormState(),
+        mode: "map",
+        format:
+          upcomingFromUrl.formatFilter === "jackpot"
+            ? "jackpot"
+            : upcomingFromUrl.formatFilter === "rodeo"
+              ? "rodeo"
+              : "either",
+        rodeoLevel: (upcomingFromUrl.selectedRodeoLevels[0] as SearchRodeoLevel | undefined) ?? "",
+        disciplines: upcomingFromUrl.selectedDisciplines,
+      });
       router.replace(pathname, { scroll: false });
       return;
     }
 
     const urlState = stateFromSearchParams(searchParams);
-    if (searchParams.get(SEARCH_RUN_PARAM) === "1" && canAutoSearch(urlState)) {
+    if (urlState.mode === "map") {
       setFormState(urlState);
-      void runSearch(urlState);
-      const params = buildSearchParams(urlState);
+      router.replace(`${pathname}?${buildSearchParams(urlState).toString()}`, { scroll: false });
+      return;
+    }
+
+    const urlStateForSearch = stateFromSearchParams(searchParams);
+    if (searchParams.get(SEARCH_RUN_PARAM) === "1" && canAutoSearch(urlStateForSearch)) {
+      setFormState(urlStateForSearch);
+      void runSearch(urlStateForSearch);
+      const params = buildSearchParams(urlStateForSearch);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       return;
     }
 
     if (searchParams.toString()) {
+      setFormState(urlStateForSearch);
       router.replace(pathname, { scroll: false });
     }
   }, [pathname, router, runSearch, searchParams]);
@@ -509,12 +567,22 @@ export function EventSearchPage({
         next.rodeoLevel = "";
       }
 
+      if (patch.format === "rodeo") {
+        next.disciplines = [];
+      }
+
       return next;
     });
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (formState.mode === "map") {
+      const params = buildSearchParams(formState);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      return;
+    }
 
     if (formState.mode === "route") {
       if (!formState.originLabel.trim()) {
@@ -584,18 +652,23 @@ export function EventSearchPage({
     "rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50";
 
   const canUseSaveSearch = authLoaded && isSignedIn && isSubscriber;
-  const searchCriteriaReady = canAutoSearch(formState);
 
-  const canSaveMapActivity = canUseSaveSearch && hasMapOverlayFilter;
+  const canSaveMapActivity =
+    canUseSaveSearch &&
+    formState.mode === "map" &&
+    (hasMapOverlayFilter || hasSearchCriteria);
 
-  const canSaveSearchActivity = canUseSaveSearch && searchCriteriaReady;
+  const canSaveSearchActivity =
+    canUseSaveSearch &&
+    (formState.mode === "map"
+      ? hasMapOverlayFilter || hasSearchCriteria
+      : canAutoSearch(formState));
 
   function getSaveParamsForSource(source: "map" | "search") {
-    if (source === "search" || (source === "map" && hasSearched && searchCriteriaReady)) {
-      return savedSearchParamsFromFormState(formState);
-    }
-
-    return savedUpcomingSearchParams(upcomingFilters);
+    return savedSearchParamsFromFormState({
+      ...formState,
+      mode: formState.mode === "map" || source === "map" ? "map" : formState.mode,
+    });
   }
 
   function openSaveDialog(source: "map" | "search") {
@@ -619,42 +692,268 @@ export function EventSearchPage({
     setSelectedKey(key);
   }
 
+  const matchingEventsCountLabel =
+    matchingEvents.length === 0
+      ? hasMapOverlayFilter || hasSearchCriteria
+        ? "No events match your current criteria and map area."
+        : "Showing all upcoming events."
+      : `${matchingEvents.length} event${matchingEvents.length === 1 ? "" : "s"} match your search criteria${
+          hasMapOverlayFilter ? " inside the drawn map area" : ""
+        }.`;
+
+  const mapSummary =
+    formState.mode === "map"
+      ? hasMapOverlayFilter
+        ? `Showing ${overlayFilteredMapResults.length} event${
+            overlayFilteredMapResults.length === 1 ? "" : "s"
+          } inside your drawn area (${mapResults.length} match your criteria on the map).`
+        : `Showing ${overlayFilteredMapResults.length} event${
+            overlayFilteredMapResults.length === 1 ? "" : "s"
+          } that match your criteria. Draw a box, freehand area, or pin + radius to narrow by location.`
+      : !hasSearched
+        ? hasMapOverlayFilter
+          ? `Showing ${overlayFilteredMapResults.length} event${
+              overlayFilteredMapResults.length === 1 ? "" : "s"
+            } inside your drawn area (${mapResults.length} total on map).`
+          : `Showing ${overlayFilteredMapResults.length} geocoded upcoming event${
+              overlayFilteredMapResults.length === 1 ? "" : "s"
+            } on the map.`
+        : hasMapOverlayFilter
+          ? `Showing ${overlayFilteredMapResults.length} event${
+              overlayFilteredMapResults.length === 1 ? "" : "s"
+            } inside your drawn area (${mapResults.length} search results on map).`
+          : "Search results shown on the map below.";
+
   return (
     <div className="space-y-6 sm:space-y-8">
-      <UpcomingEventsGrid
-        events={overlayFilteredUpcomingEvents}
-        totalEventCount={initialUpcomingEvents.length}
-        hasMapOverlayFilter={hasMapOverlayFilter}
-        filterState={upcomingFilters}
-        onFilterChange={setUpcomingFilters}
-        isSubscriber={isSubscriber}
-        selectedKey={selectedKey}
-        onSelectCard={setSelectedKey}
-        onCardRef={(key, element) => {
-          resultRefs.current[key] = element;
-        }}
-      />
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-amber-950">Search events</h2>
+            <p className="mt-1 text-sm text-amber-900/70">
+              Set your criteria, draw on the map, or search by radius or route. Filters update the
+              map and results together.
+            </p>
+          </div>
+          {canSaveSearchActivity ? (
+            <button
+              type="button"
+              onClick={() => openSaveDialog("search")}
+              className={saveSearchButtonClassName}
+            >
+              Save &amp; get alerts
+            </button>
+          ) : canUseSaveSearch ? (
+            <p className="text-sm text-amber-900/70">
+              {formState.mode === "map"
+                ? "Set criteria or draw on the map to save this search."
+                : "Select a location from the suggestions to save this search."}
+            </p>
+          ) : authLoaded && isSignedIn && !isSubscriber ? (
+            <p className="text-sm text-amber-900/70">
+              An active subscription is required to save searches.
+            </p>
+          ) : null}
+        </div>
+
+        <SearchModeToggle
+          mode={formState.mode}
+          onChange={(mode) => {
+            if (mode === formState.mode) {
+              return;
+            }
+
+            setResults(null);
+            setRouteMeta(null);
+            setHasSearched(false);
+            setSelectedKey(null);
+            setError(null);
+            updateFormState({ mode });
+          }}
+        />
+
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:p-6"
+        >
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SelectInput
+              label="Format"
+              name="format"
+              value={formState.format}
+              onChange={(event) =>
+                updateFormState({ format: event.target.value as SearchFormat })
+              }
+              options={SEARCH_FORMAT_OPTIONS}
+            />
+
+            <SelectInput
+              label="Rodeo level"
+              name="rodeoLevel"
+              value={formState.rodeoLevel}
+              onChange={(event) =>
+                updateFormState({
+                  rodeoLevel: event.target.value as SearchRodeoLevel | "",
+                })
+              }
+              options={SEARCH_RODEO_LEVEL_OPTIONS}
+              placeholder="Any level"
+              disabled={!rodeoLevelEnabled}
+              className={!rodeoLevelEnabled ? "opacity-50" : ""}
+            />
+
+            {showJackpotStructureFilter && (
+              <div className="lg:col-span-2">
+                <CheckboxGroup
+                  label="Jackpot structure"
+                  hint="Leave unchecked to include all jackpot structures."
+                  options={DISCIPLINE_OPTIONS}
+                  values={formState.disciplines}
+                  onChange={(disciplines) =>
+                    updateFormState({ disciplines: disciplines as SubmissionDiscipline[] })
+                  }
+                />
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+              <div>
+                <label htmlFor="startDate" className="mb-2 block text-sm font-semibold text-amber-950">
+                  Start date
+                </label>
+                <input
+                  id="startDate"
+                  name="startDate"
+                  type="date"
+                  value={formState.startDate}
+                  onChange={(event) => updateFormState({ startDate: event.target.value })}
+                  className={inputClassName}
+                />
+              </div>
+              <div>
+                <label htmlFor="endDate" className="mb-2 block text-sm font-semibold text-amber-950">
+                  End date
+                </label>
+                <input
+                  id="endDate"
+                  name="endDate"
+                  type="date"
+                  value={formState.endDate}
+                  onChange={(event) => updateFormState({ endDate: event.target.value })}
+                  className={inputClassName}
+                />
+              </div>
+            </div>
+
+            {formState.mode === "map" && (
+              <div className="lg:col-span-2 rounded-xl border border-amber-100 bg-[#fffaf3] px-4 py-3 text-sm text-amber-900/80">
+                Use the map below to draw a box, freehand area, or pin + radius. Results update as
+                you change criteria and your drawing.
+              </div>
+            )}
+
+            {formState.mode === "radius" && (
+              <>
+                <div className="lg:col-span-2">
+                  <LocationAutocomplete
+                    label="Location"
+                    value={formState.locationLabel}
+                    lat={formState.lat}
+                    lng={formState.lng}
+                    error={locationError ?? undefined}
+                    onChange={({ locationLabel, lat, lng }) =>
+                      updateFormState({ locationLabel, lat, lng })
+                    }
+                  />
+                </div>
+
+                <SelectInput
+                  label="Radius"
+                  name="radius"
+                  value={String(formState.radiusMiles)}
+                  onChange={(event) =>
+                    updateFormState({
+                      radiusMiles: Number(event.target.value) as SearchRadiusMiles,
+                    })
+                  }
+                  options={SEARCH_RADIUS_OPTIONS}
+                />
+              </>
+            )}
+
+            {formState.mode === "route" && (
+              <>
+                <LocationAutocomplete
+                  inputId="origin"
+                  label="Starting point"
+                  value={formState.originLabel}
+                  lat={formState.originLat}
+                  lng={formState.originLng}
+                  error={originError ?? undefined}
+                  onChange={({ locationLabel, lat, lng }) =>
+                    updateFormState({
+                      originLabel: locationLabel,
+                      originLat: lat,
+                      originLng: lng,
+                    })
+                  }
+                />
+
+                <LocationAutocomplete
+                  inputId="destination"
+                  label="Destination"
+                  value={formState.destinationLabel}
+                  lat={formState.destinationLat}
+                  lng={formState.destinationLng}
+                  error={destinationError ?? undefined}
+                  onChange={({ locationLabel, lat, lng }) =>
+                    updateFormState({
+                      destinationLabel: locationLabel,
+                      destinationLat: lat,
+                      destinationLng: lng,
+                    })
+                  }
+                />
+
+                <SelectInput
+                  label="Buffer distance"
+                  name="buffer"
+                  value={String(formState.bufferMiles)}
+                  onChange={(event) =>
+                    updateFormState({
+                      bufferMiles: Number(event.target.value) as SearchBufferMiles,
+                    })
+                  }
+                  options={SEARCH_BUFFER_OPTIONS}
+                />
+              </>
+            )}
+          </div>
+
+          {formState.mode !== "map" && (
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <button
+                type="submit"
+                className="rounded-full bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-800"
+              >
+                {formState.mode === "route" ? "Search along route" : "Search events"}
+              </button>
+              {!isSubscriber && (
+                <p className="text-sm text-amber-900/70">
+                  Pro rodeo listings are free to browse. Full event details require a subscription.
+                </p>
+              )}
+            </div>
+          )}
+        </form>
+      </section>
 
       {mapboxToken && (
         <section className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-amber-950">Event map</h2>
-              <p className="mt-1 text-sm text-amber-900/70">
-                {!hasSearched
-                  ? hasMapOverlayFilter
-                    ? `Showing ${overlayFilteredMapResults.length} event${
-                        overlayFilteredMapResults.length === 1 ? "" : "s"
-                      } inside your drawn area (${mapResults.length} total on map). Use search below to filter further.`
-                    : `Showing ${defaultMapResults.length} geocoded upcoming event${
-                        defaultMapResults.length === 1 ? "" : "s"
-                      } on the map. Use search below to filter by location, format, or date.`
-                  : hasMapOverlayFilter
-                    ? `Showing ${overlayFilteredMapResults.length} event${
-                        overlayFilteredMapResults.length === 1 ? "" : "s"
-                      } inside your drawn area (${mapResults.length} search results on map).`
-                    : "Search results shown on the map below."}
-              </p>
+              <p className="mt-1 text-sm text-amber-900/70">{mapSummary}</p>
             </div>
             {canSaveMapActivity ? (
               <button
@@ -664,14 +963,6 @@ export function EventSearchPage({
               >
                 Save &amp; get alerts
               </button>
-            ) : canUseSaveSearch ? (
-              <p className="text-sm text-amber-900/70">
-                Draw on the map to save this area filter.
-              </p>
-            ) : authLoaded && isSignedIn && !isSubscriber ? (
-              <p className="text-sm text-amber-900/70">
-                An active subscription is required to save searches.
-              </p>
             ) : null}
           </div>
 
@@ -716,228 +1007,26 @@ export function EventSearchPage({
         </section>
       )}
 
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-amber-950">Search events</h2>
-            <p className="mt-1 text-sm text-amber-900/70">
-              Filter by radius or route to find events near a location or along your drive.
-            </p>
-          </div>
-          {canSaveSearchActivity ? (
-            <button
-              type="button"
-              onClick={() => openSaveDialog("search")}
-              className={saveSearchButtonClassName}
-            >
-              Save &amp; get alerts
-            </button>
-          ) : canUseSaveSearch ? (
-            <p className="text-sm text-amber-900/70">
-              Select a location from the suggestions to save this search.
-            </p>
-          ) : authLoaded && isSignedIn && !isSubscriber ? (
-            <p className="text-sm text-amber-900/70">
-              An active subscription is required to save searches.
-            </p>
-          ) : null}
-        </div>
-
-        <SearchModeToggle
-          mode={formState.mode}
-          onChange={(mode) => {
-            if (mode === formState.mode) {
-              return;
-            }
-
-            setResults(null);
-            setRouteMeta(null);
-            setHasSearched(false);
-            setSelectedKey(null);
-            setError(null);
-            updateFormState({ mode });
+      {!hasSearched && (
+        <UpcomingEventsGrid
+          events={matchingEvents}
+          countLabel={matchingEventsCountLabel}
+          emptyTitle={
+            hasMapOverlayFilter ? "No events in drawn area" : "No events match your filters"
+          }
+          emptyMessage={
+            hasMapOverlayFilter
+              ? "None of the listings match your criteria inside the map drawing. Adjust your filters or clear the drawing."
+              : "Try adjusting your format, discipline, date, or rodeo level selections."
+          }
+          isSubscriber={isSubscriber}
+          selectedKey={selectedKey}
+          onSelectCard={setSelectedKey}
+          onCardRef={(key, element) => {
+            resultRefs.current[key] = element;
           }}
         />
-
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:p-6"
-        >
-        <div className="grid gap-6 lg:grid-cols-2">
-          <SelectInput
-            label="Format"
-            name="format"
-            value={formState.format}
-            onChange={(event) =>
-              updateFormState({ format: event.target.value as SearchFormat })
-            }
-            options={SEARCH_FORMAT_OPTIONS}
-          />
-
-          <SelectInput
-            label="Rodeo level"
-            name="rodeoLevel"
-            value={formState.rodeoLevel}
-            onChange={(event) =>
-              updateFormState({
-                rodeoLevel: event.target.value as SearchRodeoLevel | "",
-              })
-            }
-            options={SEARCH_RODEO_LEVEL_OPTIONS}
-            placeholder="Any level"
-            disabled={!rodeoLevelEnabled}
-            className={!rodeoLevelEnabled ? "opacity-50" : ""}
-          />
-
-          <div className="lg:col-span-2">
-            <CheckboxGroup
-            label="Jackpot structure"
-              hint="Leave unchecked to include all jackpot structures."
-              options={DISCIPLINE_OPTIONS}
-              values={formState.disciplines}
-              onChange={(disciplines) =>
-                updateFormState({ disciplines: disciplines as SubmissionDiscipline[] })
-              }
-            />
-          </div>
-
-          {formState.mode === "radius" ? (
-            <>
-              <div className="lg:col-span-2">
-                <LocationAutocomplete
-                  label="Location"
-                  value={formState.locationLabel}
-                  lat={formState.lat}
-                  lng={formState.lng}
-                  error={locationError ?? undefined}
-                  onChange={({ locationLabel, lat, lng }) =>
-                    updateFormState({ locationLabel, lat, lng })
-                  }
-                />
-              </div>
-
-              <SelectInput
-                label="Radius"
-                name="radius"
-                value={String(formState.radiusMiles)}
-                onChange={(event) =>
-                  updateFormState({
-                    radiusMiles: Number(event.target.value) as SearchRadiusMiles,
-                  })
-                }
-                options={SEARCH_RADIUS_OPTIONS}
-              />
-            </>
-          ) : (
-            <>
-              <LocationAutocomplete
-                inputId="origin"
-                label="Starting point"
-                value={formState.originLabel}
-                lat={formState.originLat}
-                lng={formState.originLng}
-                error={originError ?? undefined}
-                onChange={({ locationLabel, lat, lng }) =>
-                  updateFormState({
-                    originLabel: locationLabel,
-                    originLat: lat,
-                    originLng: lng,
-                  })
-                }
-              />
-
-              <LocationAutocomplete
-                inputId="destination"
-                label="Destination"
-                value={formState.destinationLabel}
-                lat={formState.destinationLat}
-                lng={formState.destinationLng}
-                error={destinationError ?? undefined}
-                onChange={({ locationLabel, lat, lng }) =>
-                  updateFormState({
-                    destinationLabel: locationLabel,
-                    destinationLat: lat,
-                    destinationLng: lng,
-                  })
-                }
-              />
-
-              <SelectInput
-                label="Buffer distance"
-                name="buffer"
-                value={String(formState.bufferMiles)}
-                onChange={(event) =>
-                  updateFormState({
-                    bufferMiles: Number(event.target.value) as SearchBufferMiles,
-                  })
-                }
-                options={SEARCH_BUFFER_OPTIONS}
-              />
-            </>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-            <div>
-              <label htmlFor="startDate" className="mb-2 block text-sm font-semibold text-amber-950">
-                Start date
-              </label>
-              <input
-                id="startDate"
-                name="startDate"
-                type="date"
-                value={formState.startDate}
-                onChange={(event) => updateFormState({ startDate: event.target.value })}
-                className={inputClassName}
-              />
-            </div>
-            <div>
-              <label htmlFor="endDate" className="mb-2 block text-sm font-semibold text-amber-950">
-                End date
-              </label>
-              <input
-                id="endDate"
-                name="endDate"
-                type="date"
-                value={formState.endDate}
-                onChange={(event) => updateFormState({ endDate: event.target.value })}
-                className={inputClassName}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <button
-            type="submit"
-            className="rounded-full bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-800"
-          >
-            {formState.mode === "route" ? "Search along route" : "Search events"}
-          </button>
-          {canSaveSearchActivity ? (
-            <button
-              type="button"
-              onClick={() => openSaveDialog("search")}
-              className={saveSearchButtonClassName}
-            >
-              Save &amp; get alerts
-            </button>
-          ) : canUseSaveSearch ? (
-            <p className="text-sm text-amber-900/70">
-              Select a location from the suggestions to save this search.
-            </p>
-          ) : authLoaded && isSignedIn && !isSubscriber ? (
-            <p className="text-sm text-amber-900/70">
-              An active subscription is required to save searches.
-            </p>
-          ) : null}
-          {!isSubscriber && (
-            <p className="text-sm text-amber-900/70">
-              Pro rodeo listings are free to browse. Full event details require a subscription.
-            </p>
-          )}
-        </div>
-      </form>
-      </section>
+      )}
 
       <section aria-live="polite" className="space-y-4">
         {hasSearched && (

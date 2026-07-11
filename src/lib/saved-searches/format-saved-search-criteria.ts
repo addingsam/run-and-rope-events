@@ -51,6 +51,8 @@ export function formatSavedSearchCriteriaLines(
     }
     const bufferLabel = labelFor(SEARCH_BUFFER_OPTIONS, String(params.bufferMiles) as "5");
     lines.push(`Route buffer: ${bufferLabel ?? `${params.bufferMiles} miles`}`);
+  } else if (params.mode === "map") {
+    lines.push("Search type: Map area");
   } else {
     lines.push("Search type: Radius search");
     if (params.locationLabel) {

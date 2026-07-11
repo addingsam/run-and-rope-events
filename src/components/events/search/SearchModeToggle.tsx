@@ -9,7 +9,18 @@ interface SearchModeToggleProps {
 
 export function SearchModeToggle({ mode, onChange }: SearchModeToggleProps) {
   return (
-    <div className="inline-flex rounded-full border border-amber-200 bg-[#fffaf3] p-1">
+    <div className="inline-flex flex-wrap rounded-full border border-amber-200 bg-[#fffaf3] p-1">
+      <button
+        type="button"
+        onClick={() => onChange("map")}
+        className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+          mode === "map"
+            ? "bg-amber-700 text-white"
+            : "text-amber-900 hover:bg-amber-100"
+        }`}
+      >
+        Map area
+      </button>
       <button
         type="button"
         onClick={() => onChange("radius")}

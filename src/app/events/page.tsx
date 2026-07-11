@@ -22,8 +22,8 @@ export default async function EventsPage() {
       <div className="mb-10 max-w-2xl">
         <h1 className="text-3xl font-bold text-amber-950">Event directory</h1>
         <p className="mt-3 text-amber-900/75">
-          Browse upcoming jackpots and rodeos by date, then search the map by format, discipline,
-          location, and date.
+          Set search criteria, draw on the interactive map, or search by radius or route to find
+          jackpots and rodeos nationwide.
         </p>
       </div>
 
