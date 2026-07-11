@@ -14,10 +14,15 @@ import {
   RODEO_LEVEL_OPTIONS,
 } from "@/lib/events/submission-options";
 import {
+  applyFlyerExtractionToSubmission,
+  countPopulatedFlyerFields,
+} from "@/lib/flyer/apply-flyer-extraction";
+import {
   FLYER_ACCEPT_ATTRIBUTE,
   validateFlyerFile,
 } from "@/lib/flyer/constants";
 import { US_STATES } from "@/lib/us-states";
+import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 import {
   EMPTY_EVENT_SUBMISSION,
   type EventSubmission,
@@ -27,7 +32,10 @@ import {
 } from "@/types/event-submission";
 
 type FormErrors = Partial<
-  Record<keyof EventSubmission | "flyer" | "disciplines" | "featurePlacement", string>
+  Record<
+    keyof EventSubmission | "flyer" | "disciplines" | "featurePlacement" | "flyerExtraction",
+    string
+  >
 >;
 
 function validateForm(
@@ -97,6 +105,8 @@ export function EventSubmissionForm() {
   const [featurePlacement, setFeaturePlacement] = useState<FeaturedPlacementChoice>("none");
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [isUploadingFlyer, setIsUploadingFlyer] = useState(false);
+  const [isExtractingFlyer, setIsExtractingFlyer] = useState(false);
+  const [flyerExtractionMessage, setFlyerExtractionMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
@@ -139,6 +149,7 @@ export function EventSubmissionForm() {
 
   function clearFlyer() {
     setFlyerFile(null);
+    setFlyerExtractionMessage(null);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -156,6 +167,7 @@ export function EventSubmissionForm() {
 
     setFlyerFile(file);
     setIsUploadingFlyer(true);
+    setFlyerExtractionMessage(null);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -179,6 +191,7 @@ export function EventSubmissionForm() {
       }
 
       updateField("flyerUrl", data.url);
+      await fillFormFromFlyer(data.url);
     } catch (error) {
       setFlyerFile(null);
       setErrors((current) => ({
@@ -199,13 +212,68 @@ export function EventSubmissionForm() {
     await uploadFlyer(file);
   }
 
+  async function fillFormFromFlyer(flyerUrl = formData.flyerUrl) {
+    if (!flyerUrl) {
+      setErrors((current) => ({
+        ...current,
+        flyerExtraction: "Upload a flyer before extracting details.",
+      }));
+      return;
+    }
+
+    setIsExtractingFlyer(true);
+    setFlyerExtractionMessage(null);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.flyerExtraction;
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/extract-flyer", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ flyerUrl }),
+      });
+
+      const data = (await response.json()) as {
+        extracted?: FlyerExtractionResult;
+        error?: string;
+      };
+
+      if (!response.ok || !data.extracted) {
+        throw new Error(data.error ?? "Could not extract details from this flyer.");
+      }
+
+      setFormData((current) => applyFlyerExtractionToSubmission(current, data.extracted!));
+      setErrors({});
+
+      const populatedCount = countPopulatedFlyerFields(data.extracted);
+      setFlyerExtractionMessage(
+        populatedCount > 0
+          ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
+          : "No confident details were found on this flyer. Please complete the form manually.",
+      );
+    } catch (error) {
+      setErrors((current) => ({
+        ...current,
+        flyerExtraction:
+          error instanceof Error ? error.message : "Could not extract details from this flyer.",
+      }));
+    } finally {
+      setIsExtractingFlyer(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isUploadingFlyer) {
+    if (isUploadingFlyer || isExtractingFlyer) {
       setErrors((current) => ({
         ...current,
-        flyer: "Please wait for the flyer upload to finish.",
+        flyer: isExtractingFlyer
+          ? "Please wait for flyer extraction to finish."
+          : "Please wait for the flyer upload to finish.",
       }));
       return;
     }
@@ -333,13 +401,97 @@ export function EventSubmissionForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <FormSection
+        title="Event Flyer"
+        description="Start here — upload your flyer and we'll read it to pre-fill the form below. JPEG, PNG, or PDF up to 10MB."
+      >
+        <div>
+          <label
+            htmlFor="flyer"
+            className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+              isUploadingFlyer || isExtractingFlyer
+                ? "cursor-wait border-amber-400 bg-amber-50/80"
+                : "cursor-pointer border-amber-300 bg-[#fffaf3] hover:border-amber-500 hover:bg-amber-50/60"
+            }`}
+          >
+            <span className="text-3xl" aria-hidden="true">
+              {isUploadingFlyer ? "⏳" : isExtractingFlyer ? "🔍" : formData.flyerUrl ? "✓" : "📎"}
+            </span>
+            <span className="mt-3 text-sm font-semibold text-amber-950">
+              {isUploadingFlyer
+                ? "Uploading to storage..."
+                : isExtractingFlyer
+                  ? "Reading flyer and filling in details..."
+                  : flyerFile
+                    ? flyerFile.name
+                    : "Choose a flyer to upload"}
+            </span>
+            <span className="mt-1 text-xs text-amber-900/60">
+              JPEG, PNG, or PDF · Max 10MB
+            </span>
+            {flyerFile && (
+              <span className="mt-2 text-xs font-medium text-amber-800">
+                {formatFileSize(flyerFile.size)}
+              </span>
+            )}
+            {formData.flyerUrl && !isUploadingFlyer && !isExtractingFlyer && (
+              <span className="mt-2 text-xs font-medium text-emerald-800">
+                Uploaded — review the details below
+              </span>
+            )}
+          </label>
+          <input
+            id="flyer"
+            name="flyer"
+            type="file"
+            accept={FLYER_ACCEPT_ATTRIBUTE}
+            className="sr-only"
+            disabled={isUploadingFlyer || isExtractingFlyer}
+            onChange={(e) => {
+              void handleFlyerChange(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+          {formData.flyerUrl && !isUploadingFlyer && (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void fillFormFromFlyer()}
+                disabled={isExtractingFlyer}
+                className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50 disabled:cursor-wait disabled:opacity-70"
+              >
+                {isExtractingFlyer ? "Reading flyer…" : "Re-read flyer"}
+              </button>
+              <button
+                type="button"
+                onClick={clearFlyer}
+                disabled={isExtractingFlyer}
+                className="text-sm font-medium text-amber-800 hover:text-amber-950 disabled:opacity-60"
+              >
+                Remove file
+              </button>
+            </div>
+          )}
+          {flyerExtractionMessage && (
+            <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              {flyerExtractionMessage}
+            </p>
+          )}
+          {errors.flyerExtraction && (
+            <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {errors.flyerExtraction}
+            </p>
+          )}
+          {errors.flyer && <p className="mt-2 text-sm text-red-700">{errors.flyer}</p>}
+        </div>
+      </FormSection>
+
+      <FormSection
         title="Event Details"
-        description="Tell riders what kind of event you're hosting."
+        description="Review and complete anything the flyer didn't capture."
       >
         <TextInput
           name="eventName"
           label="Event Name"
-          required
           value={formData.eventName}
           onChange={(e) => updateField("eventName", e.target.value)}
           error={errors.eventName}
@@ -348,17 +500,16 @@ export function EventSubmissionForm() {
         <SelectInput
           name="format"
           label="Format"
-          required
           value={formData.format}
           onChange={(e) => handleFormatChange(e.target.value as SubmissionFormat)}
           options={FORMAT_OPTIONS}
+          placeholder="Select format"
           error={errors.format}
         />
         {formData.format === "rodeo" && (
           <SelectInput
             name="rodeoLevel"
             label="Rodeo Level"
-            required
             value={formData.rodeoLevel}
             onChange={(e) => updateField("rodeoLevel", e.target.value as RodeoLevel)}
             options={RODEO_LEVEL_OPTIONS}
@@ -368,7 +519,6 @@ export function EventSubmissionForm() {
         )}
         <CheckboxGroup
           label={formData.format === "jackpot" ? "Jackpot structure" : "Discipline(s)"}
-          required
           hint={
             formData.format === "jackpot"
               ? "Select all jackpot structures that apply to this event."
@@ -403,7 +553,6 @@ export function EventSubmissionForm() {
             name="startDate"
             label="Start Date"
             type="date"
-            required
             value={formData.startDate}
             onChange={(e) => updateField("startDate", e.target.value)}
             error={errors.startDate}
@@ -439,7 +588,6 @@ export function EventSubmissionForm() {
         <TextInput
           name="venueName"
           label="Venue Name"
-          required
           value={formData.venueName}
           onChange={(e) => updateField("venueName", e.target.value)}
           error={errors.venueName}
@@ -448,7 +596,6 @@ export function EventSubmissionForm() {
         <TextInput
           name="streetAddress"
           label="Street Address"
-          required
           value={formData.streetAddress}
           onChange={(e) => updateField("streetAddress", e.target.value)}
           error={errors.streetAddress}
@@ -459,7 +606,6 @@ export function EventSubmissionForm() {
             <TextInput
               name="city"
               label="City"
-              required
               value={formData.city}
               onChange={(e) => updateField("city", e.target.value)}
               error={errors.city}
@@ -469,7 +615,6 @@ export function EventSubmissionForm() {
             <SelectInput
               name="state"
               label="State"
-              required
               value={formData.state}
               onChange={(e) => updateField("state", e.target.value)}
               error={errors.state}
@@ -481,7 +626,6 @@ export function EventSubmissionForm() {
             <TextInput
               name="zipCode"
               label="Zip Code"
-              required
               inputMode="numeric"
               value={formData.zipCode}
               onChange={(e) => updateField("zipCode", e.target.value)}
@@ -499,7 +643,6 @@ export function EventSubmissionForm() {
         <TextInput
           name="producerName"
           label="Producer Name"
-          required
           value={formData.producerName}
           onChange={(e) => updateField("producerName", e.target.value)}
           error={errors.producerName}
@@ -559,68 +702,6 @@ export function EventSubmissionForm() {
       </FormSection>
 
       <FormSection
-        title="Event Flyer"
-        description="Upload a JPEG, PNG, or PDF up to 10MB. Files are stored in Cloudflare R2."
-      >
-        <div>
-          <label
-            htmlFor="flyer"
-            className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
-              isUploadingFlyer
-                ? "cursor-wait border-amber-400 bg-amber-50/80"
-                : "cursor-pointer border-amber-300 bg-[#fffaf3] hover:border-amber-500 hover:bg-amber-50/60"
-            }`}
-          >
-            <span className="text-3xl" aria-hidden="true">
-              {isUploadingFlyer ? "⏳" : formData.flyerUrl ? "✓" : "📎"}
-            </span>
-            <span className="mt-3 text-sm font-semibold text-amber-950">
-              {isUploadingFlyer
-                ? "Uploading to storage..."
-                : flyerFile
-                  ? flyerFile.name
-                  : "Choose a flyer to upload"}
-            </span>
-            <span className="mt-1 text-xs text-amber-900/60">
-              JPEG, PNG, or PDF · Max 10MB
-            </span>
-            {flyerFile && (
-              <span className="mt-2 text-xs font-medium text-amber-800">
-                {formatFileSize(flyerFile.size)}
-              </span>
-            )}
-            {formData.flyerUrl && !isUploadingFlyer && (
-              <span className="mt-2 text-xs font-medium text-emerald-800">
-                Uploaded and ready
-              </span>
-            )}
-          </label>
-          <input
-            id="flyer"
-            name="flyer"
-            type="file"
-            accept={FLYER_ACCEPT_ATTRIBUTE}
-            className="sr-only"
-            disabled={isUploadingFlyer}
-            onChange={(e) => {
-              void handleFlyerChange(e.target.files?.[0] ?? null);
-              e.target.value = "";
-            }}
-          />
-          {flyerFile && !isUploadingFlyer && (
-            <button
-              type="button"
-              onClick={clearFlyer}
-              className="mt-3 text-sm font-medium text-amber-800 hover:text-amber-950"
-            >
-              Remove file
-            </button>
-          )}
-          {errors.flyer && <p className="mt-2 text-sm text-red-700">{errors.flyer}</p>}
-        </div>
-      </FormSection>
-
-      <FormSection
         title="Confirmation"
         description="Optional — we'll email you when your listing is live."
       >
@@ -655,12 +736,12 @@ export function EventSubmissionForm() {
 
       <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 px-4 py-5 sm:px-6">
         <p className="text-sm leading-6 text-amber-900/75">
-          Fields marked with <span className="font-semibold text-amber-800">*</span> are required.
-          Producer name will always be displayed on your listing. No account is required to submit.
+          Upload your flyer first, then review the details below. Required fields are checked when
+          you submit. Producer name will always be displayed on your listing. No account is required.
         </p>
         <button
           type="submit"
-          disabled={isSubmitting || isUploadingFlyer}
+          disabled={isSubmitting || isUploadingFlyer || isExtractingFlyer}
           className="mt-5 w-full rounded-full bg-amber-800 px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {isSubmitting
