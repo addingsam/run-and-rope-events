@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
-import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import { getFormatLabel } from "@/lib/events/submission-options";
 import {
   themeMutedTextClassName,
@@ -9,8 +8,7 @@ import {
 } from "@/lib/theme/form-classes";
 import type { EventSearchResultItem, ProRodeoSearchResultItem } from "@/types/event-search";
 import type { SubmissionFormat } from "@/types/event-submission";
-import { DisciplineSummary } from "@/components/events/search/SearchBadges";
-import { EventTypeBadge } from "@/components/events/EventTypeBadge";
+import { EventCategorySummary } from "@/components/events/search/SearchBadges";
 import { EventBookmarkButton } from "@/components/saved/EventBookmarkButton";
 
 function formatMilesAlongRoute(distanceMiles: number) {
@@ -67,11 +65,6 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
             {formatMilesAlongRoute(event.distanceMiles)}
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <EventTypeBadge
-              format={event.format}
-              rodeoLevel={event.rodeoLevel}
-              disciplines={event.disciplines}
-            />
             <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">{event.title}</h3>
           </div>
           <dl className={`mt-2 space-y-1 ${themeMutedTextClassName}`}>
@@ -92,17 +85,15 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
                   <dd>{getFormatLabel(event.format as SubmissionFormat)}</dd>
                 </div>
               )}
-              {event.format === "rodeo" && event.rodeoLevel && (
-                <div>
-                  <dt className="sr-only">Rodeo level</dt>
-                  <dd>{formatRodeoLevelList(parseStoredRodeoLevels(event.rodeoLevel))}</dd>
-                </div>
-              )}
             </div>
             <div>
-              <dt className="sr-only">Disciplines</dt>
+              <dt className="sr-only">Categories</dt>
               <dd>
-                <DisciplineSummary disciplines={event.disciplines} />
+                <EventCategorySummary
+                  format={event.format}
+                  rodeoLevel={event.rodeoLevel}
+                  disciplines={event.disciplines}
+                />
               </dd>
             </div>
           </dl>

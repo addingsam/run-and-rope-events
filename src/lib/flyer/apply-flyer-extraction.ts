@@ -1,20 +1,16 @@
+import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
+import {
+  disciplineLabelToValue,
+  inferFlyerDisciplineFromText,
+} from "@/lib/flyer/flyer-disciplines";
+import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
 import { US_STATES } from "@/lib/us-states";
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 import type {
   EventSubmission,
   RodeoLevel,
-  SubmissionDiscipline,
   SubmissionFormat,
 } from "@/types/event-submission";
-
-const DISCIPLINE_LABEL_TO_VALUE: Record<string, SubmissionDiscipline> = {
-  "Barrel Racing": "barrel_racing",
-  "Team Roping": "team_roping",
-  "Calf Roping": "calf_roping",
-  "Breakaway Roping": "breakaway_roping",
-  "Steer Roping": "steer_roping",
-  "Steer Wrestling": "steer_wrestling",
-};
 
 const FORMAT_LABEL_TO_VALUE: Record<string, SubmissionFormat> = {
   Jackpot: "jackpot",
@@ -108,12 +104,23 @@ export function applyFlyerExtractionToSubmission(
   current: EventSubmission,
   extracted: FlyerExtractionResult,
 ): EventSubmission {
-  const format = extracted.format ? FORMAT_LABEL_TO_VALUE[extracted.format] : current.format;
-  const discipline = extracted.discipline
-    ? DISCIPLINE_LABEL_TO_VALUE[extracted.discipline]
-    : null;
-  const extractedLevel = extracted.rodeoLevel
-    ? RODEO_LEVEL_LABEL_TO_VALUE[extracted.rodeoLevel] ?? null
+  const sanitized = sanitizeFlyerExtractionLocation(extracted);
+  const extractedFormat = sanitized.format
+    ? FORMAT_LABEL_TO_VALUE[sanitized.format]
+    : current.format;
+  const disciplineLabel =
+    sanitized.discipline ??
+    inferFlyerDisciplineFromText(
+      sanitized.eventName,
+      sanitized.classDivisionInfo,
+      sanitized.additionalNotes,
+      sanitized.contactName,
+    );
+  const discipline = disciplineLabelToValue(disciplineLabel);
+  const disciplines = discipline ? [discipline] : current.disciplines;
+  const format = resolveFormatFromDisciplines(disciplines, extractedFormat);
+  const extractedLevel = sanitized.rodeoLevel
+    ? RODEO_LEVEL_LABEL_TO_VALUE[sanitized.rodeoLevel] ?? null
     : null;
   const rodeoLevels =
     format === "rodeo"
@@ -121,30 +128,30 @@ export function applyFlyerExtractionToSubmission(
         ? [extractedLevel]
         : current.rodeoLevels
       : [];
-  const zipFromAddress = parseZipFromAddress(extracted.address);
+  const zipFromAddress = parseZipFromAddress(sanitized.address);
 
   return {
     ...current,
-    eventName: extracted.eventName ?? current.eventName,
+    eventName: sanitized.eventName ?? current.eventName,
     format,
     rodeoLevels,
-    disciplines: discipline ? [discipline] : current.disciplines,
+    disciplines,
     additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
-    startDate: normalizeStartDate(extracted.date) || current.startDate,
-    endDate: normalizeOptionalDate(extracted.endDate) || current.endDate,
-    entryDeadline: normalizeOptionalDate(extracted.entryDeadline) || current.entryDeadline,
-    classDivisionInfo: extracted.classDivisionInfo ?? current.classDivisionInfo,
-    venueName: extracted.venueName ?? current.venueName,
-    streetAddress: extracted.address ?? current.streetAddress,
-    city: extracted.city ?? current.city,
-    state: normalizeState(extracted.state) || current.state,
-    zipCode: extracted.zipCode ?? (zipFromAddress || current.zipCode),
-    producerName: extracted.contactName ?? current.producerName,
-    contactEmail: extracted.contactEmail ?? current.contactEmail,
-    contactPhone: extracted.contactPhone ?? current.contactPhone,
-    entryFee: extracted.entryFee ?? current.entryFee,
-    prizePayoutInfo: extracted.prizePayoutInfo ?? current.prizePayoutInfo,
-    description: buildDescription(extracted, current.description),
+    startDate: normalizeStartDate(sanitized.date) || current.startDate,
+    endDate: normalizeOptionalDate(sanitized.endDate) || current.endDate,
+    entryDeadline: normalizeOptionalDate(sanitized.entryDeadline) || current.entryDeadline,
+    classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
+    venueName: sanitized.venueName ?? "",
+    streetAddress: sanitized.address ?? "",
+    city: sanitized.city ?? "",
+    state: normalizeState(sanitized.state) || "",
+    zipCode: sanitized.zipCode ?? zipFromAddress ?? "",
+    producerName: sanitized.contactName ?? current.producerName,
+    contactEmail: sanitized.contactEmail ?? current.contactEmail,
+    contactPhone: sanitized.contactPhone ?? current.contactPhone,
+    entryFee: sanitized.entryFee ?? current.entryFee,
+    prizePayoutInfo: sanitized.prizePayoutInfo ?? current.prizePayoutInfo,
+    description: buildDescription(sanitized, current.description),
   };
 }
 

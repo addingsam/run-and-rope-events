@@ -6,6 +6,7 @@ import type {
   RodeoLevel,
   SubmissionDiscipline,
   SubmissionFormat,
+  SubmissionSource,
 } from "@/types/event-submission";
 
 function extractUserDescription(description: string | null) {
@@ -58,5 +59,6 @@ export function mapEventRecordToSubmission(record: EventRecord): EventSubmission
     description: extractUserDescription(record.description),
     submitterEmail: record.submitter_email ?? "",
     flyerUrl: record.flyer_url ?? "",
+    source: (record.source === "scrape" ? "scrape" : "flyer") as SubmissionSource,
   };
 }

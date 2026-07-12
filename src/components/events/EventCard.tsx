@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getDisciplineLabelFromSlug } from "@/lib/events/submission-options";
+import { EventCategorySummary } from "@/components/events/search/SearchBadges";
 import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
 import type { RodeoEvent } from "@/types/event";
 
@@ -16,21 +16,20 @@ function formatDate(date: string) {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const disciplineLabel =
-    event.disciplines.length === 1
-      ? getDisciplineLabelFromSlug(event.disciplines[0])
-      : `${event.disciplines.length} disciplines`;
-
   return (
     <article
       className={`p-5 shadow-sm transition-shadow hover:shadow-md ${themePanelClassName}`}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)]">
-            {disciplineLabel}
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">
+          <div className="mb-2">
+            <EventCategorySummary
+              format={event.format}
+              rodeoLevel={event.rodeoLevel}
+              disciplines={event.disciplines}
+            />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
             {event.title}
           </h3>
         </div>

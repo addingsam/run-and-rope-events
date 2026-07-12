@@ -1,10 +1,17 @@
 import { APP_NAME } from "@/lib/constants";
 import { getResendClient, getResendFromAddress } from "@/lib/email/resend";
+import { getSubmissionConfirmationRecipients } from "@/lib/email/submission-confirmation-recipients";
+import type { EventSubmission } from "@/types/event-submission";
 
 interface SubmissionConfirmationInput {
   to: string;
   eventName: string;
   startDate: string;
+}
+
+export interface SubmissionConfirmationSendResult {
+  sent: string[];
+  failed: Array<{ email: string; reason: string }>;
 }
 
 function formatEventDate(date: string) {
@@ -52,6 +59,17 @@ function buildConfirmationHtml(eventName: string, formattedDate: string) {
   `;
 }
 
+function logResendDeliveryIssue(email: string, reason: string) {
+  if (reason.includes("only send testing emails to your own email address")) {
+    console.error(
+      `Submission confirmation blocked by Resend test mode for ${email}. Verify a sending domain in Resend and update RESEND_FROM_EMAIL.`,
+    );
+    return;
+  }
+
+  console.error(`Failed to send submission confirmation to ${email}:`, reason);
+}
+
 export async function sendSubmissionConfirmation({
   to,
   eventName,
@@ -80,4 +98,33 @@ export async function sendSubmissionConfirmation({
   if (error) {
     throw new Error(error.message);
   }
+}
+
+export async function sendSubmissionConfirmationEmails(
+  submission: Pick<EventSubmission, "submitterEmail" | "contactEmail" | "eventName" | "startDate">,
+): Promise<SubmissionConfirmationSendResult> {
+  const recipients = getSubmissionConfirmationRecipients(submission);
+  const sent: string[] = [];
+  const failed: Array<{ email: string; reason: string }> = [];
+
+  if (!submission.eventName || !submission.startDate) {
+    return { sent, failed };
+  }
+
+  for (const email of recipients) {
+    try {
+      await sendSubmissionConfirmation({
+        to: email,
+        eventName: submission.eventName,
+        startDate: submission.startDate,
+      });
+      sent.push(email);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "Unknown email delivery error.";
+      failed.push({ email, reason });
+      logResendDeliveryIssue(email, reason);
+    }
+  }
+
+  return { sent, failed };
 }

@@ -1,5 +1,8 @@
 import {
-  FLYER_EXTRACTION_DISCIPLINE_LABELS,
+  inferFlyerDisciplineFromText,
+  normalizeFlyerDiscipline,
+} from "@/lib/flyer/flyer-disciplines";
+import {
   FLYER_EXTRACTION_FORMAT_LABELS,
   FLYER_EXTRACTION_RODEO_LEVEL_LABELS,
   type FlyerExtractionResult,
@@ -62,7 +65,14 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
     city: nullableString(parsed.city),
     state: nullableString(parsed.state),
     zipCode: nullableString(parsed.zipCode),
-    discipline: enumOrNull(parsed.discipline, FLYER_EXTRACTION_DISCIPLINE_LABELS),
+    discipline:
+      normalizeFlyerDiscipline(parsed.discipline) ??
+      inferFlyerDisciplineFromText(
+        nullableString(parsed.eventName),
+        nullableString(parsed.classDivisionInfo),
+        nullableString(parsed.additionalNotes),
+        nullableString(parsed.discipline),
+      ),
     format: enumOrNull(parsed.format, FLYER_EXTRACTION_FORMAT_LABELS),
     rodeoLevel: enumOrNull(parsed.rodeoLevel, FLYER_EXTRACTION_RODEO_LEVEL_LABELS),
     entryFee: nullableString(parsed.entryFee),

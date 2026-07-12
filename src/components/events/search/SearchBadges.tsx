@@ -1,5 +1,8 @@
 import type { SubmissionDiscipline } from "@/types/event-submission";
-import { DisciplineColorBadge } from "@/components/events/EventTypeBadge";
+import {
+  RodeoLevelsBadges,
+  ThemeDisciplineBadge,
+} from "@/components/events/EventTypeBadge";
 
 interface SearchBadgeProps {
   children: React.ReactNode;
@@ -21,7 +24,11 @@ export function SearchBadge({ children, variant = "amber" }: SearchBadgeProps) {
   );
 }
 
-export function DisciplineSummary({ disciplines }: { disciplines: SubmissionDiscipline[] | string[] }) {
+export function DisciplineSummary({
+  disciplines,
+}: {
+  disciplines: SubmissionDiscipline[] | string[];
+}) {
   if (disciplines.length === 0) {
     return <span>—</span>;
   }
@@ -29,8 +36,28 @@ export function DisciplineSummary({ disciplines }: { disciplines: SubmissionDisc
   return (
     <span className="inline-flex flex-wrap gap-1.5">
       {disciplines.map((discipline) => (
-        <DisciplineColorBadge key={discipline} discipline={discipline} />
+        <ThemeDisciplineBadge key={discipline} discipline={discipline} />
       ))}
     </span>
   );
+}
+
+export function EventCategorySummary({
+  format,
+  rodeoLevel,
+  disciplines,
+}: {
+  format: string | null;
+  rodeoLevel?: string | null;
+  disciplines: SubmissionDiscipline[] | string[];
+}) {
+  if (format === "rodeo") {
+    if (rodeoLevel) {
+      return <RodeoLevelsBadges levelValue={rodeoLevel} />;
+    }
+
+    return <span>—</span>;
+  }
+
+  return <DisciplineSummary disciplines={disciplines} />;
 }

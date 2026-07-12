@@ -23,6 +23,27 @@ export const DISCIPLINE_OPTIONS = [
   { value: "obstacle_trail", label: "Obstacle & Trail" },
 ] as const satisfies readonly { value: SubmissionDiscipline; label: string }[];
 
+export const JACKPOT_ONLY_DISCIPLINES = [
+  "cowboy_mounted_shooting",
+  "ranch_horse",
+  "obstacle_trail",
+] as const satisfies readonly SubmissionDiscipline[];
+
+export function isJackpotOnlyDiscipline(discipline: SubmissionDiscipline) {
+  return (JACKPOT_ONLY_DISCIPLINES as readonly SubmissionDiscipline[]).includes(discipline);
+}
+
+export function resolveFormatFromDisciplines(
+  disciplines: SubmissionDiscipline[],
+  fallback: SubmissionFormat,
+): SubmissionFormat {
+  if (disciplines.some(isJackpotOnlyDiscipline)) {
+    return "jackpot";
+  }
+
+  return fallback;
+}
+
 const formatLabelMap = Object.fromEntries(
   FORMAT_OPTIONS.map((option) => [option.value, option.label]),
 ) as Record<SubmissionFormat, string>;

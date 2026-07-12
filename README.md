@@ -74,11 +74,12 @@ Upload flow:
 
 ## Resend (confirmation emails)
 
-When a submitter provides an email on `/submit`, the app sends a confirmation that their event was received and is under review.
+When a submitter provides an email on `/submit`, the app sends a confirmation that their event was received and is under review. Confirmations go to every unique address entered in **Submitter Email** and **Contact Email**.
 
 1. Create an account at [Resend](https://resend.com/).
 2. Generate an API key.
-3. Add these values to `.env.local`:
+3. **Verify a sending domain** in Resend. The default `onboarding@resend.dev` sender only delivers to the Resend account owner's inbox, so other submitter addresses will not receive mail until a domain is verified.
+4. Add these values to `.env.local`:
 
 | Variable | Description |
 | -------- | ----------- |

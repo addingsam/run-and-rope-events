@@ -34,3 +34,6 @@ export const themeInactiveToggleClassName =
 
 export const themeToggleGroupClassName =
   "inline-flex flex-wrap rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] p-1";
+
+export const themeBadgeClassName =
+  "inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-accent-primary)]/15 px-2.5 py-1 text-xs font-semibold text-[var(--color-text-primary)]";

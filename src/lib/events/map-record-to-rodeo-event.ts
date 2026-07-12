@@ -35,6 +35,7 @@ export function mapEventRecordToRodeoEvent(record: EventRecord): RodeoEvent {
     id: record.id,
     title: record.event_name,
     format,
+    rodeoLevel: record.rodeo_level,
     disciplines,
     additionalOfferings: record.additional_offerings ?? undefined,
     status: "upcoming",

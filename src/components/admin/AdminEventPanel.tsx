@@ -85,6 +85,11 @@ function EventRow({
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-semibold text-stone-900">{event.event_name}</p>
+              {event.source === "scrape" && (
+                <span className="rounded-full border border-sky-300 bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-950">
+                  Scraped — needs review
+                </span>
+              )}
               {hasDuplicates && (
                 <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-950">
                   Possible duplicate

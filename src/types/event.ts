@@ -17,6 +17,7 @@ export interface RodeoEvent {
   id: string;
   title: string;
   format: EventFormat;
+  rodeoLevel?: string | null;
   disciplines: EventDiscipline[];
   additionalOfferings?: string[];
   status: EventStatus;

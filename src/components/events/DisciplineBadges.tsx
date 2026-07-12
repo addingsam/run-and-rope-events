@@ -1,4 +1,4 @@
-import { DisciplineColorBadge } from "@/components/events/EventTypeBadge";
+import { ThemeDisciplineBadge } from "@/components/events/EventTypeBadge";
 
 interface DisciplineBadgesProps {
   disciplines: string[];
@@ -12,7 +12,7 @@ export function DisciplineBadges({ disciplines }: DisciplineBadgesProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {disciplines.map((discipline) => (
-        <DisciplineColorBadge key={discipline} discipline={discipline} />
+        <ThemeDisciplineBadge key={discipline} discipline={discipline} />
       ))}
     </div>
   );

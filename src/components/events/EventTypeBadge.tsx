@@ -12,6 +12,7 @@ import {
   formatRodeoLevelList,
   parseStoredRodeoLevels,
 } from "@/lib/events/rodeo-levels";
+import { themeBadgeClassName } from "@/lib/theme/form-classes";
 import type { RodeoLevel } from "@/types/event-submission";
 
 interface EventTypeBadgeProps {
@@ -69,6 +70,7 @@ interface DisciplineColorBadgeProps {
   className?: string;
 }
 
+/** Map pin / legacy multicolor badge — keep for map-related color logic only. */
 export function DisciplineColorBadge({ discipline, className = "" }: DisciplineColorBadgeProps) {
   const color = getDisciplineColor(discipline);
   const lightText = usesLightBadgeText(color);
@@ -81,6 +83,14 @@ export function DisciplineColorBadge({ discipline, className = "" }: DisciplineC
         color: lightText ? "#ffffff" : "#1f2937",
       }}
     >
+      {getDisciplineLabelFromSlug(discipline)}
+    </span>
+  );
+}
+
+export function ThemeDisciplineBadge({ discipline, className = "" }: DisciplineColorBadgeProps) {
+  return (
+    <span className={`${themeBadgeClassName} ${className}`}>
       {getDisciplineLabelFromSlug(discipline)}
     </span>
   );
@@ -102,7 +112,7 @@ export function RodeoLevelsBadges({
   return (
     <span className={`inline-flex flex-wrap gap-2 ${className}`}>
       {levels.map((level) => (
-        <RodeoLevelColorBadge key={level} level={level} />
+        <ThemeRodeoLevelBadge key={level} level={level} />
       ))}
     </span>
   );
@@ -113,6 +123,25 @@ interface RodeoLevelColorBadgeProps {
   className?: string;
 }
 
+function getRodeoLevelBadgeLabel(level: string) {
+  if (level === "pro") {
+    return "Pro Rodeo";
+  }
+
+  if (level === "youth" || level === "open" || level === "amateur") {
+    return getRodeoLevelLabel(level as RodeoLevel);
+  }
+
+  return level.replaceAll("_", " ");
+}
+
+export function ThemeRodeoLevelBadge({ level, className = "" }: RodeoLevelColorBadgeProps) {
+  return (
+    <span className={`${themeBadgeClassName} ${className}`}>{getRodeoLevelBadgeLabel(level)}</span>
+  );
+}
+
+/** Map pin multicolor rodeo level badge — not used on event card thumbnails. */
 export function RodeoLevelColorBadge({ level, className = "" }: RodeoLevelColorBadgeProps) {
   const color = getRodeoLevelColor(level);
   const lightText = usesLightBadgeText(color);

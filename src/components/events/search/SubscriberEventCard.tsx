@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { EventFlyerTrigger } from "@/components/events/EventFlyerTrigger";
 import { EventBookmarkButton } from "@/components/saved/EventBookmarkButton";
-import { DisciplineSummary } from "@/components/events/search/SearchBadges";
+import { EventCategorySummary } from "@/components/events/search/SearchBadges";
 import { formatEventDate } from "@/lib/events/format-date";
-import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import { getFormatLabel } from "@/lib/events/submission-options";
 import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
 import type { EventSearchResultItem } from "@/types/event-search";
@@ -69,17 +68,15 @@ export function SubscriberEventCard({ event }: SubscriberEventCardProps) {
                 <dd>{getFormatLabel(event.format as SubmissionFormat)}</dd>
               </div>
             )}
-            {event.format === "rodeo" && event.rodeoLevel && (
-              <div>
-                <dt className="sr-only">Rodeo level</dt>
-                <dd>{formatRodeoLevelList(parseStoredRodeoLevels(event.rodeoLevel))}</dd>
-              </div>
-            )}
           </div>
           <div>
-            <dt className="sr-only">Disciplines</dt>
+            <dt className="sr-only">Categories</dt>
             <dd>
-              <DisciplineSummary disciplines={event.disciplines} />
+              <EventCategorySummary
+                format={event.format}
+                rodeoLevel={event.rodeoLevel}
+                disciplines={event.disciplines}
+              />
             </dd>
           </div>
         </dl>

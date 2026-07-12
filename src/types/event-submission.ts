@@ -1,5 +1,7 @@
 export type SubmissionFormat = "jackpot" | "rodeo";
 
+export type SubmissionSource = "flyer" | "scrape";
+
 export type RodeoLevel = "youth" | "open" | "amateur";
 
 export type SubmissionDiscipline =
@@ -37,6 +39,7 @@ export interface EventSubmission {
   description: string;
   submitterEmail: string;
   flyerUrl: string;
+  source: SubmissionSource;
 }
 
 export const EMPTY_EVENT_SUBMISSION: EventSubmission = {
@@ -63,4 +66,5 @@ export const EMPTY_EVENT_SUBMISSION: EventSubmission = {
   description: "",
   submitterEmail: "",
   flyerUrl: "",
+  source: "flyer",
 };

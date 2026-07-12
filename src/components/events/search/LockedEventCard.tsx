@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { RodeoLevelsBadges } from "@/components/events/EventTypeBadge";
-import { DisciplineSummary } from "@/components/events/search/SearchBadges";
+import { EventCategorySummary } from "@/components/events/search/SearchBadges";
 import { formatEventDate } from "@/lib/events/format-date";
 import { getFormatLabel } from "@/lib/events/submission-options";
 import {
@@ -55,19 +54,15 @@ export function LockedEventCard({ event }: LockedEventCardProps) {
                 <dd>{getFormatLabel(event.format as SubmissionFormat)}</dd>
               </div>
             )}
-            {event.format === "rodeo" && event.rodeoLevel && (
-              <div>
-                <dt className="sr-only">Rodeo level</dt>
-                <dd>
-                  <RodeoLevelsBadges levelValue={event.rodeoLevel} />
-                </dd>
-              </div>
-            )}
           </div>
           <div>
-            <dt className="sr-only">Disciplines</dt>
+            <dt className="sr-only">Categories</dt>
             <dd>
-              <DisciplineSummary disciplines={event.disciplines} />
+              <EventCategorySummary
+                format={event.format}
+                rodeoLevel={event.rodeoLevel}
+                disciplines={event.disciplines}
+              />
             </dd>
           </div>
         </dl>

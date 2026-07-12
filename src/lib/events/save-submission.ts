@@ -4,6 +4,7 @@ import {
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
+import { submissionSourceToRecordSource } from "@/lib/events/validate-submission";
 import { geocodeCityState } from "@/lib/geocoding/geocode-city-state";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { EventRecordInsert } from "@/types/event-record";
@@ -75,7 +76,7 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
     description: buildDescription(submission),
     flyer_url: toNullable(submission.flyerUrl),
     submitter_email: toNullable(submission.submitterEmail),
-    source: "submission",
+    source: submissionSourceToRecordSource(submission.source ?? "flyer"),
   };
 }
 

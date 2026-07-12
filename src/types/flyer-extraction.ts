@@ -1,14 +1,9 @@
-export const FLYER_EXTRACTION_DISCIPLINE_LABELS = [
-  "Barrel Racing",
-  "Team Roping",
-  "Calf Roping",
-  "Breakaway Roping",
-  "Steer Roping",
-  "Steer Wrestling",
-] as const;
+import type { FlyerExtractionDisciplineLabel } from "@/lib/flyer/flyer-disciplines";
 
-export type FlyerExtractionDisciplineLabel =
-  (typeof FLYER_EXTRACTION_DISCIPLINE_LABELS)[number];
+export {
+  FLYER_EXTRACTION_DISCIPLINE_LABELS,
+  type FlyerExtractionDisciplineLabel,
+} from "@/lib/flyer/flyer-disciplines";
 
 export const FLYER_EXTRACTION_FORMAT_LABELS = ["Jackpot", "Rodeo"] as const;
 

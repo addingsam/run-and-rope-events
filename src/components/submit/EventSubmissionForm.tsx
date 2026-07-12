@@ -17,6 +17,7 @@ import {
   applyFlyerExtractionToSubmission,
   countPopulatedFlyerFields,
 } from "@/lib/flyer/apply-flyer-extraction";
+import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
   FLYER_ACCEPT_ATTRIBUTE,
   validateFlyerFile,
@@ -29,6 +30,7 @@ import {
   themeSecondaryButtonClassName,
 } from "@/lib/theme/form-classes";
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
+import { validateEventSubmission } from "@/lib/events/validate-submission";
 import {
   EMPTY_EVENT_SUBMISSION,
   type EventSubmission,
@@ -99,43 +101,7 @@ function validateForm(
   data: EventSubmission,
   featurePlacement: FeaturedPlacementChoice,
 ): FormErrors {
-  const errors: FormErrors = {};
-
-  if (!data.eventName.trim()) errors.eventName = "Event name is required.";
-  if (!data.format) errors.format = "Format is required.";
-  if (data.format === "rodeo" && data.rodeoLevels.length === 0) {
-    errors.rodeoLevels = "Select at least one rodeo level.";
-  }
-  if (data.disciplines.length === 0) {
-    errors.disciplines = "Select at least one discipline.";
-  }
-  if (!data.startDate) errors.startDate = "Start date is required.";
-  if (!data.venueName.trim()) errors.venueName = "Venue name is required.";
-  if (!data.streetAddress.trim()) errors.streetAddress = "Street address is required.";
-  if (!data.city.trim()) errors.city = "City is required.";
-  if (!data.state) errors.state = "State is required.";
-  if (!data.zipCode.trim()) errors.zipCode = "Zip code is required.";
-  if (!data.producerName.trim()) errors.producerName = "Producer name is required.";
-
-  if (data.endDate && data.startDate && data.endDate < data.startDate) {
-    errors.endDate = "End date must be on or after the start date.";
-  }
-
-  if (data.entryDeadline && data.startDate && data.entryDeadline > data.startDate) {
-    errors.entryDeadline = "Entry deadline should be before the event start date.";
-  }
-
-  if (data.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactEmail)) {
-    errors.contactEmail = "Enter a valid email address.";
-  }
-
-  if (data.submitterEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.submitterEmail)) {
-    errors.submitterEmail = "Enter a valid email address.";
-  }
-
-  if (data.producerWebsite && !/^https?:\/\/.+/i.test(data.producerWebsite)) {
-    errors.producerWebsite = "Enter a valid URL starting with http:// or https://.";
-  }
+  const errors: FormErrors = validateEventSubmission(data, "flyer");
 
   if (featurePlacement !== "none") {
     const email = data.submitterEmail.trim() || data.contactEmail.trim();
@@ -167,6 +133,7 @@ export function EventSubmissionForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [confirmationNotice, setConfirmationNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleFormatChange(format: SubmissionFormat) {
@@ -315,7 +282,9 @@ export function EventSubmissionForm() {
       setFormData((current) => applyFlyerExtractionToSubmission(current, data.extracted!));
       setErrors({});
 
-      const populatedCount = countPopulatedFlyerFields(data.extracted);
+      const populatedCount = countPopulatedFlyerFields(
+        sanitizeFlyerExtractionLocation(data.extracted),
+      );
       setFlyerExtractionMessage(
         populatedCount > 0
           ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
@@ -388,6 +357,10 @@ export function EventSubmissionForm() {
       const data = (await response.json()) as {
         eventId?: string;
         error?: string;
+        confirmationEmails?: {
+          sent: string[];
+          failed: Array<{ email: string; reason: string }>;
+        };
       };
 
       if (!response.ok || !data.eventId) {
@@ -423,7 +396,22 @@ export function EventSubmissionForm() {
         return;
       }
 
-      setSubmittedEmail(formData.submitterEmail);
+      const sentEmails = data.confirmationEmails?.sent ?? [];
+      const failedEmails = data.confirmationEmails?.failed ?? [];
+
+      if (sentEmails.length > 0) {
+        setSubmittedEmail(sentEmails.join(", "));
+        setConfirmationNotice(null);
+      } else if (failedEmails.length > 0) {
+        setSubmittedEmail("");
+        setConfirmationNotice(
+          "Your event was saved, but we could not send a confirmation email right now. Our team still received your submission.",
+        );
+      } else {
+        setSubmittedEmail("");
+        setConfirmationNotice(null);
+      }
+
       setSubmitted(true);
       setFormData(EMPTY_EVENT_SUBMISSION);
       setFeaturePlacement("none");
@@ -452,14 +440,17 @@ export function EventSubmissionForm() {
           Thanks for listing your event. We&apos;ll review the details and publish it to the
           directory soon.
           {submittedEmail
-            ? ` A confirmation will be sent to ${submittedEmail}.`
-            : ""}
+            ? ` A confirmation was sent to ${submittedEmail}.`
+            : confirmationNotice
+              ? ` ${confirmationNotice}`
+              : ""}
         </p>
         <button
           type="button"
           onClick={() => {
             setSubmitted(false);
             setSubmittedEmail("");
+            setConfirmationNotice(null);
             setFeaturePlacement("none");
           }}
           className={`mt-6 px-6 py-3 ${themePrimaryButtonClassName}`}
@@ -573,7 +564,6 @@ export function EventSubmissionForm() {
           value={formData.eventName}
           onChange={(e) => updateField("eventName", e.target.value)}
           error={errors.eventName}
-          placeholder="Spring Barrel Bash"
         />
         <SelectInput
           name="format"
@@ -619,7 +609,6 @@ export function EventSubmissionForm() {
           label="Description"
           value={formData.description}
           onChange={(e) => updateField("description", e.target.value)}
-          placeholder="Share schedule details, added money, stall info, or anything riders should know."
         />
       </FormSection>
 
@@ -659,26 +648,28 @@ export function EventSubmissionForm() {
           label="Class or Division Info"
           value={formData.classDivisionInfo}
           onChange={(e) => updateField("classDivisionInfo", e.target.value)}
-          placeholder="Open 4D, youth breakaway, #9 header, etc."
         />
       </FormSection>
 
-      <FormSection title="Venue & Location" description="Where will riders find you?">
+      <FormSection
+        title="Venue & Location"
+        description="Venue name and street address are required when submitting from a flyer. Add anything the flyer didn't capture."
+      >
         <TextInput
           name="venueName"
           label="Venue Name"
+          required
           value={formData.venueName}
           onChange={(e) => updateField("venueName", e.target.value)}
           error={errors.venueName}
-          placeholder="Triple R Arena"
         />
         <TextInput
           name="streetAddress"
           label="Street Address"
+          required
           value={formData.streetAddress}
           onChange={(e) => updateField("streetAddress", e.target.value)}
           error={errors.streetAddress}
-          placeholder="1200 County Road 101"
         />
         <div className="grid gap-5 sm:grid-cols-3">
           <div className="sm:col-span-1">
@@ -710,7 +701,6 @@ export function EventSubmissionForm() {
               onChange={(e) => updateField("zipCode", e.target.value)}
               error={errors.zipCode}
               hint="Required — add if your flyer didn't include it."
-              placeholder="76401"
             />
           </div>
         </div>
@@ -727,7 +717,6 @@ export function EventSubmissionForm() {
           onChange={(e) => updateField("producerName", e.target.value)}
           error={errors.producerName}
           hint="Always shown on the event listing."
-          placeholder="Rockin' R Productions"
         />
         <TextInput
           name="producerWebsite"
@@ -747,7 +736,6 @@ export function EventSubmissionForm() {
             value={formData.contactEmail}
             onChange={(e) => updateField("contactEmail", e.target.value)}
             error={errors.contactEmail}
-            placeholder="info@example.com"
           />
           <TextInput
             name="contactPhone"
@@ -755,7 +743,6 @@ export function EventSubmissionForm() {
             type="tel"
             value={formData.contactPhone}
             onChange={(e) => updateField("contactPhone", e.target.value)}
-            placeholder="(555) 555-0100"
           />
         </div>
       </FormSection>
@@ -767,7 +754,6 @@ export function EventSubmissionForm() {
             label="Entry Fee"
             value={formData.entryFee}
             onChange={(e) => updateField("entryFee", e.target.value)}
-            placeholder="e.g. $45 per event, $10 office fee, $75 for the open division."
             className="min-h-24"
           />
           <TextArea
@@ -775,7 +761,6 @@ export function EventSubmissionForm() {
             label="Prize or Payout Info"
             value={formData.prizePayoutInfo}
             onChange={(e) => updateField("prizePayoutInfo", e.target.value)}
-            placeholder="Added money, payout structure, jackpot details..."
             className="min-h-24"
           />
         </div>
@@ -792,7 +777,6 @@ export function EventSubmissionForm() {
           value={formData.submitterEmail}
           onChange={(e) => updateField("submitterEmail", e.target.value)}
           error={errors.submitterEmail}
-          placeholder="you@example.com"
         />
       </FormSection>
 
@@ -820,8 +804,9 @@ export function EventSubmissionForm() {
 
       <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
         <p className={`leading-6 ${themeMutedTextClassName}`}>
-          Upload your flyer first, then review the details below. Required fields are checked when
-          you submit. Producer name will always be displayed on your listing. No account is required.
+          A flyer upload is required. Review the details below and confirm venue name and street
+          address before submitting. Producer name will always be displayed on your listing. No
+          account is required.
         </p>
         {errors.submit && (
           <p className="mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">

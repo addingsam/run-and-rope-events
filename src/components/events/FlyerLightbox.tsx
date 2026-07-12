@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { EventCategorySummary } from "@/components/events/search/SearchBadges";
 import { formatFlyerAddress } from "@/lib/events/flyer-lightbox";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
-import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
-import {
-  getDisciplineLabelFromSlug,
-  getFormatLabel,
-} from "@/lib/events/submission-options";
+import { getFormatLabel } from "@/lib/events/submission-options";
 import {
   themeMutedTextClassName,
   themePanelClassName,
@@ -97,25 +94,17 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
           )}
 
           <div className="p-5 sm:p-6">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {event.format && (
                 <span className="rounded-full bg-[var(--color-accent-primary)]/20 px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
                   {getFormatLabel(event.format as SubmissionFormat)}
                 </span>
               )}
-              {event.disciplines.map((discipline) => (
-                <span
-                  key={discipline}
-                  className="rounded-full bg-[var(--color-accent-primary)]/20 px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]"
-                >
-                  {getDisciplineLabelFromSlug(discipline)}
-                </span>
-              ))}
-              {event.format === "rodeo" && event.rodeoLevel && (
-                <span className="rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text-muted)]">
-                  {formatRodeoLevelList(parseStoredRodeoLevels(event.rodeoLevel))}
-                </span>
-              )}
+              <EventCategorySummary
+                format={event.format}
+                rodeoLevel={event.rodeoLevel}
+                disciplines={event.disciplines}
+              />
             </div>
 
             <h2 className="mt-4 text-2xl font-bold text-[var(--color-text-primary)]">{event.title}</h2>

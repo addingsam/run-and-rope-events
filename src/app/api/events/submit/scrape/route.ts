@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseSubmissionFormData } from "@/lib/events/parse-submission";
 import { saveEventSubmission } from "@/lib/events/save-submission";
-import { sendSubmissionConfirmationEmails } from "@/lib/email/send-submission-confirmation";
 import { validateEventSubmission } from "@/lib/events/validate-submission";
 
 export const runtime = "nodejs";
@@ -9,9 +8,9 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const submission = parseSubmissionFormData(formData);
+    const submission = parseSubmissionFormData(formData, { source: "scrape" });
 
-    const validationErrors = validateEventSubmission(submission, submission.source);
+    const validationErrors = validateEventSubmission(submission, "scrape");
     if (Object.keys(validationErrors).length > 0) {
       const firstError = Object.values(validationErrors)[0];
       return NextResponse.json({ error: firstError, errors: validationErrors }, { status: 400 });
@@ -19,16 +18,13 @@ export async function POST(request: Request) {
 
     const savedEvent = await saveEventSubmission(submission);
 
-    const confirmationEmails = await sendSubmissionConfirmationEmails(submission);
-
     return NextResponse.json({
       success: true,
       eventId: savedEvent.id,
-      confirmationEmailSent: confirmationEmails.sent.length > 0,
-      confirmationEmails,
+      requiresAdminReview: true,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Event submission failed.";
+    const message = error instanceof Error ? error.message : "Scraped event submission failed.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -46,7 +46,6 @@ export function AdditionalOfferingsField({ values, onChange }: AdditionalOfferin
               name="additionalOfferings"
               value={value}
               onChange={(e) => updateRow(index, e.target.value)}
-              placeholder="Bull riding, mutton bustin', live concert..."
               className={themeInputClassName}
               aria-label={`Additional offering ${index + 1}`}
             />
