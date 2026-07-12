@@ -8,6 +8,12 @@ import type {
   SearchRodeoLevel,
 } from "@/types/event-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
+import {
+  eventMatchesRodeoLevels,
+  regularRodeoLevelsForMatching,
+  shouldIncludeProRodeos,
+  shouldIncludeRegularRodeoEvents,
+} from "@/lib/events/rodeo-levels";
 import { findNearbyEvents, findNearbyProRodeos } from "@/lib/supabase/nearby";
 import type { NearbyEventResult, NearbyProRodeoResult } from "@/lib/supabase/nearby";
 
@@ -15,29 +21,13 @@ const PUBLISHED_STATUSES = new Set(["approved", "published"]);
 
 export interface SearchEventsInput {
   format: SearchFormat;
-  rodeoLevel?: SearchRodeoLevel | "";
+  rodeoLevels?: SearchRodeoLevel[];
   disciplines?: SubmissionDiscipline[];
   lat: number;
   lng: number;
   radiusMiles: SearchRadiusMiles;
   startDate?: string;
   endDate?: string;
-}
-
-function shouldIncludeProRodeos(format: SearchFormat, rodeoLevel?: SearchRodeoLevel | "") {
-  if (format === "jackpot") {
-    return false;
-  }
-
-  if (rodeoLevel && rodeoLevel !== "pro") {
-    return false;
-  }
-
-  return true;
-}
-
-function shouldIncludeRegularEvents(rodeoLevel?: SearchRodeoLevel | "") {
-  return rodeoLevel !== "pro";
 }
 
 function isWithinDateRange(
@@ -108,10 +98,31 @@ function mapProRodeoResult(proRodeo: NearbyProRodeoResult): ProRodeoSearchResult
   };
 }
 
+function eventMatchesRodeoLevelFilter(
+  event: EventSearchResultItem,
+  format: SearchFormat,
+  rodeoLevels: SearchRodeoLevel[],
+) {
+  const eventFormat = event.format?.trim().toLowerCase();
+
+  if (eventFormat !== "rodeo") {
+    return format !== "rodeo";
+  }
+
+  if (rodeoLevels.length === 0) {
+    return true;
+  }
+
+  return eventMatchesRodeoLevels(
+    event.rodeoLevel,
+    regularRodeoLevelsForMatching(rodeoLevels),
+  );
+}
+
 export async function searchEvents(input: SearchEventsInput): Promise<EventSearchResponse> {
   const {
     format,
-    rodeoLevel = "",
+    rodeoLevels = [],
     disciplines = [],
     lat,
     lng,
@@ -121,13 +132,14 @@ export async function searchEvents(input: SearchEventsInput): Promise<EventSearc
   } = input;
 
   const eventFormatFilter = format === "either" ? null : format;
+  const matchingLevels = regularRodeoLevelsForMatching(rodeoLevels);
   const rodeoLevelFilter =
-    rodeoLevel && rodeoLevel !== "pro" ? rodeoLevel : null;
+    matchingLevels.length === 1 ? matchingLevels[0] : null;
   const disciplineFilter = disciplines.length > 0 ? disciplines : null;
 
   const entries: SearchResultEntry[] = [];
 
-  if (shouldIncludeRegularEvents(rodeoLevel)) {
+  if (shouldIncludeRegularRodeoEvents(rodeoLevels)) {
     const nearbyEvents = await findNearbyEvents({
       lat,
       lng,
@@ -146,14 +158,19 @@ export async function searchEvents(input: SearchEventsInput): Promise<EventSearc
         continue;
       }
 
+      const mapped = mapEventResult(event);
+      if (!eventMatchesRodeoLevelFilter(mapped, format, rodeoLevels)) {
+        continue;
+      }
+
       entries.push({
         kind: "event",
-        item: mapEventResult(event),
+        item: mapped,
       });
     }
   }
 
-  if (shouldIncludeProRodeos(format, rodeoLevel)) {
+  if (shouldIncludeProRodeos(format, rodeoLevels)) {
     const nearbyProRodeos = await findNearbyProRodeos({
       lat,
       lng,

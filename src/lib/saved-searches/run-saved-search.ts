@@ -26,11 +26,23 @@ import type {
 } from "@/types/event-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
 
+function normalizeSavedSearchParams(params: SavedSearchParams): SavedSearchParams {
+  const legacyRodeoLevel = (params as { rodeoLevel?: SearchRodeoLevel | "" }).rodeoLevel;
+  const rodeoLevels =
+    params.rodeoLevels ??
+    (legacyRodeoLevel ? [legacyRodeoLevel as SearchRodeoLevel] : []);
+
+  return {
+    ...params,
+    rodeoLevels,
+  };
+}
+
 export function createEmptySavedSearchParams(): SavedSearchParams {
   return {
     mode: "radius",
     format: "either",
-    rodeoLevel: "",
+    rodeoLevels: [],
     disciplines: [],
     locationLabel: "",
     lat: null,
@@ -71,8 +83,10 @@ export function savedUpcomingSearchParams(
 }
 
 function savedParamsToSearchCriteria(params: SavedSearchParams): SearchCriteriaFilter {
-  if (params.mode === "upcoming") {
-    const upcoming = upcomingFiltersFromSavedParams(params);
+  const normalized = normalizeSavedSearchParams(params);
+
+  if (normalized.mode === "upcoming") {
+    const upcoming = upcomingFiltersFromSavedParams(normalized);
     return {
       format:
         upcoming.formatFilter === "jackpot"
@@ -80,22 +94,23 @@ function savedParamsToSearchCriteria(params: SavedSearchParams): SearchCriteriaF
           : upcoming.formatFilter === "rodeo"
             ? "rodeo"
             : "either",
-      rodeoLevel: (upcoming.selectedRodeoLevels[0] as SearchRodeoLevel | undefined) ?? "",
+      rodeoLevels: upcoming.selectedRodeoLevels as SearchRodeoLevel[],
       disciplines: upcoming.selectedDisciplines,
       startDate: "",
       endDate: "",
     };
   }
 
-  return searchCriteriaFromFormState(params);
+  return searchCriteriaFromFormState(normalized);
 }
 
 async function runMapAreaSavedSearch(
   params: SavedSearchParams,
   mapOverlay?: SavedMapOverlay | null,
 ): Promise<EventSearchResponse> {
+  const normalized = normalizeSavedSearchParams(params);
   const events = await listUpcomingEvents();
-  const filtered = filterEventsBySearchCriteria(events, savedParamsToSearchCriteria(params));
+  const filtered = filterEventsBySearchCriteria(events, savedParamsToSearchCriteria(normalized));
   const overlayFiltered = filterEventItemsByMapOverlay(
     filtered,
     mapOverlay ?? { pinRadius: null, shapes: [] },
@@ -115,8 +130,9 @@ async function runUpcomingSavedSearch(
   params: SavedSearchParams,
   mapOverlay?: SavedMapOverlay | null,
 ): Promise<EventSearchResponse> {
+  const normalized = normalizeSavedSearchParams(params);
   const events = await listUpcomingEvents();
-  const filtered = filterUpcomingEvents(events, upcomingFiltersFromSavedParams(params));
+  const filtered = filterUpcomingEvents(events, upcomingFiltersFromSavedParams(normalized));
   const overlayFiltered = filterEventItemsByMapOverlay(
     filtered,
     mapOverlay ?? { pinRadius: null, shapes: [] },
@@ -136,56 +152,58 @@ export async function runSavedSearch(
   params: SavedSearchParams,
   mapOverlay?: SavedMapOverlay | null,
 ) {
-  if (params.mode === "upcoming") {
-    return runUpcomingSavedSearch(params, mapOverlay);
+  const normalized = normalizeSavedSearchParams(params);
+
+  if (normalized.mode === "upcoming") {
+    return runUpcomingSavedSearch(normalized, mapOverlay);
   }
 
-  if (params.mode === "map") {
-    return runMapAreaSavedSearch(params, mapOverlay);
+  if (normalized.mode === "map") {
+    return runMapAreaSavedSearch(normalized, mapOverlay);
   }
 
-  if (params.mode === "route") {
+  if (normalized.mode === "route") {
     if (
-      params.originLat === null ||
-      params.originLng === null ||
-      params.destinationLat === null ||
-      params.destinationLng === null
+      normalized.originLat === null ||
+      normalized.originLng === null ||
+      normalized.destinationLat === null ||
+      normalized.destinationLng === null
     ) {
       throw new Error("Saved route search is missing origin or destination coordinates.");
     }
 
     return searchAlongRoute({
-      origin: { lat: params.originLat, lng: params.originLng },
-      destination: { lat: params.destinationLat, lng: params.destinationLng },
-      bufferMiles: params.bufferMiles,
-      format: params.format,
-      rodeoLevel: params.rodeoLevel,
-      disciplines: params.disciplines,
-      startDate: params.startDate || undefined,
-      endDate: params.endDate || undefined,
+      origin: { lat: normalized.originLat, lng: normalized.originLng },
+      destination: { lat: normalized.destinationLat, lng: normalized.destinationLng },
+      bufferMiles: normalized.bufferMiles,
+      format: normalized.format,
+      rodeoLevels: normalized.rodeoLevels,
+      disciplines: normalized.disciplines,
+      startDate: normalized.startDate || undefined,
+      endDate: normalized.endDate || undefined,
     });
   }
 
-  if (params.lat === null || params.lng === null) {
+  if (normalized.lat === null || normalized.lng === null) {
     throw new Error("Saved radius search is missing location coordinates.");
   }
 
   return searchEvents({
-    format: params.format,
-    rodeoLevel: params.rodeoLevel,
-    disciplines: params.disciplines,
-    lat: params.lat,
-    lng: params.lng,
-    radiusMiles: params.radiusMiles,
-    startDate: params.startDate || undefined,
-    endDate: params.endDate || undefined,
+    format: normalized.format,
+    rodeoLevels: normalized.rodeoLevels,
+    disciplines: normalized.disciplines,
+    lat: normalized.lat,
+    lng: normalized.lng,
+    radiusMiles: normalized.radiusMiles,
+    startDate: normalized.startDate || undefined,
+    endDate: normalized.endDate || undefined,
   });
 }
 
 export function savedSearchParamsFromFormState(state: {
   mode: SearchMode;
   format: SearchFormat;
-  rodeoLevel: SearchRodeoLevel | "";
+  rodeoLevels: SearchRodeoLevel[];
   disciplines: SubmissionDiscipline[];
   locationLabel: string;
   lat: number | null;
@@ -230,7 +248,11 @@ export function consumePendingSavedSearch(): PendingSavedSearch | null {
   sessionStorage.removeItem(PENDING_SAVED_SEARCH_KEY);
 
   try {
-    return JSON.parse(raw) as PendingSavedSearch;
+    const parsed = JSON.parse(raw) as PendingSavedSearch;
+    return {
+      ...parsed,
+      params: normalizeSavedSearchParams(parsed.params),
+    };
   } catch {
     return null;
   }
@@ -277,48 +299,50 @@ export function upcomingFiltersFromQueryString(searchParams: URLSearchParams): U
 }
 
 export function savedSearchToQueryString(params: SavedSearchParams) {
-  if (params.mode === "upcoming") {
-    return savedUpcomingSearchToQueryString(params);
+  const normalized = normalizeSavedSearchParams(params);
+
+  if (normalized.mode === "upcoming") {
+    return savedUpcomingSearchToQueryString(normalized);
   }
 
   const search = new URLSearchParams();
-  if (params.mode === "map") {
+  if (normalized.mode === "map") {
     search.set("mode", "map");
-  } else if (params.mode === "route") {
+  } else if (normalized.mode === "route") {
     search.set("mode", "route");
     search.set(SEARCH_RUN_PARAM, "1");
   } else {
     search.set(SEARCH_RUN_PARAM, "1");
   }
-  if (params.format !== "either") {
-    search.set("format", params.format);
+  if (normalized.format !== "either") {
+    search.set("format", normalized.format);
   }
-  if (params.rodeoLevel) {
-    search.set("rodeoLevel", params.rodeoLevel);
+  if (normalized.rodeoLevels.length > 0) {
+    search.set("rodeoLevels", normalized.rodeoLevels.join(","));
   }
-  if (params.disciplines.length > 0) {
-    search.set("disciplines", params.disciplines.join(","));
+  if (normalized.disciplines.length > 0) {
+    search.set("disciplines", normalized.disciplines.join(","));
   }
-  if (params.mode === "route") {
-    if (params.originLabel) search.set("origin", params.originLabel);
-    if (params.originLat !== null) search.set("originLat", String(params.originLat));
-    if (params.originLng !== null) search.set("originLng", String(params.originLng));
-    if (params.destinationLabel) search.set("destination", params.destinationLabel);
-    if (params.destinationLat !== null) {
-      search.set("destinationLat", String(params.destinationLat));
+  if (normalized.mode === "route") {
+    if (normalized.originLabel) search.set("origin", normalized.originLabel);
+    if (normalized.originLat !== null) search.set("originLat", String(normalized.originLat));
+    if (normalized.originLng !== null) search.set("originLng", String(normalized.originLng));
+    if (normalized.destinationLabel) search.set("destination", normalized.destinationLabel);
+    if (normalized.destinationLat !== null) {
+      search.set("destinationLat", String(normalized.destinationLat));
     }
-    if (params.destinationLng !== null) {
-      search.set("destinationLng", String(params.destinationLng));
+    if (normalized.destinationLng !== null) {
+      search.set("destinationLng", String(normalized.destinationLng));
     }
-    search.set("buffer", String(params.bufferMiles));
+    search.set("buffer", String(normalized.bufferMiles));
   } else {
-    if (params.locationLabel) search.set("location", params.locationLabel);
-    if (params.lat !== null) search.set("lat", String(params.lat));
-    if (params.lng !== null) search.set("lng", String(params.lng));
-    search.set("radius", String(params.radiusMiles));
+    if (normalized.locationLabel) search.set("location", normalized.locationLabel);
+    if (normalized.lat !== null) search.set("lat", String(normalized.lat));
+    if (normalized.lng !== null) search.set("lng", String(normalized.lng));
+    search.set("radius", String(normalized.radiusMiles));
   }
-  if (params.startDate) search.set("startDate", params.startDate);
-  if (params.endDate) search.set("endDate", params.endDate);
+  if (normalized.startDate) search.set("startDate", normalized.startDate);
+  if (normalized.endDate) search.set("endDate", normalized.endDate);
   return search.toString();
 }
 

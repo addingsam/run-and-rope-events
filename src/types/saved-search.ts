@@ -13,7 +13,7 @@ export type SavedSearchMode = SearchMode | "upcoming";
 export interface SavedSearchParams {
   mode: SavedSearchMode;
   format: SearchFormat;
-  rodeoLevel: SearchRodeoLevel | "";
+  rodeoLevels: SearchRodeoLevel[];
   disciplines: SubmissionDiscipline[];
   locationLabel: string;
   lat: number | null;

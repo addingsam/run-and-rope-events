@@ -1,3 +1,4 @@
+import { parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import type { SubmissionDiscipline } from "@/types/event-submission";
 
 /** Neutral fallback when discipline or rodeo level is missing or unrecognized. */
@@ -97,7 +98,8 @@ export function getEventPinColor({
   disciplines: string[] | null | undefined;
 }): string {
   if (format === "rodeo" && rodeoLevel) {
-    return getRodeoLevelColor(rodeoLevel);
+    const [primaryLevel] = parseStoredRodeoLevels(rodeoLevel);
+    return getRodeoLevelColor(primaryLevel);
   }
 
   return getDisciplineColor(disciplines?.[0]);

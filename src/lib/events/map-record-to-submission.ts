@@ -1,4 +1,5 @@
 import { parseEventDescription } from "@/lib/events/flyer-lightbox";
+import { parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import type { EventRecord } from "@/types/event-record";
 import type {
   EventSubmission,
@@ -22,7 +23,7 @@ function extractUserDescription(description: string | null) {
         !part.startsWith("Entry deadline: ") &&
         !part.startsWith("End date: ") &&
         !part.startsWith("Format: ") &&
-        !part.startsWith("Rodeo level: ") &&
+        !part.startsWith("Rodeo level") &&
         !part.startsWith("Disciplines: "),
     )
     .join("\n\n");
@@ -34,7 +35,9 @@ export function mapEventRecordToSubmission(record: EventRecord): EventSubmission
   return {
     eventName: record.event_name,
     format: (record.event_format as SubmissionFormat) ?? "jackpot",
-    rodeoLevel: (record.rodeo_level as RodeoLevel) ?? "",
+    rodeoLevels: parseStoredRodeoLevels(record.rodeo_level).filter((level): level is RodeoLevel =>
+      level === "youth" || level === "open" || level === "amateur",
+    ),
     disciplines: (record.disciplines ?? []) as SubmissionDiscipline[],
     additionalOfferings: record.additional_offerings ?? [],
     startDate: record.event_date,

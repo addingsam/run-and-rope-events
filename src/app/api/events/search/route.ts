@@ -15,6 +15,7 @@ import type {
   SearchRodeoLevel,
 } from "@/types/event-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
+import { parseSearchRodeoLevels } from "@/lib/events/rodeo-levels";
 import { DISCIPLINE_OPTIONS } from "@/lib/events/submission-options";
 
 const VALID_FORMATS = new Set<SearchFormat>(["jackpot", "rodeo", "either"]);
@@ -87,7 +88,9 @@ export async function GET(request: Request) {
 
   const mode = (searchParams.get("mode") ?? "radius") as SearchMode;
   const format = (searchParams.get("format") ?? "either") as SearchFormat;
-  const rodeoLevel = (searchParams.get("rodeoLevel") ?? "") as SearchRodeoLevel | "";
+  const rodeoLevels = parseSearchRodeoLevels(
+    searchParams.get("rodeoLevels") ?? searchParams.get("rodeoLevel"),
+  );
   const disciplines = parseDisciplines(searchParams.get("disciplines"));
   const startDate = searchParams.get("startDate") ?? undefined;
   const endDate = searchParams.get("endDate") ?? undefined;
@@ -100,7 +103,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid format." }, { status: 400 });
   }
 
-  if (rodeoLevel && !VALID_RODEO_LEVELS.has(rodeoLevel)) {
+  if (rodeoLevels.some((level) => !VALID_RODEO_LEVELS.has(level))) {
     return NextResponse.json({ error: "Invalid rodeo level." }, { status: 400 });
   }
 
@@ -136,7 +139,7 @@ export async function GET(request: Request) {
         destination,
         bufferMiles: bufferParam as SearchBufferMiles,
         format,
-        rodeoLevel,
+        rodeoLevels,
         disciplines,
         startDate,
         endDate,
@@ -163,7 +166,7 @@ export async function GET(request: Request) {
 
     const response = await searchEvents({
       format,
-      rodeoLevel,
+      rodeoLevels,
       disciplines,
       lat: center.lat,
       lng: center.lng,

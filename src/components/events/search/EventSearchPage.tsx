@@ -16,6 +16,7 @@ import { SearchModeToggle } from "@/components/events/search/SearchModeToggle";
 import { SubscriberEventCard } from "@/components/events/search/SubscriberEventCard";
 import { UpcomingEventsGrid } from "@/components/events/search/UpcomingEventsGrid";
 import { getResultKey } from "@/lib/mapbox/search-map-utils";
+import { parseSearchRodeoLevels } from "@/lib/events/rodeo-levels";
 import {
   DEFAULT_SEARCH_BUFFER,
   DEFAULT_SEARCH_RADIUS,
@@ -68,7 +69,7 @@ interface EventSearchPageProps {
 interface SearchFormState {
   mode: SearchMode;
   format: SearchFormat;
-  rodeoLevel: SearchRodeoLevel | "";
+  rodeoLevels: SearchRodeoLevel[];
   disciplines: SubmissionDiscipline[];
   locationLabel: string;
   lat: number | null;
@@ -89,7 +90,7 @@ function createDefaultSearchFormState(): SearchFormState {
   return {
     mode: "map",
     format: "either",
-    rodeoLevel: "",
+    rodeoLevels: [],
     disciplines: [],
     locationLabel: "",
     lat: null,
@@ -161,8 +162,8 @@ function buildSearchParams(state: SearchFormState) {
     params.set("format", state.format);
   }
 
-  if (state.rodeoLevel) {
-    params.set("rodeoLevel", state.rodeoLevel);
+  if (state.rodeoLevels.length > 0) {
+    params.set("rodeoLevels", state.rodeoLevels.join(","));
   }
 
   if (state.disciplines.length > 0) {
@@ -217,7 +218,9 @@ function stateFromSearchParams(searchParams: URLSearchParams): SearchFormState {
   return {
     mode: parseMode(searchParams.get("mode")),
     format: (searchParams.get("format") as SearchFormat | null) ?? "either",
-    rodeoLevel: (searchParams.get("rodeoLevel") as SearchRodeoLevel | null) ?? "",
+    rodeoLevels: parseSearchRodeoLevels(
+      searchParams.get("rodeoLevels") ?? searchParams.get("rodeoLevel"),
+    ),
     disciplines: parseDisciplines(searchParams.get("disciplines")),
     locationLabel: searchParams.get("location") ?? "",
     lat: searchParams.get("lat") ? Number(searchParams.get("lat")) : null,
@@ -306,7 +309,7 @@ export function EventSearchPage({
   const resultRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const didInitializeFromUrl = useRef(false);
 
-  const rodeoLevelEnabled =
+  const showRodeoLevelFilter =
     formState.format === "rodeo" || formState.format === "either";
 
   const showJackpotStructureFilter =
@@ -450,7 +453,7 @@ export function EventSearchPage({
               : upcoming.formatFilter === "rodeo"
                 ? "rodeo"
                 : "either",
-          rodeoLevel: (upcoming.selectedRodeoLevels[0] as SearchRodeoLevel | undefined) ?? "",
+          rodeoLevels: upcoming.selectedRodeoLevels as SearchRodeoLevel[],
           disciplines: upcoming.selectedDisciplines,
         });
         if (pendingSavedSearch.mapOverlay) {
@@ -465,7 +468,7 @@ export function EventSearchPage({
           ...createDefaultSearchFormState(),
           mode: "map",
           format: pendingSavedSearch.params.format,
-          rodeoLevel: pendingSavedSearch.params.rodeoLevel,
+          rodeoLevels: pendingSavedSearch.params.rodeoLevels ?? [],
           disciplines: pendingSavedSearch.params.disciplines,
           startDate: pendingSavedSearch.params.startDate,
           endDate: pendingSavedSearch.params.endDate,
@@ -482,7 +485,7 @@ export function EventSearchPage({
         ...createDefaultSearchFormState(),
         mode: pendingSavedSearch.params.mode === "route" ? "route" : "radius",
         format: pendingSavedSearch.params.format,
-        rodeoLevel: pendingSavedSearch.params.rodeoLevel,
+        rodeoLevels: pendingSavedSearch.params.rodeoLevels ?? [],
         disciplines: pendingSavedSearch.params.disciplines,
         locationLabel: pendingSavedSearch.params.locationLabel,
         lat: pendingSavedSearch.params.lat,
@@ -519,7 +522,7 @@ export function EventSearchPage({
             : upcomingFromUrl.formatFilter === "rodeo"
               ? "rodeo"
               : "either",
-        rodeoLevel: (upcomingFromUrl.selectedRodeoLevels[0] as SearchRodeoLevel | undefined) ?? "",
+        rodeoLevels: upcomingFromUrl.selectedRodeoLevels as SearchRodeoLevel[],
         disciplines: upcomingFromUrl.selectedDisciplines,
       });
       router.replace(pathname, { scroll: false });
@@ -564,7 +567,7 @@ export function EventSearchPage({
       const next = { ...current, ...patch };
 
       if (patch.format === "jackpot") {
-        next.rodeoLevel = "";
+        next.rodeoLevels = [];
       }
 
       if (patch.format === "rodeo") {
@@ -787,20 +790,20 @@ export function EventSearchPage({
               options={SEARCH_FORMAT_OPTIONS}
             />
 
-            <SelectInput
-              label="Rodeo level"
-              name="rodeoLevel"
-              value={formState.rodeoLevel}
-              onChange={(event) =>
-                updateFormState({
-                  rodeoLevel: event.target.value as SearchRodeoLevel | "",
-                })
-              }
-              options={SEARCH_RODEO_LEVEL_OPTIONS}
-              placeholder="Any level"
-              disabled={!rodeoLevelEnabled}
-              className={!rodeoLevelEnabled ? "opacity-50" : ""}
-            />
+            {showRodeoLevelFilter && (
+              <div className="lg:col-span-2">
+                <CheckboxGroup
+                  label="Rodeo level"
+                  hint="Leave unchecked to include all rodeo levels. Select multiple to see events matching any chosen level."
+                  options={SEARCH_RODEO_LEVEL_OPTIONS}
+                  values={formState.rodeoLevels}
+                  onChange={(levels) =>
+                    updateFormState({ rodeoLevels: levels as SearchRodeoLevel[] })
+                  }
+                  id="rodeoLevels"
+                />
+              </div>
+            )}
 
             {showJackpotStructureFilter && (
               <div className="lg:col-span-2">

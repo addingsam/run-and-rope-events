@@ -3,6 +3,7 @@ import {
   getFormatLabel,
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
+import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
 import { geocodeCityState } from "@/lib/geocoding/geocode-city-state";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { EventRecordInsert } from "@/types/event-record";
@@ -18,8 +19,8 @@ function buildDescription(submission: EventSubmission) {
       `Entry deadline: ${submission.entryDeadline.trim()}`,
     `Format: ${getFormatLabel(submission.format)}`,
     submission.format === "rodeo" &&
-      submission.rodeoLevel &&
-      `Rodeo level: ${getRodeoLevelLabel(submission.rodeoLevel)}`,
+      submission.rodeoLevels.length > 0 &&
+      `Rodeo level${submission.rodeoLevels.length === 1 ? "" : "s"}: ${submission.rodeoLevels.map(getRodeoLevelLabel).join(", ")}`,
     submission.disciplines.length > 0 &&
       `Disciplines: ${formatDisciplineLabels(submission.disciplines)}`,
   ].filter(Boolean);
@@ -47,7 +48,10 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
     event_name: submission.eventName.trim(),
     event_type: submission.disciplines.join(","),
     event_format: submission.format,
-    rodeo_level: submission.format === "rodeo" ? submission.rodeoLevel : null,
+    rodeo_level:
+      submission.format === "rodeo"
+        ? serializeRodeoLevels(submission.rodeoLevels)
+        : null,
     disciplines: submission.disciplines,
     additional_offerings:
       submission.format === "rodeo"

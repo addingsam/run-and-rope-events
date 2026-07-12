@@ -1,3 +1,4 @@
+import { eventMatchesRodeoLevels } from "@/lib/events/rodeo-levels";
 import type { EventSearchResultItem } from "@/types/event-search";
 import type { RodeoLevel, SubmissionDiscipline } from "@/types/event-submission";
 
@@ -42,13 +43,11 @@ function eventMatchesDisciplines(
   );
 }
 
-function eventMatchesRodeoLevels(event: EventSearchResultItem, selectedRodeoLevels: string[]) {
-  if (selectedRodeoLevels.length === 0) {
-    return true;
-  }
-
-  const level = event.rodeoLevel?.trim().toLowerCase();
-  return Boolean(level && selectedRodeoLevels.includes(level));
+function eventMatchesRodeoLevelsFilter(
+  event: EventSearchResultItem,
+  selectedRodeoLevels: string[],
+) {
+  return eventMatchesRodeoLevels(event.rodeoLevel, selectedRodeoLevels);
 }
 
 export function hasActiveUpcomingFilters({
@@ -85,7 +84,7 @@ export function filterUpcomingEvents(
         return false;
       }
 
-      return eventMatchesRodeoLevels(event, selectedRodeoLevels);
+      return eventMatchesRodeoLevelsFilter(event, selectedRodeoLevels);
     }
 
     if (format === "jackpot") {
@@ -93,7 +92,7 @@ export function filterUpcomingEvents(
     }
 
     if (format === "rodeo") {
-      return eventMatchesRodeoLevels(event, selectedRodeoLevels);
+      return eventMatchesRodeoLevelsFilter(event, selectedRodeoLevels);
     }
 
     return false;

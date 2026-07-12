@@ -1,5 +1,5 @@
 import { DisciplineBadges } from "@/components/events/DisciplineBadges";
-import { RodeoLevelColorBadge } from "@/components/events/EventTypeBadge";
+import { RodeoLevelsBadges } from "@/components/events/EventTypeBadge";
 import { formatFlyerAddress } from "@/lib/events/flyer-lightbox";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
 import { getFormatLabel } from "@/lib/events/submission-options";
@@ -51,7 +51,7 @@ export function EventDetailGrid({ event }: EventDetailGridProps) {
 
         <GridField label="Rodeo level">
           {event.format === "rodeo" && event.rodeoLevel ? (
-            <RodeoLevelColorBadge level={event.rodeoLevel} />
+            <RodeoLevelsBadges levelValue={event.rodeoLevel} />
           ) : (
             <EmptyValue />
           )}

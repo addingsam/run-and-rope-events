@@ -67,9 +67,11 @@ export function formatSavedSearchCriteriaLines(
     if (formatLabel && params.format !== "either") {
       lines.push(`Format: ${formatLabel}`);
     }
-    const levelLabel = labelFor(SEARCH_RODEO_LEVEL_OPTIONS, params.rodeoLevel);
-    if (levelLabel) {
-      lines.push(`Rodeo level: ${levelLabel}`);
+    const levelLabels = (params.rodeoLevels ?? []).map(
+      (level) => labelFor(SEARCH_RODEO_LEVEL_OPTIONS, level) ?? level,
+    );
+    if (levelLabels.length > 0) {
+      lines.push(`Rodeo levels: ${levelLabels.join(", ")}`);
     }
     if (params.disciplines.length > 0) {
       lines.push(

@@ -66,7 +66,10 @@ export async function POST(request: Request) {
     }
 
     if (message.startsWith("Missing ANTHROPIC_API_KEY")) {
-      return jsonError(message, 500);
+      return jsonError(
+        "Flyer auto-fill is not configured. Add ANTHROPIC_API_KEY to your environment, or complete the form manually.",
+        503,
+      );
     }
 
     return jsonError(message, 400);

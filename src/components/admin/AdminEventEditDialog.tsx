@@ -131,7 +131,7 @@ export function AdminEventEditDialog({
                   const format = changeEvent.target.value as SubmissionFormat;
                   updateField("format", format);
                   if (format !== "rodeo") {
-                    updateField("rodeoLevel", "");
+                    updateField("rodeoLevels", []);
                     updateField("additionalOfferings", []);
                   }
                 }}
@@ -139,15 +139,14 @@ export function AdminEventEditDialog({
                 className={adminInputClass}
               />
               {formData.format === "rodeo" && (
-                <SelectInput
-                  label="Rodeo level"
-                  name="rodeoLevel"
-                  value={formData.rodeoLevel}
-                  onChange={(changeEvent) =>
-                    updateField("rodeoLevel", changeEvent.target.value as RodeoLevel)
-                  }
+                <CheckboxGroup
+                  label="Rodeo level(s)"
                   options={RODEO_LEVEL_OPTIONS}
-                  className={adminInputClass}
+                  values={formData.rodeoLevels}
+                  onChange={(values) =>
+                    updateField("rodeoLevels", values as RodeoLevel[])
+                  }
+                  id="rodeoLevels"
                 />
               )}
               <TextInput

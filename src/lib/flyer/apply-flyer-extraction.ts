@@ -112,18 +112,22 @@ export function applyFlyerExtractionToSubmission(
   const discipline = extracted.discipline
     ? DISCIPLINE_LABEL_TO_VALUE[extracted.discipline]
     : null;
-  const rodeoLevel = extracted.rodeoLevel
-    ? RODEO_LEVEL_LABEL_TO_VALUE[extracted.rodeoLevel] ?? ""
-    : format === "rodeo"
-      ? current.rodeoLevel
-      : "";
+  const extractedLevel = extracted.rodeoLevel
+    ? RODEO_LEVEL_LABEL_TO_VALUE[extracted.rodeoLevel] ?? null
+    : null;
+  const rodeoLevels =
+    format === "rodeo"
+      ? extractedLevel
+        ? [extractedLevel]
+        : current.rodeoLevels
+      : [];
   const zipFromAddress = parseZipFromAddress(extracted.address);
 
   return {
     ...current,
     eventName: extracted.eventName ?? current.eventName,
     format,
-    rodeoLevel: format === "rodeo" ? rodeoLevel : "",
+    rodeoLevels,
     disciplines: discipline ? [discipline] : current.disciplines,
     additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
     startDate: normalizeStartDate(extracted.date) || current.startDate,

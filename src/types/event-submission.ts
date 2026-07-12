@@ -16,7 +16,7 @@ export type SubmissionDiscipline =
 export interface EventSubmission {
   eventName: string;
   format: SubmissionFormat;
-  rodeoLevel: RodeoLevel | "";
+  rodeoLevels: RodeoLevel[];
   disciplines: SubmissionDiscipline[];
   additionalOfferings: string[];
   startDate: string;
@@ -42,7 +42,7 @@ export interface EventSubmission {
 export const EMPTY_EVENT_SUBMISSION: EventSubmission = {
   eventName: "",
   format: "jackpot",
-  rodeoLevel: "",
+  rodeoLevels: [],
   disciplines: [],
   additionalOfferings: [],
   startDate: "",

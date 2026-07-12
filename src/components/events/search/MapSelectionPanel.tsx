@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { formatEventDateRange } from "@/lib/events/format-date";
+import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import {
   getDisciplineLabelFromSlug,
   getFormatLabel,
-  getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
 import type { SearchResultEntry } from "@/types/event-search";
-import type { RodeoLevel, SubmissionFormat } from "@/types/event-submission";
+import type { SubmissionFormat } from "@/types/event-submission";
 import type { MapSelection } from "@/lib/mapbox/search-map-utils";
 import { getStateLabel } from "@/lib/mapbox/state-centroids";
 
@@ -143,7 +143,7 @@ export function MapSelectionPanel({
         {event.format === "rodeo" && event.rodeoLevel && (
           <div>
             <dt className="sr-only">Level</dt>
-            <dd>{getRodeoLevelLabel(event.rodeoLevel as RodeoLevel)}</dd>
+            <dd>{formatRodeoLevelList(parseStoredRodeoLevels(event.rodeoLevel))}</dd>
           </div>
         )}
         <div>

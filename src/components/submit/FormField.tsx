@@ -132,6 +132,7 @@ interface CheckboxGroupProps {
   hint?: string;
   required?: boolean;
   error?: string;
+  id?: string;
   options: readonly { value: string; label: string }[];
   values: string[];
   onChange: (values: string[]) => void;
@@ -142,6 +143,7 @@ export function CheckboxGroup({
   hint,
   required,
   error,
+  id = "disciplines",
   options,
   values,
   onChange,
@@ -156,8 +158,8 @@ export function CheckboxGroup({
   }
 
   return (
-    <div>
-      <FieldLabel htmlFor="disciplines" label={label} required={required} hint={hint} />
+    <div id={id}>
+      <FieldLabel htmlFor={id} label={label} required={required} hint={hint} />
       <div className="space-y-3 rounded-xl border border-amber-200 bg-[#fffaf3] p-4">
         {options.map((option) => {
           const checked = values.includes(option.value);

@@ -3,13 +3,13 @@
 import { useEffect } from "react";
 import { formatFlyerAddress } from "@/lib/events/flyer-lightbox";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
+import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import {
   getDisciplineLabelFromSlug,
   getFormatLabel,
-  getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
 import type { FlyerLightboxEvent } from "@/types/flyer-lightbox";
-import type { RodeoLevel, SubmissionFormat } from "@/types/event-submission";
+import type { SubmissionFormat } from "@/types/event-submission";
 
 interface FlyerLightboxProps {
   event: FlyerLightboxEvent;
@@ -107,7 +107,7 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
               ))}
               {event.format === "rodeo" && event.rodeoLevel && (
                 <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-800">
-                  {getRodeoLevelLabel(event.rodeoLevel as RodeoLevel)}
+                  {formatRodeoLevelList(parseStoredRodeoLevels(event.rodeoLevel))}
                 </span>
               )}
             </div>

@@ -13,7 +13,7 @@ export type SearchMode = "map" | "radius" | "route";
 
 export interface EventSearchFilters {
   format: SearchFormat;
-  rodeoLevel: SearchRodeoLevel | "";
+  rodeoLevels: SearchRodeoLevel[];
   disciplines: SubmissionDiscipline[];
   locationLabel: string;
   lat: number | null;

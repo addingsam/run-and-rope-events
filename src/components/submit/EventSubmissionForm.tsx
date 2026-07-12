@@ -33,10 +33,61 @@ import {
 
 type FormErrors = Partial<
   Record<
-    keyof EventSubmission | "flyer" | "disciplines" | "featurePlacement" | "flyerExtraction",
+    | keyof EventSubmission
+    | "flyer"
+    | "disciplines"
+    | "featurePlacement"
+    | "flyerExtraction"
+    | "submit",
     string
   >
 >;
+
+const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
+  "flyer",
+  "flyerExtraction",
+  "eventName",
+  "format",
+  "rodeoLevels",
+  "disciplines",
+  "startDate",
+  "endDate",
+  "entryDeadline",
+  "venueName",
+  "streetAddress",
+  "city",
+  "state",
+  "zipCode",
+  "producerName",
+  "contactEmail",
+  "submitterEmail",
+  "producerWebsite",
+  "featurePlacement",
+];
+
+function scrollToFirstFormError(errors: FormErrors) {
+  const firstKey = ERROR_FIELD_ORDER.find((key) => errors[key]);
+  if (!firstKey) {
+    return;
+  }
+
+  const fieldId =
+    firstKey === "disciplines"
+      ? "disciplines"
+      : firstKey === "featurePlacement"
+        ? "featurePlacement"
+        : firstKey;
+
+  const element =
+    document.getElementById(fieldId) ??
+    document.querySelector<HTMLElement>(`[name="${fieldId}"]`);
+
+  element?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
+    element.focus({ preventScroll: true });
+  }
+}
 
 function validateForm(
   data: EventSubmission,
@@ -46,8 +97,8 @@ function validateForm(
 
   if (!data.eventName.trim()) errors.eventName = "Event name is required.";
   if (!data.format) errors.format = "Format is required.";
-  if (data.format === "rodeo" && !data.rodeoLevel) {
-    errors.rodeoLevel = "Rodeo level is required for rodeo events.";
+  if (data.format === "rodeo" && data.rodeoLevels.length === 0) {
+    errors.rodeoLevels = "Select at least one rodeo level.";
   }
   if (data.disciplines.length === 0) {
     errors.disciplines = "Select at least one discipline.";
@@ -116,14 +167,14 @@ export function EventSubmissionForm() {
     setFormData((current) => ({
       ...current,
       format,
-      rodeoLevel: format === "rodeo" ? current.rodeoLevel : "",
+      rodeoLevels: format === "rodeo" ? current.rodeoLevels : [],
       additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
     }));
     setErrors((current) => {
       const next = { ...current };
       delete next.format;
       if (format !== "rodeo") {
-        delete next.rodeoLevel;
+        delete next.rodeoLevels;
       }
       return next;
     });
@@ -138,11 +189,21 @@ export function EventSubmissionForm() {
     });
   }
 
+  function handleRodeoLevelsChange(levels: RodeoLevel[]) {
+    updateField("rodeoLevels", levels);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.rodeoLevels;
+      return next;
+    });
+  }
+
   function updateField<K extends keyof EventSubmission>(field: K, value: EventSubmission[K]) {
     setFormData((current) => ({ ...current, [field]: value }));
     setErrors((current) => {
       const next = { ...current };
       delete next[field];
+      delete next.submit;
       return next;
     });
   }
@@ -288,7 +349,12 @@ export function EventSubmissionForm() {
 
     const validationErrors = validateForm(formData, featurePlacement);
     if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+      const errorCount = Object.keys(validationErrors).length;
+      setErrors({
+        ...validationErrors,
+        submit: `Please fix ${errorCount} required field${errorCount === 1 ? "" : "s"} highlighted above.`,
+      });
+      requestAnimationFrame(() => scrollToFirstFormError(validationErrors));
       return;
     }
 
@@ -359,7 +425,7 @@ export function EventSubmissionForm() {
       setErrors({});
     } catch (submitError) {
       setErrors({
-        eventName:
+        submit:
           submitError instanceof Error
             ? submitError.message
             : "Something went wrong. Please try again.",
@@ -507,14 +573,14 @@ export function EventSubmissionForm() {
           error={errors.format}
         />
         {formData.format === "rodeo" && (
-          <SelectInput
-            name="rodeoLevel"
-            label="Rodeo Level"
-            value={formData.rodeoLevel}
-            onChange={(e) => updateField("rodeoLevel", e.target.value as RodeoLevel)}
+          <CheckboxGroup
+            label="Rodeo level(s)"
+            hint="Select all levels that apply to this rodeo."
             options={RODEO_LEVEL_OPTIONS}
-            placeholder="Select rodeo level"
-            error={errors.rodeoLevel}
+            values={formData.rodeoLevels}
+            onChange={(values) => handleRodeoLevelsChange(values as RodeoLevel[])}
+            error={errors.rodeoLevels}
+            id="rodeoLevels"
           />
         )}
         <CheckboxGroup
@@ -528,6 +594,7 @@ export function EventSubmissionForm() {
           values={formData.disciplines}
           onChange={(values) => handleDisciplinesChange(values as SubmissionDiscipline[])}
           error={errors.disciplines}
+          id="disciplines"
         />
         {formData.format === "rodeo" && (
           <AdditionalOfferingsField
@@ -630,6 +697,7 @@ export function EventSubmissionForm() {
               value={formData.zipCode}
               onChange={(e) => updateField("zipCode", e.target.value)}
               error={errors.zipCode}
+              hint="Required — add if your flyer didn't include it."
               placeholder="76401"
             />
           </div>
@@ -720,18 +788,21 @@ export function EventSubmissionForm() {
         title="Homepage Featuring"
         description="Optional paid promotion on the main page."
       >
-        <FeaturedPlacementField
-          value={featurePlacement}
-          onChange={(value) => {
-            setFeaturePlacement(value);
-            setErrors((current) => {
-              const next = { ...current };
-              delete next.featurePlacement;
-              return next;
-            });
-          }}
-          error={errors.featurePlacement}
-        />
+        <div id="featurePlacement">
+          <FeaturedPlacementField
+            value={featurePlacement}
+            onChange={(value) => {
+              setFeaturePlacement(value);
+              setErrors((current) => {
+                const next = { ...current };
+                delete next.featurePlacement;
+                delete next.submit;
+                return next;
+              });
+            }}
+            error={errors.featurePlacement}
+          />
+        </div>
       </FormSection>
 
       <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 px-4 py-5 sm:px-6">
@@ -739,6 +810,11 @@ export function EventSubmissionForm() {
           Upload your flyer first, then review the details below. Required fields are checked when
           you submit. Producer name will always be displayed on your listing. No account is required.
         </p>
+        {errors.submit && (
+          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {errors.submit}
+          </p>
+        )}
         <button
           type="submit"
           disabled={isSubmitting || isUploadingFlyer || isExtractingFlyer}

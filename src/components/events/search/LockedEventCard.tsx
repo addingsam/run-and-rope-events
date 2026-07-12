@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RodeoLevelColorBadge } from "@/components/events/EventTypeBadge";
+import { RodeoLevelsBadges } from "@/components/events/EventTypeBadge";
 import { DisciplineSummary } from "@/components/events/search/SearchBadges";
 import { formatEventDate } from "@/lib/events/format-date";
 import { getFormatLabel } from "@/lib/events/submission-options";
@@ -53,7 +53,7 @@ export function LockedEventCard({ event }: LockedEventCardProps) {
               <div>
                 <dt className="sr-only">Rodeo level</dt>
                 <dd>
-                  <RodeoLevelColorBadge level={event.rodeoLevel} />
+                  <RodeoLevelsBadges levelValue={event.rodeoLevel} />
                 </dd>
               </div>
             )}

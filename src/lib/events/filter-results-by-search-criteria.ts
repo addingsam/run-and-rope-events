@@ -6,10 +6,16 @@ import type {
   SearchRodeoLevel,
 } from "@/types/event-search";
 import type { SubmissionDiscipline } from "@/types/event-submission";
+import {
+  eventMatchesRodeoLevels,
+  regularRodeoLevelsForMatching,
+  shouldIncludeProRodeos,
+  shouldIncludeRegularRodeoEvents,
+} from "@/lib/events/rodeo-levels";
 
 export interface SearchCriteriaFilter {
   format: SearchFormat;
-  rodeoLevel: SearchRodeoLevel | "";
+  rodeoLevels: SearchRodeoLevel[];
   disciplines: SubmissionDiscipline[];
   startDate: string;
   endDate: string;
@@ -46,32 +52,16 @@ function isProRodeoWithinDateRange(
   return true;
 }
 
-function shouldIncludeProRodeos(format: SearchFormat, rodeoLevel?: SearchRodeoLevel | "") {
-  if (format === "jackpot") {
-    return false;
-  }
-
-  if (rodeoLevel && rodeoLevel !== "pro") {
-    return false;
-  }
-
-  return true;
-}
-
-function shouldIncludeRegularEvents(rodeoLevel?: SearchRodeoLevel | "") {
-  return rodeoLevel !== "pro";
-}
-
 export function hasActiveSearchCriteria({
   format,
-  rodeoLevel,
+  rodeoLevels,
   disciplines,
   startDate,
   endDate,
 }: SearchCriteriaFilter) {
   return (
     format !== "either" ||
-    Boolean(rodeoLevel) ||
+    rodeoLevels.length > 0 ||
     disciplines.length > 0 ||
     Boolean(startDate) ||
     Boolean(endDate)
@@ -80,14 +70,14 @@ export function hasActiveSearchCriteria({
 
 export function searchCriteriaFromFormState(state: {
   format: SearchFormat;
-  rodeoLevel: SearchRodeoLevel | "";
+  rodeoLevels: SearchRodeoLevel[];
   disciplines: SubmissionDiscipline[];
   startDate: string;
   endDate: string;
 }): SearchCriteriaFilter {
   return {
     format: state.format,
-    rodeoLevel: state.rodeoLevel,
+    rodeoLevels: state.rodeoLevels,
     disciplines: state.disciplines,
     startDate: state.startDate,
     endDate: state.endDate,
@@ -98,7 +88,7 @@ export function eventMatchesSearchCriteria(
   event: EventSearchResultItem,
   criteria: SearchCriteriaFilter,
 ) {
-  if (!shouldIncludeRegularEvents(criteria.rodeoLevel)) {
+  if (!shouldIncludeRegularRodeoEvents(criteria.rodeoLevels)) {
     return false;
   }
 
@@ -112,9 +102,9 @@ export function eventMatchesSearchCriteria(
     return false;
   }
 
-  if (criteria.rodeoLevel) {
-    const level = event.rodeoLevel?.trim().toLowerCase();
-    if (level !== criteria.rodeoLevel) {
+  if (format === "rodeo" && criteria.rodeoLevels.length > 0) {
+    const matchingLevels = regularRodeoLevelsForMatching(criteria.rodeoLevels);
+    if (!eventMatchesRodeoLevels(event.rodeoLevel, matchingLevels)) {
       return false;
     }
   }
@@ -136,7 +126,7 @@ export function proRodeoMatchesSearchCriteria(
   proRodeo: ProRodeoSearchResultItem,
   criteria: SearchCriteriaFilter,
 ) {
-  if (!shouldIncludeProRodeos(criteria.format, criteria.rodeoLevel)) {
+  if (!shouldIncludeProRodeos(criteria.format, criteria.rodeoLevels)) {
     return false;
   }
 

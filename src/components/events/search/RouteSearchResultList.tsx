@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
-import { getFormatLabel, getRodeoLevelLabel } from "@/lib/events/submission-options";
+import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
+import { getFormatLabel } from "@/lib/events/submission-options";
 import type { EventSearchResultItem, ProRodeoSearchResultItem } from "@/types/event-search";
-import type { RodeoLevel, SubmissionFormat } from "@/types/event-submission";
+import type { SubmissionFormat } from "@/types/event-submission";
 import { DisciplineSummary } from "@/components/events/search/SearchBadges";
 import { EventTypeBadge } from "@/components/events/EventTypeBadge";
 import { EventBookmarkButton } from "@/components/saved/EventBookmarkButton";
@@ -87,7 +88,7 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
               {event.format === "rodeo" && event.rodeoLevel && (
                 <div>
                   <dt className="sr-only">Rodeo level</dt>
-                  <dd>{getRodeoLevelLabel(event.rodeoLevel as RodeoLevel)}</dd>
+                  <dd>{formatRodeoLevelList(parseStoredRodeoLevels(event.rodeoLevel))}</dd>
                 </div>
               )}
             </div>

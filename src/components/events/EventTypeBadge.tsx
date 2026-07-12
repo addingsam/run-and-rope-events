@@ -8,6 +8,10 @@ import {
   getDisciplineLabelFromSlug,
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
+import {
+  formatRodeoLevelList,
+  parseStoredRodeoLevels,
+} from "@/lib/events/rodeo-levels";
 import type { RodeoLevel } from "@/types/event-submission";
 
 interface EventTypeBadgeProps {
@@ -23,15 +27,10 @@ function getBadgeLabel({
   disciplines = [],
 }: EventTypeBadgeProps): string {
   if (format === "rodeo" && rodeoLevel) {
-    if (rodeoLevel === "youth" || rodeoLevel === "open" || rodeoLevel === "amateur") {
-      return getRodeoLevelLabel(rodeoLevel as RodeoLevel);
+    const levels = parseStoredRodeoLevels(rodeoLevel);
+    if (levels.length > 0) {
+      return formatRodeoLevelList(levels);
     }
-
-    if (rodeoLevel === "pro") {
-      return "Pro Rodeo";
-    }
-
-    return rodeoLevel.replaceAll("_", " ");
   }
 
   const primaryDiscipline = disciplines[0];
@@ -83,6 +82,28 @@ export function DisciplineColorBadge({ discipline, className = "" }: DisciplineC
       }}
     >
       {getDisciplineLabelFromSlug(discipline)}
+    </span>
+  );
+}
+
+export function RodeoLevelsBadges({
+  levelValue,
+  className = "",
+}: {
+  levelValue: string | null | undefined;
+  className?: string;
+}) {
+  const levels = parseStoredRodeoLevels(levelValue);
+
+  if (levels.length === 0) {
+    return null;
+  }
+
+  return (
+    <span className={`inline-flex flex-wrap gap-2 ${className}`}>
+      {levels.map((level) => (
+        <RodeoLevelColorBadge key={level} level={level} />
+      ))}
     </span>
   );
 }

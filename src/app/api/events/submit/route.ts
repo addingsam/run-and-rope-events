@@ -22,7 +22,10 @@ function parseSubmission(formData: FormData): EventSubmission {
   return {
     eventName: getString(formData.get("eventName")),
     format: getString(formData.get("format")) as SubmissionFormat,
-    rodeoLevel: getString(formData.get("rodeoLevel")) as RodeoLevel | "",
+    rodeoLevels: formData
+      .getAll("rodeoLevels")
+      .map((value) => getString(value))
+      .filter(Boolean) as RodeoLevel[],
     disciplines: formData
       .getAll("disciplines")
       .map((value) => getString(value))
