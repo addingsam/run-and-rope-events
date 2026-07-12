@@ -65,13 +65,13 @@ export default async function Home() {
             </Link>
             <Link
               href="/subscribe"
-              className="rounded-full border border-amber-300 bg-white px-6 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-50"
+              className="rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
             >
               View subscription plans
             </Link>
             <Link
               href="/submit"
-              className="rounded-full border border-amber-300 bg-white px-6 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-50"
+              className="rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
             >
               List your event
             </Link>

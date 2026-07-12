@@ -1,7 +1,12 @@
 import { forwardRef } from "react";
-
-const inputClassName =
-  "w-full rounded-xl border border-amber-200 bg-[#fffaf3] px-4 py-3 text-base text-amber-950 placeholder:text-amber-900/40 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20";
+import {
+  themeCheckboxGroupClassName,
+  themeCheckboxInputClassName,
+  themeCheckboxRowClassName,
+  themeHintClassName,
+  themeInputClassName,
+  themeLabelClassName,
+} from "@/lib/theme/form-classes";
 
 interface FieldLabelProps {
   htmlFor: string;
@@ -14,14 +19,16 @@ interface FieldLabelProps {
 export function FieldLabel({ htmlFor, label, required, hint, encouraged }: FieldLabelProps) {
   return (
     <div className="mb-2">
-      <label htmlFor={htmlFor} className="block text-sm font-semibold text-amber-950">
+      <label htmlFor={htmlFor} className={themeLabelClassName}>
         {label}
-        {required && <span className="ml-1 text-amber-700">*</span>}
+        {required && <span className="ml-1 text-[var(--color-accent-cta)]">*</span>}
         {encouraged && (
-          <span className="ml-2 text-xs font-medium text-amber-700">(strongly encouraged)</span>
+          <span className="ml-2 text-xs font-medium text-[var(--color-accent-primary)]">
+            (strongly encouraged)
+          </span>
         )}
       </label>
-      {hint && <p className="mt-1 text-xs leading-5 text-amber-900/60">{hint}</p>}
+      {hint && <p className={themeHintClassName}>{hint}</p>}
     </div>
   );
 }
@@ -52,10 +59,10 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
         ref={ref}
         id={fieldId}
         required={required}
-        className={`${inputClassName} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
+        className={`${themeInputClassName} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
         {...props}
       />
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
     </div>
   );
 });
@@ -81,7 +88,7 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(funct
         ref={ref}
         id={fieldId}
         required={required}
-        className={`${inputClassName} appearance-none bg-[#fffaf3] ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
+        className={`${themeInputClassName} appearance-none ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
         {...props}
       >
         {placeholder && (
@@ -95,7 +102,7 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(funct
           </option>
         ))}
       </select>
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
     </div>
   );
 });
@@ -119,10 +126,10 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function 
         ref={ref}
         id={fieldId}
         required={required}
-        className={`${inputClassName} min-h-32 resize-y ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
+        className={`${themeInputClassName} min-h-32 resize-y ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
         {...props}
       />
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
     </div>
   );
 });
@@ -160,29 +167,28 @@ export function CheckboxGroup({
   return (
     <div id={id}>
       <FieldLabel htmlFor={id} label={label} required={required} hint={hint} />
-      <div className="space-y-3 rounded-xl border border-amber-200 bg-[#fffaf3] p-4">
+      <div className={themeCheckboxGroupClassName}>
         {options.map((option) => {
           const checked = values.includes(option.value);
 
           return (
-            <label
-              key={option.value}
-              className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-amber-50"
-            >
+            <label key={option.value} className={themeCheckboxRowClassName}>
               <input
                 type="checkbox"
                 name="disciplines"
                 value={option.value}
                 checked={checked}
                 onChange={() => toggleValue(option.value)}
-                className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-700 focus:ring-amber-500/30"
+                className={themeCheckboxInputClassName}
               />
-              <span className="text-sm leading-6 text-amber-950">{option.label}</span>
+              <span className="text-sm leading-6 text-[var(--color-text-primary)]">
+                {option.label}
+              </span>
             </label>
           );
         })}
       </div>
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
     </div>
   );
 }

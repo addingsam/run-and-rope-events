@@ -7,6 +7,12 @@ import {
   getDisciplineLabelFromSlug,
   getFormatLabel,
 } from "@/lib/events/submission-options";
+import {
+  themeMutedTextClassName,
+  themePanelClassName,
+  themePrimaryButtonClassName,
+  themeSecondaryButtonClassName,
+} from "@/lib/theme/form-classes";
 import type { SearchResultEntry } from "@/types/event-search";
 import type { SubmissionFormat } from "@/types/event-submission";
 import type { MapSelection } from "@/lib/mapbox/search-map-utils";
@@ -51,24 +57,23 @@ export function MapSelectionPanel({
 
   if (selection.type === "state_cluster") {
     return (
-      <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl border border-amber-200 bg-white p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm">
+      <div
+        className={`absolute bottom-3 left-3 right-3 z-10 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm ${themePanelClassName}`}
+      >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 text-sm text-amber-700 hover:text-amber-950"
+          className="absolute right-3 top-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
         >
           ✕
         </button>
-        <h3 className="pr-8 text-lg font-semibold text-amber-950">
+        <h3 className="pr-8 text-lg font-semibold text-[var(--color-text-primary)]">
           {getStateLabel(selection.state)}
         </h3>
-        <p className="mt-2 text-sm text-amber-900/75">
+        <p className={`mt-2 ${themeMutedTextClassName}`}>
           Event listings in this state are available to subscribers.
         </p>
-        <Link
-          href="/subscribe"
-          className="mt-4 inline-flex rounded-full bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
-        >
+        <Link href="/subscribe" className={`mt-4 inline-flex ${themePrimaryButtonClassName}`}>
           Subscribe to unlock
         </Link>
       </div>
@@ -84,32 +89,36 @@ export function MapSelectionPanel({
     const proRodeo = entry.item;
 
     return (
-      <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl border border-stone-200 bg-stone-50 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm">
+      <div
+        className={`absolute bottom-3 left-3 right-3 z-10 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm ${themePanelClassName}`}
+      >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 text-sm text-stone-600 hover:text-stone-900"
+          className="absolute right-3 top-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
         >
           ✕
         </button>
         <div className="flex items-start gap-2 pr-8">
-          <span className="text-xl text-yellow-600">★</span>
+          <span className="text-xl text-[var(--color-accent-cta)]">★</span>
           <div>
-            <h3 className="text-lg font-semibold text-stone-900">{proRodeo.rodeoName}</h3>
-            <p className="mt-1 text-sm text-stone-700">{proRodeo.sanctioningBody}</p>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              {proRodeo.rodeoName}
+            </h3>
+            <p className={`mt-1 ${themeMutedTextClassName}`}>{proRodeo.sanctioningBody}</p>
           </div>
         </div>
-        <p className="mt-3 text-sm text-stone-700">
+        <p className={`mt-3 ${themeMutedTextClassName}`}>
           {proRodeo.city}, {proRodeo.state}
         </p>
-        <p className="mt-1 text-sm text-stone-700">
+        <p className={`mt-1 ${themeMutedTextClassName}`}>
           {formatEventDateRange(proRodeo.startDate, proRodeo.endDate)}
         </p>
         <a
           href={proRodeo.externalLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-flex rounded-full bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700"
+          className={`mt-4 inline-flex ${themePrimaryButtonClassName}`}
         >
           View on {proRodeo.sanctioningBody}
         </a>
@@ -124,16 +133,18 @@ export function MapSelectionPanel({
   const event = entry.item;
 
   return (
-    <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl border border-amber-200 bg-white p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm">
+    <div
+      className={`absolute bottom-3 left-3 right-3 z-10 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm ${themePanelClassName}`}
+    >
       <button
         type="button"
         onClick={onClose}
-        className="absolute right-3 top-3 text-sm text-amber-700 hover:text-amber-950"
+        className="absolute right-3 top-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
       >
         ✕
       </button>
-      <h3 className="pr-8 text-lg font-semibold text-amber-950">{event.title}</h3>
-      <dl className="mt-3 space-y-1 text-sm text-amber-900/80">
+      <h3 className="pr-8 text-lg font-semibold text-[var(--color-text-primary)]">{event.title}</h3>
+      <dl className={`mt-3 space-y-1 ${themeMutedTextClassName}`}>
         {event.format && (
           <div>
             <dt className="sr-only">Format</dt>
@@ -155,10 +166,7 @@ export function MapSelectionPanel({
           </dd>
         </div>
       </dl>
-      <Link
-        href={`/events/${event.id}`}
-        className="mt-4 inline-flex rounded-full border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
-      >
+      <Link href={`/events/${event.id}`} className={`mt-4 inline-flex ${themeSecondaryButtonClassName}`}>
         View details
       </Link>
     </div>

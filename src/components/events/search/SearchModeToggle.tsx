@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  themeActiveToggleClassName,
+  themeInactiveToggleClassName,
+  themeToggleGroupClassName,
+} from "@/lib/theme/form-classes";
 import type { SearchMode } from "@/types/event-search";
 
 interface SearchModeToggleProps {
@@ -9,14 +14,12 @@ interface SearchModeToggleProps {
 
 export function SearchModeToggle({ mode, onChange }: SearchModeToggleProps) {
   return (
-    <div className="inline-flex flex-wrap rounded-full border border-amber-200 bg-[#fffaf3] p-1">
+    <div className={themeToggleGroupClassName}>
       <button
         type="button"
         onClick={() => onChange("map")}
         className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-          mode === "map"
-            ? "bg-amber-700 text-white"
-            : "text-amber-900 hover:bg-amber-100"
+          mode === "map" ? themeActiveToggleClassName : themeInactiveToggleClassName
         }`}
       >
         Map area
@@ -25,9 +28,7 @@ export function SearchModeToggle({ mode, onChange }: SearchModeToggleProps) {
         type="button"
         onClick={() => onChange("radius")}
         className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-          mode === "radius"
-            ? "bg-amber-700 text-white"
-            : "text-amber-900 hover:bg-amber-100"
+          mode === "radius" ? themeActiveToggleClassName : themeInactiveToggleClassName
         }`}
       >
         Radius search
@@ -36,9 +37,7 @@ export function SearchModeToggle({ mode, onChange }: SearchModeToggleProps) {
         type="button"
         onClick={() => onChange("route")}
         className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-          mode === "route"
-            ? "bg-amber-700 text-white"
-            : "text-amber-900 hover:bg-amber-100"
+          mode === "route" ? themeActiveToggleClassName : themeInactiveToggleClassName
         }`}
       >
         Search along my route

@@ -1,6 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Oswald } from "next/font/google";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { SavedEventsProvider } from "@/components/saved/SavedEventsProvider";
@@ -19,6 +19,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: {
     default: APP_NAME,
@@ -29,13 +35,13 @@ export const metadata: Metadata = {
 
 const clerkAppearance = {
   variables: {
-    colorPrimary: "#b45309",
-    colorText: "#451a03",
-    colorBackground: "#fffaf3",
+    colorPrimary: "#3D6D8C",
+    colorText: "#F2F1ED",
+    colorBackground: "#16181C",
     borderRadius: "0.75rem",
   },
   elements: {
-    card: "shadow-sm border border-amber-200",
+    card: "shadow-sm border border-[var(--color-border)]",
     formButtonPrimary: "bg-amber-700 hover:bg-amber-800",
   },
 };
@@ -59,9 +65,9 @@ export default async function RootLayout({
     >
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${oswald.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+        <body className="min-h-full flex flex-col bg-[var(--color-background)] text-[var(--color-text-primary)]">
           <SavedEventsProvider enabled={savedEventsEnabled}>
             <Header />
             <main className="flex-1">{children}</main>

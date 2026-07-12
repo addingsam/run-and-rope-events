@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { FEATURED_PLACEMENT } from "@/lib/stripe/featured";
+import {
+  themeCheckboxInputClassName,
+  themeCheckboxRowClassName,
+  themeInputClassName,
+  themeLabelClassName,
+  themeMutedTextClassName,
+  themePrimaryButtonClassName,
+} from "@/lib/theme/form-classes";
 import type { FeaturedBillingType } from "@/lib/stripe/featured";
 
 interface FeatureEventCheckoutButtonProps {
@@ -47,41 +55,45 @@ export function FeatureEventCheckoutButton({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-amber-900/75">
+      <p className={themeMutedTextClassName}>
         No account required. Pay securely with Stripe to feature {eventTitle} on the homepage.
       </p>
 
       <div className="space-y-3">
-        <label className="flex cursor-pointer gap-3 rounded-xl border border-amber-200 px-4 py-3">
+        <label className={`flex cursor-pointer gap-3 px-4 py-3 ${themeCheckboxRowClassName}`}>
           <input
             type="radio"
             name="billingType"
             checked={billingType === "one_time"}
             onChange={() => setBillingType("one_time")}
-            className="mt-1"
+            className={themeCheckboxInputClassName}
           />
-          <span className="text-sm text-amber-950">{FEATURED_PLACEMENT.oneTimeLabel}</span>
+          <span className="text-sm text-[var(--color-text-primary)]">
+            {FEATURED_PLACEMENT.oneTimeLabel}
+          </span>
         </label>
-        <label className="flex cursor-pointer gap-3 rounded-xl border border-amber-200 px-4 py-3">
+        <label className={`flex cursor-pointer gap-3 px-4 py-3 ${themeCheckboxRowClassName}`}>
           <input
             type="radio"
             name="billingType"
             checked={billingType === "recurring"}
             onChange={() => setBillingType("recurring")}
-            className="mt-1"
+            className={themeCheckboxInputClassName}
           />
-          <span className="text-sm text-amber-950">{FEATURED_PLACEMENT.recurringLabel}</span>
+          <span className="text-sm text-[var(--color-text-primary)]">
+            {FEATURED_PLACEMENT.recurringLabel}
+          </span>
         </label>
       </div>
 
-      <label className="block text-sm font-medium text-amber-950">
+      <label className={themeLabelClassName}>
         Email for receipt
         <input
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
-          className="mt-2 w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-amber-950"
+          className={`mt-2 ${themeInputClassName} text-sm`}
         />
       </label>
 
@@ -89,11 +101,11 @@ export function FeatureEventCheckoutButton({
         type="button"
         onClick={() => void handleCheckout()}
         disabled={loading}
-        className="inline-flex rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className={`inline-flex px-6 py-3 disabled:cursor-not-allowed disabled:opacity-60 ${themePrimaryButtonClassName}`}
       >
         {loading ? "Redirecting to checkout..." : "Continue to payment"}
       </button>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
 } from "@/lib/events/event-actions";
 import { EventBookmarkButton } from "@/components/saved/EventBookmarkButton";
 import { APP_NAME } from "@/lib/constants";
+import { themeMutedTextClassName, themeSecondaryButtonClassName } from "@/lib/theme/form-classes";
 import type { EventDetailView } from "@/types/event-detail";
 
 interface EventDetailActionsProps {
@@ -51,7 +52,7 @@ export function EventDetailActions({ event }: EventDetailActionsProps) {
           href={buildGoogleCalendarUrl(event)}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
+          className={themeSecondaryButtonClassName}
         >
           Add to calendar
         </a>
@@ -59,13 +60,13 @@ export function EventDetailActions({ event }: EventDetailActionsProps) {
         <button
           type="button"
           onClick={() => void handleShare()}
-          className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
+          className={themeSecondaryButtonClassName}
         >
           Share
         </button>
       </div>
 
-      {shareMessage && <p className="text-sm text-amber-800">{shareMessage}</p>}
+      {shareMessage && <p className={`text-sm text-[var(--color-accent-primary)]`}>{shareMessage}</p>}
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
+
 interface AlsoAtThisRodeoProps {
   offerings: string[];
 }
@@ -8,17 +10,19 @@ export function AlsoAtThisRodeo({ offerings }: AlsoAtThisRodeoProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/90 p-5 sm:p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-600">
+    <section
+      className={`border-dashed p-5 sm:p-6 ${themePanelClassName}`}
+    >
+      <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
         Also At This Rodeo
       </h2>
-      <p className="mt-2 text-sm text-stone-600">
+      <p className={`mt-2 ${themeMutedTextClassName}`}>
         Extra events and activities happening at the same rodeo.
       </p>
       <ul className="mt-4 flex flex-wrap gap-2">
         {offerings.map((offering) => (
           <li key={offering}>
-            <span className="inline-flex rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm leading-5 text-stone-700 shadow-sm">
+            <span className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm leading-5 text-[var(--color-text-primary)] shadow-sm">
               {offering}
             </span>
           </li>

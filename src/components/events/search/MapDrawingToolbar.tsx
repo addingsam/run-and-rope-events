@@ -1,6 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import {
+  themeActiveToggleClassName,
+  themeInactiveToggleClassName,
+  themeMutedTextClassName,
+  themePanelClassName,
+} from "@/lib/theme/form-classes";
 
 export type DrawingTool = "none" | "pin-radius" | "freehand" | "rectangle";
 
@@ -39,8 +45,10 @@ export function MapDrawingToolbar({
   }
 
   return (
-    <div className="absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)] rounded-xl border border-amber-200 bg-white/95 p-3 shadow-md backdrop-blur-sm">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-800">
+    <div
+      className={`absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)] p-3 shadow-md backdrop-blur-sm ${themePanelClassName}`}
+    >
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)]">
         Drawing tools
       </p>
       <div className="flex flex-wrap gap-2">
@@ -50,9 +58,7 @@ export function MapDrawingToolbar({
             type="button"
             onClick={() => handleToolClick(tool.id)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-              activeTool === tool.id
-                ? "bg-amber-700 text-white"
-                : "border border-amber-200 bg-[#fffaf3] text-amber-950 hover:bg-amber-50"
+              activeTool === tool.id ? themeActiveToggleClassName : themeInactiveToggleClassName
             } ${!isSubscriber ? "opacity-70" : ""}`}
           >
             {!isSubscriber ? "🔒 " : ""}
@@ -62,7 +68,7 @@ export function MapDrawingToolbar({
         <button
           type="button"
           onClick={onClear}
-          className="rounded-full border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-50"
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${themeInactiveToggleClassName}`}
         >
           Clear
         </button>
@@ -70,7 +76,7 @@ export function MapDrawingToolbar({
 
       {activeTool === "pin-radius" && isSubscriber && (
         <div className="mt-3">
-          <label className="text-xs font-medium text-amber-900">
+          <label className="text-xs font-medium text-[var(--color-text-primary)]">
             Radius: {pinRadiusMiles} mi
           </label>
           <input
@@ -80,16 +86,21 @@ export function MapDrawingToolbar({
             step={5}
             value={pinRadiusMiles}
             onChange={(event) => onPinRadiusChange(Number(event.target.value))}
-            className="mt-1 w-full accent-amber-700"
+            className="mt-1 w-full accent-[var(--color-accent-cta)]"
           />
-          <p className="mt-1 text-[11px] text-amber-800/70">Click the map to drop a pin.</p>
+          <p className={`mt-1 text-[11px] ${themeMutedTextClassName}`}>
+            Click the map to drop a pin.
+          </p>
         </div>
       )}
 
       {!isSubscriber && (
-        <p className="mt-2 text-[11px] text-amber-800/70">
+        <p className={`mt-2 text-[11px] ${themeMutedTextClassName}`}>
           Drawing tools require a subscription.{" "}
-          <Link href="/subscribe" className="font-semibold text-amber-800 hover:text-amber-950">
+          <Link
+            href="/subscribe"
+            className="font-semibold text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
+          >
             Subscribe
           </Link>
         </p>

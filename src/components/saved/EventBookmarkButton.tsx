@@ -16,7 +16,7 @@ function BookmarkIcon({ filled }: { filled: boolean }) {
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className={`h-5 w-5 ${filled ? "fill-amber-700 text-amber-700" : "fill-none text-amber-800"}`}
+      className={`h-5 w-5 ${filled ? "fill-[var(--color-accent-cta)] text-[var(--color-accent-cta)]" : "fill-none text-[var(--color-accent-primary)]"}`}
       stroke="currentColor"
       strokeWidth="1.75"
     >
@@ -39,7 +39,7 @@ export function EventBookmarkButton({
     return (
       <Link
         href={`/sign-in?redirect_url=${encodeURIComponent("/events")}`}
-        className={`inline-flex items-center justify-center rounded-full border border-amber-200 bg-white/90 text-amber-800 shadow-sm backdrop-blur transition-colors hover:bg-amber-50 ${
+        className={`inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 text-[var(--color-accent-primary)] shadow-sm backdrop-blur transition-colors hover:bg-[var(--color-background)] ${
           size === "sm" ? "h-8 w-8" : "h-10 w-10"
         } ${className}`}
         aria-label="Sign in to save events"
@@ -76,7 +76,7 @@ export function EventBookmarkButton({
         type="button"
         onClick={(clickEvent) => void handleClick(clickEvent)}
         disabled={loading || pending}
-        className={`inline-flex items-center justify-center rounded-full border border-amber-200 bg-white/90 text-amber-800 shadow-sm backdrop-blur transition-colors hover:bg-amber-50 disabled:opacity-60 ${
+        className={`inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 text-[var(--color-accent-primary)] shadow-sm backdrop-blur transition-colors hover:bg-[var(--color-background)] disabled:opacity-60 ${
           size === "sm" ? "h-8 w-8" : "h-10 w-10"
         } ${className}`}
         aria-label={label}

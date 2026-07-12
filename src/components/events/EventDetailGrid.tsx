@@ -3,6 +3,7 @@ import { RodeoLevelsBadges } from "@/components/events/EventTypeBadge";
 import { formatFlyerAddress } from "@/lib/events/flyer-lightbox";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
 import { getFormatLabel } from "@/lib/events/submission-options";
+import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
 import type { EventDetailView } from "@/types/event-detail";
 import type { SubmissionFormat } from "@/types/event-submission";
 
@@ -21,16 +22,16 @@ function GridField({
 }) {
   return (
     <div className={className}>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-amber-800/70">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
         {label}
       </dt>
-      <dd className="mt-2 text-sm leading-6 text-amber-950">{children}</dd>
+      <dd className="mt-2 text-sm leading-6 text-[var(--color-text-primary)]">{children}</dd>
     </div>
   );
 }
 
 function EmptyValue() {
-  return <span className="text-amber-900/40">—</span>;
+  return <span className="text-[var(--color-text-muted)]/50">—</span>;
 }
 
 export function EventDetailGrid({ event }: EventDetailGridProps) {
@@ -40,8 +41,8 @@ export function EventDetailGrid({ event }: EventDetailGridProps) {
     : formatEventDate(event.startDate);
 
   return (
-    <section className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-semibold text-amber-950">Event details</h2>
+    <section className={`p-5 shadow-sm sm:p-6 ${themePanelClassName}`}>
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Event details</h2>
       <dl className="mt-6 grid gap-6 sm:grid-cols-2">
         <GridField label="Date">{dateValue}</GridField>
 
@@ -81,7 +82,7 @@ export function EventDetailGrid({ event }: EventDetailGridProps) {
               href={event.websiteUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="break-all font-medium text-amber-800 hover:text-amber-950"
+              className="break-all font-medium text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
             >
               {event.websiteUrl}
             </a>
@@ -125,7 +126,7 @@ export function EventDetailGrid({ event }: EventDetailGridProps) {
                 <p>
                   <a
                     href={`mailto:${event.contactEmail}`}
-                    className="font-medium text-amber-800 hover:text-amber-950"
+                    className="font-medium text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
                   >
                     {event.contactEmail}
                   </a>

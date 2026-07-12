@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import {
+  themeHintClassName,
+  themeInputClassName,
+  themeLabelClassName,
+} from "@/lib/theme/form-classes";
 import type { LocationSuggestion } from "@/types/event-search";
-
-const inputClassName =
-  "w-full rounded-xl border border-amber-200 bg-[#fffaf3] px-4 py-3 text-base text-amber-950 placeholder:text-amber-900/40 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20";
 
 interface LocationAutocompleteProps {
   label: string;
@@ -98,9 +100,9 @@ export function LocationAutocomplete({
 
   return (
     <div ref={containerRef} className="relative">
-      <label htmlFor={inputId} className="mb-2 block text-sm font-semibold text-amber-950">
+      <label htmlFor={inputId} className={themeLabelClassName}>
         {label}
-        <span className="ml-1 text-amber-700">*</span>
+        <span className="ml-1 text-[var(--color-accent-cta)]">*</span>
       </label>
       <input
         id={inputId}
@@ -117,29 +119,25 @@ export function LocationAutocomplete({
         role="combobox"
         aria-expanded={open}
         aria-controls={listboxId}
-        className={`${inputClassName} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""}`}
+        className={`${themeInputClassName} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""}`}
       />
-      {loading && (
-        <p className="mt-2 text-xs text-amber-900/60">Looking up locations…</p>
-      )}
+      {loading && <p className={themeHintClassName}>Looking up locations…</p>}
       {!hasCoordinates && query.trim().length > 0 && !loading && (
-        <p className="mt-2 text-xs text-amber-900/60">
-          Select a suggestion to set the search center.
-        </p>
+        <p className={themeHintClassName}>Select a suggestion to set the search center.</p>
       )}
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
       {open && suggestions.length > 0 && (
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-amber-200 bg-white py-2 shadow-lg"
+          className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 shadow-lg"
         >
           {suggestions.map((suggestion) => (
             <li key={suggestion.id} role="option">
               <button
                 type="button"
                 onClick={() => handleSelect(suggestion)}
-                className="block w-full px-4 py-2 text-left text-sm text-amber-950 hover:bg-amber-50"
+                className="block w-full px-4 py-2 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-background)]"
               >
                 {suggestion.label}
               </button>

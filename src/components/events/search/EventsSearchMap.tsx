@@ -1030,21 +1030,25 @@ export function EventsSearchMap({
       )}
 
       {showSubscribePrompt && !isSubscriber && (
-        <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl border border-amber-200 bg-white p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm">
+        <div
+          className={`absolute bottom-3 left-3 right-3 z-10 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]`}
+        >
           <button
             type="button"
             onClick={() => setShowSubscribePrompt(false)}
-            className="absolute right-3 top-3 text-sm text-amber-700 hover:text-amber-950"
+            className="absolute right-3 top-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
           >
             ✕
           </button>
-          <h3 className="pr-8 text-lg font-semibold text-amber-950">Subscribe to draw on the map</h3>
-          <p className="mt-2 text-sm text-amber-900/75">
+          <h3 className="pr-8 text-lg font-semibold text-[var(--color-text-primary)]">
+            Subscribe to draw on the map
+          </h3>
+          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
             Pin radius, freehand, and box drawing tools unlock with a subscription.
           </p>
           <a
             href="/subscribe"
-            className="mt-4 inline-flex rounded-full bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
+            className="mt-4 inline-flex rounded-full bg-[var(--color-accent-cta)] px-4 py-2 text-sm font-semibold text-[var(--color-background)] hover:opacity-90"
           >
             View plans
           </a>

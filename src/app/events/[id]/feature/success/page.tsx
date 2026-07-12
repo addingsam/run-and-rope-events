@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import { getEventForFeaturingCheckout } from "@/lib/events/featured-events";
 import { isEventCurrentlyFeatured } from "@/lib/events/map-record-to-rodeo-event";
 import { syncFeaturedPlacementFromCheckoutSession } from "@/lib/stripe/sync-featured-checkout";
+import {
+  themeMutedTextClassName,
+  themePrimaryButtonClassName,
+  themeSecondaryButtonClassName,
+} from "@/lib/theme/form-classes";
 
 interface FeatureSuccessPageProps {
   params: Promise<{ id: string }>;
@@ -32,19 +37,19 @@ export default async function FeatureSuccessPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-3xl font-bold text-amber-950">
+      <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
         {isFeatured ? "Featured placement active" : "Payment received"}
       </h1>
-      <p className="mt-4 text-base leading-7 text-amber-900/75">
+      <p className={`mt-4 text-base leading-7 ${themeMutedTextClassName}`}>
         {isFeatured ? (
           <>
-            <span className="font-semibold text-amber-950">{event.event_name}</span> is now featured
+            <span className="font-semibold text-[var(--color-text-primary)]">{event.event_name}</span> is now featured
             on the homepage for all visitors, including those without a subscription.
           </>
         ) : (
           <>
             Thanks for your payment. Featured placement for{" "}
-            <span className="font-semibold text-amber-950">{event.event_name}</span> should appear
+            <span className="font-semibold text-[var(--color-text-primary)]">{event.event_name}</span> should appear
             shortly once Stripe confirms checkout.
           </>
         )}
@@ -53,13 +58,13 @@ export default async function FeatureSuccessPage({
       <div className="mt-8 flex flex-wrap gap-4">
         <Link
           href="/"
-          className="rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
+          className={`px-6 py-3 ${themePrimaryButtonClassName}`}
         >
           View homepage
         </Link>
         <Link
           href="/submit"
-          className="rounded-full border border-amber-300 bg-white px-6 py-3 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-50"
+          className={`px-6 py-3 ${themeSecondaryButtonClassName}`}
         >
           Submit another event
         </Link>

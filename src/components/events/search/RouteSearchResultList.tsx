@@ -2,6 +2,11 @@ import Link from "next/link";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
 import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import { getFormatLabel } from "@/lib/events/submission-options";
+import {
+  themeMutedTextClassName,
+  themePanelClassName,
+  themeSecondaryButtonClassName,
+} from "@/lib/theme/form-classes";
 import type { EventSearchResultItem, ProRodeoSearchResultItem } from "@/types/event-search";
 import type { SubmissionFormat } from "@/types/event-submission";
 import { DisciplineSummary } from "@/components/events/search/SearchBadges";
@@ -20,26 +25,26 @@ interface RouteEventListItemProps {
 export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemProps) {
   if (!isSubscriber) {
     return (
-      <article className="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
+      <article className={`p-4 shadow-sm ${themePanelClassName}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)]">
               {formatMilesAlongRoute(event.distanceMiles)}
             </p>
-            <h3 className="mt-1 truncate text-lg font-semibold text-amber-950/70 blur-[2px]">
+            <h3 className="mt-1 truncate text-lg font-semibold text-[var(--color-text-primary)]/70 blur-[2px]">
               {event.title}
             </h3>
-            <p className="mt-2 text-sm text-amber-900/70">
+            <p className={`mt-2 ${themeMutedTextClassName}`}>
               {event.city}, {event.state} · {formatEventDate(event.eventDate)}
             </p>
           </div>
           <div className="shrink-0 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/20 text-lg">
               🔒
             </div>
             <Link
               href="/subscribe"
-              className="mt-2 block text-xs font-semibold text-amber-800 hover:text-amber-950"
+              className="mt-2 block text-xs font-semibold text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
             >
               Subscribe
             </Link>
@@ -50,13 +55,15 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
   }
 
   return (
-    <article className="relative rounded-2xl border border-amber-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+    <article
+      className={`relative p-4 shadow-sm transition-shadow hover:shadow-md ${themePanelClassName}`}
+    >
       <div className="absolute right-3 top-3 z-10">
         <EventBookmarkButton eventId={event.id} eventTitle={event.title} size="sm" />
       </div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)]">
             {formatMilesAlongRoute(event.distanceMiles)}
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -65,9 +72,9 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
               rodeoLevel={event.rodeoLevel}
               disciplines={event.disciplines}
             />
-            <h3 className="text-lg font-semibold text-amber-950">{event.title}</h3>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">{event.title}</h3>
           </div>
-          <dl className="mt-2 space-y-1 text-sm text-amber-900/80">
+          <dl className={`mt-2 space-y-1 ${themeMutedTextClassName}`}>
             <div>
               <dt className="sr-only">Location</dt>
               <dd>
@@ -100,10 +107,7 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
             </div>
           </dl>
         </div>
-        <Link
-          href={`/events/${event.id}`}
-          className="shrink-0 rounded-full border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-50"
-        >
+        <Link href={`/events/${event.id}`} className={`shrink-0 ${themeSecondaryButtonClassName}`}>
           View details
         </Link>
       </div>
@@ -121,25 +125,27 @@ export function RouteProRodeoListItem({ proRodeo }: RouteProRodeoListItemProps) 
       href={proRodeo.externalLink}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-2xl border border-stone-200 bg-stone-50/80 p-4 shadow-sm transition-shadow hover:border-stone-300 hover:shadow-md"
+      className={`block p-4 shadow-sm transition-shadow hover:border-[var(--color-accent-primary)]/40 hover:shadow-md ${themePanelClassName}`}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             {formatMilesAlongRoute(proRodeo.distanceMiles)}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold text-stone-900">{proRodeo.rodeoName}</h3>
-            <span className="rounded-full bg-stone-200 px-2.5 py-1 text-xs font-semibold text-stone-800">
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              {proRodeo.rodeoName}
+            </h3>
+            <span className="rounded-full bg-[var(--color-background)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text-muted)]">
               {proRodeo.sanctioningBody}
             </span>
           </div>
-          <p className="mt-2 text-sm text-stone-700">
+          <p className={`mt-2 ${themeMutedTextClassName}`}>
             {proRodeo.city}, {proRodeo.state} ·{" "}
             {formatEventDateRange(proRodeo.startDate, proRodeo.endDate)}
           </p>
         </div>
-        <span className="text-sm font-semibold text-stone-800">
+        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
           View on {proRodeo.sanctioningBody} →
         </span>
       </div>

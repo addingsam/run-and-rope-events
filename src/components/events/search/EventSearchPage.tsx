@@ -50,6 +50,14 @@ import type {
 } from "@/types/event-search";
 import { SaveSearchDialog } from "@/components/saved/SaveSearchDialog";
 import {
+  themeInputClassName,
+  themeLabelClassName,
+  themeMutedTextClassName,
+  themePanelClassName,
+  themePrimaryButtonClassName,
+  themeSecondaryButtonClassName,
+} from "@/lib/theme/form-classes";
+import {
   consumePendingSavedSearch,
   savedSearchParamsFromFormState,
   SEARCH_RUN_PARAM,
@@ -643,16 +651,12 @@ export function EventSearchPage({
     return <LockedEventCard event={entry.item} />;
   }
 
-  const inputClassName =
-    "w-full rounded-xl border border-amber-200 bg-[#fffaf3] px-4 py-3 text-base text-amber-950 placeholder:text-amber-900/40 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20";
+  const saveSearchButtonClassName = themeSecondaryButtonClassName;
 
   const searchCenter =
     formState.mode === "radius" && formState.lat !== null && formState.lng !== null
       ? { lat: formState.lat, lng: formState.lng }
       : null;
-
-  const saveSearchButtonClassName =
-    "rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50";
 
   const canUseSaveSearch = authLoaded && isSignedIn && isSubscriber;
 
@@ -732,8 +736,8 @@ export function EventSearchPage({
       <section className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-amber-950">Search events</h2>
-            <p className="mt-1 text-sm text-amber-900/70">
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Search events</h2>
+            <p className={`mt-1 ${themeMutedTextClassName}`}>
               Set your criteria, draw on the map, or search by radius or route. Filters update the
               map and results together.
             </p>
@@ -747,13 +751,13 @@ export function EventSearchPage({
               Save &amp; get alerts
             </button>
           ) : canUseSaveSearch ? (
-            <p className="text-sm text-amber-900/70">
+            <p className={themeMutedTextClassName}>
               {formState.mode === "map"
                 ? "Set criteria or draw on the map to save this search."
                 : "Select a location from the suggestions to save this search."}
             </p>
           ) : authLoaded && isSignedIn && !isSubscriber ? (
-            <p className="text-sm text-amber-900/70">
+            <p className={themeMutedTextClassName}>
               An active subscription is required to save searches.
             </p>
           ) : null}
@@ -777,7 +781,7 @@ export function EventSearchPage({
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:p-6"
+          className={`p-5 shadow-sm sm:p-6 ${themePanelClassName}`}
         >
           <div className="grid gap-6 lg:grid-cols-2">
             <SelectInput
@@ -821,7 +825,7 @@ export function EventSearchPage({
 
             <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
               <div>
-                <label htmlFor="startDate" className="mb-2 block text-sm font-semibold text-amber-950">
+                <label htmlFor="startDate" className={themeLabelClassName}>
                   Start date
                 </label>
                 <input
@@ -830,11 +834,11 @@ export function EventSearchPage({
                   type="date"
                   value={formState.startDate}
                   onChange={(event) => updateFormState({ startDate: event.target.value })}
-                  className={inputClassName}
+                  className={themeInputClassName}
                 />
               </div>
               <div>
-                <label htmlFor="endDate" className="mb-2 block text-sm font-semibold text-amber-950">
+                <label htmlFor="endDate" className={themeLabelClassName}>
                   End date
                 </label>
                 <input
@@ -843,13 +847,13 @@ export function EventSearchPage({
                   type="date"
                   value={formState.endDate}
                   onChange={(event) => updateFormState({ endDate: event.target.value })}
-                  className={inputClassName}
+                  className={themeInputClassName}
                 />
               </div>
             </div>
 
             {formState.mode === "map" && (
-              <div className="lg:col-span-2 rounded-xl border border-amber-100 bg-[#fffaf3] px-4 py-3 text-sm text-amber-900/80">
+              <div className="lg:col-span-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-sm text-[var(--color-text-muted)]">
                 Use the map below to draw a box, freehand area, or pin + radius. Results update as
                 you change criteria and your drawing.
               </div>
@@ -937,12 +941,12 @@ export function EventSearchPage({
             <div className="mt-6 flex flex-wrap items-center gap-4">
               <button
                 type="submit"
-                className="rounded-full bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-800"
+                className={`px-5 py-2.5 ${themePrimaryButtonClassName}`}
               >
                 {formState.mode === "route" ? "Search along route" : "Search events"}
               </button>
               {!isSubscriber && (
-                <p className="text-sm text-amber-900/70">
+                <p className={themeMutedTextClassName}>
                   Pro rodeo listings are free to browse. Full event details require a subscription.
                 </p>
               )}
@@ -955,8 +959,8 @@ export function EventSearchPage({
         <section className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-amber-950">Event map</h2>
-              <p className="mt-1 text-sm text-amber-900/70">{mapSummary}</p>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Event map</h2>
+              <p className={`mt-1 ${themeMutedTextClassName}`}>{mapSummary}</p>
             </div>
             {canSaveMapActivity ? (
               <button
@@ -1034,12 +1038,12 @@ export function EventSearchPage({
       <section aria-live="polite" className="space-y-4">
         {hasSearched && (
           <div>
-            <h2 className="text-xl font-semibold text-amber-950">Search results</h2>
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Search results</h2>
           </div>
         )}
 
         {loading && (
-          <p className="text-sm text-amber-900/70">
+          <p className={themeMutedTextClassName}>
             {formState.mode === "route"
               ? "Calculating route and searching for events…"
               : "Searching nearby events…"}
@@ -1056,20 +1060,20 @@ export function EventSearchPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {results ? (
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-amber-950">
+                <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                   {hasMapOverlayFilter
                     ? `${overlayFilteredSearchResults.length} result${
                         overlayFilteredSearchResults.length === 1 ? "" : "s"
                       } in drawn area`
                     : `${results.counts.total} result${results.counts.total === 1 ? "" : "s"}`}
                   {hasMapOverlayFilter && (
-                    <span className="font-normal text-amber-900/70">
+                    <span className="font-normal text-[var(--color-text-muted)]">
                       {" "}
                       ({results.counts.total} total from search)
                     </span>
                   )}
                   {!hasMapOverlayFilter && results.counts.proRodeos > 0 && (
-                    <span className="font-normal text-amber-900/70">
+                    <span className="font-normal text-[var(--color-text-muted)]">
                       {" "}
                       ({results.counts.events} listing
                       {results.counts.events === 1 ? "" : "s"}, {results.counts.proRodeos} pro rodeo
@@ -1078,7 +1082,7 @@ export function EventSearchPage({
                   )}
                 </p>
                 {routeMeta && (
-                  <p className="text-sm text-amber-900/70">
+                  <p className={themeMutedTextClassName}>
                     Driving route: {routeMeta.distanceMiles.toFixed(1)} miles ·{" "}
                     {Math.round(routeMeta.durationMinutes)} min
                   </p>
@@ -1101,9 +1105,9 @@ export function EventSearchPage({
         )}
 
         {!loading && hasSearched && results?.counts.total === 0 && (
-          <div className="rounded-2xl border border-amber-200 bg-white px-5 py-10 text-center">
-            <p className="text-lg font-semibold text-amber-950">No events found</p>
-            <p className="mt-2 text-sm text-amber-900/70">
+          <div className={`px-5 py-10 text-center ${themePanelClassName}`}>
+            <p className="text-lg font-semibold text-[var(--color-text-primary)]">No events found</p>
+            <p className={`mt-2 ${themeMutedTextClassName}`}>
               {formState.mode === "route"
                 ? "Try widening the buffer distance, adjusting dates, or changing your filters."
                 : "Try widening the radius, adjusting dates, or changing your filters."}
@@ -1117,9 +1121,9 @@ export function EventSearchPage({
           results.counts.total > 0 &&
           overlayFilteredSearchResults.length === 0 &&
           hasMapOverlayFilter && (
-            <div className="rounded-2xl border border-amber-200 bg-white px-5 py-10 text-center">
-              <p className="text-lg font-semibold text-amber-950">No events in drawn area</p>
-              <p className="mt-2 text-sm text-amber-900/70">
+            <div className={`px-5 py-10 text-center ${themePanelClassName}`}>
+              <p className="text-lg font-semibold text-[var(--color-text-primary)]">No events in drawn area</p>
+              <p className={`mt-2 ${themeMutedTextClassName}`}>
                 Your search returned results, but none fall inside the map drawing. Adjust or clear
                 your drawing to see more.
               </p>
@@ -1146,7 +1150,7 @@ export function EventSearchPage({
                   }}
                   onClick={(clickEvent) => handleResultCardClick(clickEvent, key)}
                   className={`rounded-2xl transition-shadow ${
-                    isSelected ? "ring-2 ring-amber-500 ring-offset-2" : ""
+                    isSelected ? "ring-2 ring-[var(--color-accent-primary)] ring-offset-2 ring-offset-[var(--color-background)]" : ""
                   }`}
                 >
                   {renderResultCard(entry)}

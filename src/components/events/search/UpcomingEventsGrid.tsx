@@ -2,6 +2,7 @@
 
 import { LockedEventCard } from "@/components/events/search/LockedEventCard";
 import { SubscriberEventCard } from "@/components/events/search/SubscriberEventCard";
+import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
 import type { EventSearchResultItem } from "@/types/event-search";
 
 interface UpcomingEventsGridProps {
@@ -48,14 +49,14 @@ export function UpcomingEventsGrid({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold text-amber-950">Matching events</h2>
-        <p className="mt-1 text-sm text-amber-900/70">{countLabel}</p>
+        <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Matching events</h2>
+        <p className={`mt-1 ${themeMutedTextClassName}`}>{countLabel}</p>
       </div>
 
       {events.length === 0 ? (
-        <div className="rounded-2xl border border-amber-200 bg-white px-5 py-10 text-center">
-          <p className="text-lg font-semibold text-amber-950">{emptyTitle}</p>
-          <p className="mt-2 text-sm text-amber-900/70">{emptyMessage}</p>
+        <div className={`px-5 py-10 text-center ${themePanelClassName}`}>
+          <p className="text-lg font-semibold text-[var(--color-text-primary)]">{emptyTitle}</p>
+          <p className={`mt-2 ${themeMutedTextClassName}`}>{emptyMessage}</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -69,7 +70,9 @@ export function UpcomingEventsGrid({
                 ref={(element) => onCardRef(key, element)}
                 onClick={(clickEvent) => handleCardClick(clickEvent, key)}
                 className={`rounded-2xl transition-shadow ${
-                  isSelected ? "ring-2 ring-amber-500 ring-offset-2" : ""
+                  isSelected
+                    ? "ring-2 ring-[var(--color-accent-primary)] ring-offset-2 ring-offset-[var(--color-background)]"
+                    : ""
                 }`}
               >
                 {isSubscriber ? (

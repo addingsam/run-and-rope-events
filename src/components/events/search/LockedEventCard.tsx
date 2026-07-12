@@ -3,6 +3,11 @@ import { RodeoLevelsBadges } from "@/components/events/EventTypeBadge";
 import { DisciplineSummary } from "@/components/events/search/SearchBadges";
 import { formatEventDate } from "@/lib/events/format-date";
 import { getFormatLabel } from "@/lib/events/submission-options";
+import {
+  themeMutedTextClassName,
+  themePanelClassName,
+  themePrimaryButtonClassName,
+} from "@/lib/theme/form-classes";
 import type { EventSearchResultItem } from "@/types/event-search";
 import type { SubmissionFormat } from "@/types/event-submission";
 
@@ -12,33 +17,34 @@ interface LockedEventCardProps {
 
 export function LockedEventCard({ event }: LockedEventCardProps) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
-      <div className="relative h-52 w-full overflow-hidden bg-[#fffaf3]">
-        <div className="h-full w-full bg-gradient-to-br from-amber-700 via-amber-600 to-amber-800 blur-sm" />
+    <article className={`overflow-hidden shadow-sm ${themePanelClassName}`}>
+      <div className="relative h-52 w-full overflow-hidden bg-[var(--color-background)]">
+        <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent-primary)] via-[var(--color-accent-primary)]/80 to-[var(--color-background)] blur-sm" />
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 px-6 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-2xl text-white">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface)]/30 text-2xl text-[var(--color-text-primary)]">
             🔒
           </div>
-          <p className="text-sm font-semibold text-white">Subscribe to unlock</p>
-          <Link
-            href="/subscribe"
-            className="mt-3 rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-400"
-          >
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+            Subscribe to unlock
+          </p>
+          <Link href="/subscribe" className={`mt-3 ${themePrimaryButtonClassName}`}>
             View plans
           </Link>
         </div>
       </div>
 
-      <div className="border-b border-amber-100 px-5 py-4">
-        <h3 className="text-lg font-semibold leading-snug text-amber-950">{event.title}</h3>
-        <p className="mt-1 text-sm text-amber-900/80">{formatEventDate(event.eventDate)}</p>
+      <div className="border-b border-[var(--color-border)] px-5 py-4">
+        <h3 className="text-lg font-semibold leading-snug text-[var(--color-text-primary)]">
+          {event.title}
+        </h3>
+        <p className={`mt-1 ${themeMutedTextClassName}`}>{formatEventDate(event.eventDate)}</p>
       </div>
 
       <div className="p-5">
-        <dl className="space-y-1.5 text-sm text-amber-900/60">
+        <dl className={`space-y-1.5 ${themeMutedTextClassName}`}>
           <div>
             <dt className="sr-only">Location</dt>
-            <dd className="font-medium text-amber-900/75">
+            <dd className="font-medium text-[var(--color-text-primary)]">
               {event.city}, {event.state}
             </dd>
           </div>

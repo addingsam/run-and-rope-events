@@ -7,6 +7,7 @@ import { DisciplineSummary } from "@/components/events/search/SearchBadges";
 import { formatEventDate } from "@/lib/events/format-date";
 import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import { getFormatLabel } from "@/lib/events/submission-options";
+import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
 import type { EventSearchResultItem } from "@/types/event-search";
 import type { SubmissionFormat } from "@/types/event-submission";
 
@@ -19,7 +20,9 @@ export function SubscriberEventCard({ event }: SubscriberEventCardProps) {
   const isPdf = event.flyerUrl?.toLowerCase().endsWith(".pdf");
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <article
+      className={`relative overflow-hidden shadow-sm transition-shadow hover:shadow-md ${themePanelClassName}`}
+    >
       <div className="absolute right-3 top-3 z-10">
         <EventBookmarkButton eventId={event.id} eventTitle={event.title} size="sm" />
       </div>
@@ -27,7 +30,7 @@ export function SubscriberEventCard({ event }: SubscriberEventCardProps) {
       <EventFlyerTrigger
         eventId={event.id}
         ariaLabel={`View flyer and details for ${event.title}`}
-        className="relative block h-52 w-full cursor-zoom-in bg-[#fffaf3] text-left"
+        className="relative block h-52 w-full cursor-zoom-in bg-[var(--color-background)] text-left"
       >
         {hasFlyer && !isPdf ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -37,23 +40,25 @@ export function SubscriberEventCard({ event }: SubscriberEventCardProps) {
             className="h-full w-full object-contain"
           />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-amber-700 via-amber-600 to-amber-800" />
+          <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent-primary)] via-[var(--color-accent-primary)]/80 to-[var(--color-background)]" />
         )}
       </EventFlyerTrigger>
 
-      <div className="border-b border-amber-100 px-5 py-4">
-        <h3 className="text-lg font-semibold leading-snug text-amber-950">{event.title}</h3>
-        <p className="mt-1 text-sm text-amber-900/80">{formatEventDate(event.eventDate)}</p>
+      <div className="border-b border-[var(--color-border)] px-5 py-4">
+        <h3 className="text-lg font-semibold leading-snug text-[var(--color-text-primary)]">
+          {event.title}
+        </h3>
+        <p className={`mt-1 ${themeMutedTextClassName}`}>{formatEventDate(event.eventDate)}</p>
       </div>
 
       <Link
         href={`/events/${event.id}`}
-        className="block p-5 transition-colors hover:bg-amber-50/60"
+        className="block p-5 transition-colors hover:bg-[var(--color-background)]"
       >
-        <dl className="space-y-1.5 text-sm text-amber-900/80">
+        <dl className={`space-y-1.5 ${themeMutedTextClassName}`}>
           <div>
             <dt className="sr-only">Location</dt>
-            <dd className="font-medium text-amber-950">
+            <dd className="font-medium text-[var(--color-text-primary)]">
               {event.city}, {event.state}
             </dd>
           </div>

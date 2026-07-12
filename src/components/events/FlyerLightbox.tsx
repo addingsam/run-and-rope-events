@@ -8,6 +8,12 @@ import {
   getDisciplineLabelFromSlug,
   getFormatLabel,
 } from "@/lib/events/submission-options";
+import {
+  themeMutedTextClassName,
+  themePanelClassName,
+  themePrimaryButtonClassName,
+  themeSecondaryButtonClassName,
+} from "@/lib/theme/form-classes";
 import type { FlyerLightboxEvent } from "@/types/flyer-lightbox";
 import type { SubmissionFormat } from "@/types/event-submission";
 
@@ -27,9 +33,9 @@ function DetailRow({
 }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-amber-800/70">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">{label}</dt>
       <dd
-        className={`mt-1 text-sm text-amber-950 ${multiline ? "whitespace-pre-line" : ""}`}
+        className={`mt-1 text-sm text-[var(--color-text-primary)] ${multiline ? "whitespace-pre-line" : ""}`}
       >
         {value}
       </dd>
@@ -75,12 +81,12 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-amber-200/40 bg-[#fffaf3] shadow-2xl"
+        className={`flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden shadow-2xl ${themePanelClassName}`}
         onClick={(clickEvent) => clickEvent.stopPropagation()}
       >
         <div className="overflow-y-auto">
           {showFlyerPreview && event.flyerUrl && (
-            <div className="border-b border-amber-200 bg-amber-950/5">
+            <div className="border-b border-[var(--color-border)] bg-[var(--color-background)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={event.flyerUrl}
@@ -93,28 +99,28 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
           <div className="p-5 sm:p-6">
             <div className="flex flex-wrap gap-2">
               {event.format && (
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
+                <span className="rounded-full bg-[var(--color-accent-primary)]/20 px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
                   {getFormatLabel(event.format as SubmissionFormat)}
                 </span>
               )}
               {event.disciplines.map((discipline) => (
                 <span
                   key={discipline}
-                  className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900"
+                  className="rounded-full bg-[var(--color-accent-primary)]/20 px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]"
                 >
                   {getDisciplineLabelFromSlug(discipline)}
                 </span>
               ))}
               {event.format === "rodeo" && event.rodeoLevel && (
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-800">
+                <span className="rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text-muted)]">
                   {formatRodeoLevelList(parseStoredRodeoLevels(event.rodeoLevel))}
                 </span>
               )}
             </div>
 
-            <h2 className="mt-4 text-2xl font-bold text-amber-950">{event.title}</h2>
+            <h2 className="mt-4 text-2xl font-bold text-[var(--color-text-primary)]">{event.title}</h2>
 
-            <hr className="my-5 border-amber-200" />
+            <hr className="my-5 border-[var(--color-border)]" />
 
             <dl className="space-y-4">
               <DetailRow
@@ -148,15 +154,15 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
               )}
               {(event.contactEmail || event.contactPhone || event.websiteUrl) && (
                 <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-amber-800/70">
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                     Contact
                   </dt>
-                  <dd className="mt-1 space-y-1 text-sm text-amber-950">
+                  <dd className="mt-1 space-y-1 text-sm text-[var(--color-text-primary)]">
                     {event.contactEmail && (
                       <p>
                         <a
                           href={`mailto:${event.contactEmail}`}
-                          className="font-medium text-amber-800 hover:text-amber-950"
+                          className="font-medium text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
                         >
                           {event.contactEmail}
                         </a>
@@ -169,7 +175,7 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
                           href={event.websiteUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-medium text-amber-800 hover:text-amber-950"
+                          className="font-medium text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
                         >
                           {event.websiteUrl}
                         </a>
@@ -182,13 +188,13 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-amber-200 bg-white/80 p-4 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-3 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:flex-row sm:justify-end">
           {event.flyerUrl && (
             <a
               href={event.flyerUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-full bg-amber-700 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-800"
+              className={`text-center ${themePrimaryButtonClassName} px-5 py-2.5`}
             >
               Download flyer
             </a>
@@ -196,7 +202,7 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-amber-300 bg-white px-5 py-2.5 text-sm font-semibold text-amber-950 hover:bg-amber-50"
+            className={`px-5 py-2.5 ${themeSecondaryButtonClassName}`}
           >
             Close
           </button>

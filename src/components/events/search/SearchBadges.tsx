@@ -9,10 +9,10 @@ interface SearchBadgeProps {
 export function SearchBadge({ children, variant = "amber" }: SearchBadgeProps) {
   const classes =
     variant === "flyer"
-      ? "bg-white/90 text-amber-950"
+      ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)]"
       : variant === "stone"
-        ? "bg-stone-100 text-stone-800"
-        : "bg-amber-100 text-amber-900";
+        ? "bg-[var(--color-background)] text-[var(--color-text-muted)]"
+        : "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-primary)]";
 
   return (
     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${classes}`}>

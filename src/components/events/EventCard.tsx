@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDisciplineLabelFromSlug } from "@/lib/events/submission-options";
+import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
 import type { RodeoEvent } from "@/types/event";
 
 interface EventCardProps {
@@ -21,26 +22,30 @@ export function EventCard({ event }: EventCardProps) {
       : `${event.disciplines.length} disciplines`;
 
   return (
-    <article className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+    <article
+      className={`p-5 shadow-sm transition-shadow hover:shadow-md ${themePanelClassName}`}
+    >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)]">
             {disciplineLabel}
           </p>
-          <h3 className="mt-1 text-lg font-semibold text-amber-950">{event.title}</h3>
+          <h3 className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">
+            {event.title}
+          </h3>
         </div>
         <div className="flex flex-col items-end gap-2">
           {event.featured && (
-            <span className="rounded-full bg-amber-700 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+            <span className="rounded-full bg-[var(--color-accent-cta)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-background)]">
               Featured
             </span>
           )}
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+          <span className="rounded-full bg-[var(--color-accent-primary)]/20 px-3 py-1 text-xs font-medium text-[var(--color-text-primary)]">
             {event.status.replace("-", " ")}
           </span>
         </div>
       </div>
-      <dl className="space-y-1 text-sm text-amber-900/75">
+      <dl className={`space-y-1 ${themeMutedTextClassName}`}>
         <div>
           <dt className="sr-only">Date</dt>
           <dd>{formatDate(event.startDate)}</dd>
@@ -59,11 +64,11 @@ export function EventCard({ event }: EventCardProps) {
         )}
       </dl>
       {event.description && (
-        <p className="mt-3 text-sm leading-6 text-amber-900/70">{event.description}</p>
+        <p className={`mt-3 leading-6 ${themeMutedTextClassName}`}>{event.description}</p>
       )}
       <Link
         href={`/events/${event.id}`}
-        className="mt-4 inline-flex text-sm font-semibold text-amber-800 hover:text-amber-950"
+        className="mt-4 inline-flex text-sm font-semibold text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
       >
         View details →
       </Link>

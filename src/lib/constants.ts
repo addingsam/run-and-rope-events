@@ -9,7 +9,7 @@ export const APP_TAGLINE = "Jackpots & rodeos, all in one place.";
 
 export const APP_HOME_EYEBROW = "Jackpots & rodeos";
 
-export const APP_HOME_HEADLINE = "Find your next jackpot. Discover your next rodeo.";
+export const APP_HOME_HEADLINE = "Find your next event. Plan your next route.";
 
 export const DISCIPLINE_LABELS = {
   "barrel-racing": "Barrel Racing",

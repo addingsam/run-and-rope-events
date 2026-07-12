@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FlyerLightbox } from "@/components/events/FlyerLightbox";
 import { EventBookmarkButton } from "@/components/saved/EventBookmarkButton";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
+import { themePrimaryButtonClassName, themeSecondaryButtonClassName } from "@/lib/theme/form-classes";
 import type { EventDetailView } from "@/types/event-detail";
 
 interface EventDetailHeroProps {
@@ -25,7 +26,7 @@ export function EventDetailHero({ event }: EventDetailHeroProps) {
 
   return (
     <>
-      <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-amber-200 bg-[#fffaf3]">
+      <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen border-b border-[var(--color-border)] bg-[var(--color-background)]">
         <div className="absolute right-4 top-4 z-20 sm:right-8">
           <EventBookmarkButton eventId={event.id} eventTitle={event.title} />
         </div>
@@ -42,18 +43,20 @@ export function EventDetailHero({ event }: EventDetailHeroProps) {
               className="mx-auto max-h-[70vh] w-full object-contain"
             />
           ) : (
-            <div className="flex min-h-[320px] items-center justify-center rounded-2xl bg-gradient-to-br from-amber-800 via-amber-700 to-amber-950 sm:min-h-[380px]">
-              <p className="text-sm font-medium text-amber-100/90">No flyer preview available</p>
+            <div className="flex min-h-[320px] items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-accent-primary)] via-[var(--color-accent-primary)]/80 to-[var(--color-background)] sm:min-h-[380px]">
+              <p className="text-sm font-medium text-[var(--color-text-muted)]">
+                No flyer preview available
+              </p>
             </div>
           )}
         </div>
 
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
-          <h1 className="max-w-3xl text-3xl font-bold leading-tight text-amber-950 sm:text-4xl">
+          <h1 className="max-w-3xl text-3xl font-bold leading-tight text-[var(--color-text-primary)] sm:text-4xl">
             {event.title}
           </h1>
 
-          <dl className="mt-4 space-y-1 text-sm text-amber-900/80 sm:text-base">
+          <dl className="mt-4 space-y-1 text-sm text-[var(--color-text-muted)] sm:text-base">
             <div>
               <dt className="sr-only">Date</dt>
               <dd>{dateLabel}</dd>
@@ -76,7 +79,7 @@ export function EventDetailHero({ event }: EventDetailHeroProps) {
             <button
               type="button"
               onClick={() => setLightboxOpen(true)}
-              className="rounded-full bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
+              className={themePrimaryButtonClassName}
             >
               View flyer
             </button>
@@ -85,7 +88,7 @@ export function EventDetailHero({ event }: EventDetailHeroProps) {
                 href={event.flyerUrl!}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50"
+                className={themeSecondaryButtonClassName}
               >
                 Download
               </a>
