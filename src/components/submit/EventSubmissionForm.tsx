@@ -22,6 +22,12 @@ import {
   validateFlyerFile,
 } from "@/lib/flyer/constants";
 import { US_STATES } from "@/lib/us-states";
+import {
+  themeMutedTextClassName,
+  themePanelClassName,
+  themePrimaryButtonClassName,
+  themeSecondaryButtonClassName,
+} from "@/lib/theme/form-classes";
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 import {
   EMPTY_EVENT_SUBMISSION,
@@ -437,12 +443,12 @@ export function EventSubmissionForm() {
 
   if (submitted) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-white px-6 py-10 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
+      <div className={`px-6 py-10 text-center shadow-sm ${themePanelClassName}`}>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/20 text-2xl text-[var(--color-accent-cta)]">
           ✓
         </div>
-        <h2 className="text-2xl font-bold text-amber-950">Event submitted</h2>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-amber-900/75">
+        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Event submitted</h2>
+        <p className={`mx-auto mt-3 max-w-md leading-7 ${themeMutedTextClassName}`}>
           Thanks for listing your event. We&apos;ll review the details and publish it to the
           directory soon.
           {submittedEmail
@@ -456,7 +462,7 @@ export function EventSubmissionForm() {
             setSubmittedEmail("");
             setFeaturePlacement("none");
           }}
-          className="mt-6 rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
+          className={`mt-6 px-6 py-3 ${themePrimaryButtonClassName}`}
         >
           Submit another event
         </button>
@@ -475,14 +481,20 @@ export function EventSubmissionForm() {
             htmlFor="flyer"
             className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
               isUploadingFlyer || isExtractingFlyer
-                ? "cursor-wait border-amber-400 bg-amber-50/80"
-                : "cursor-pointer border-amber-300 bg-[#fffaf3] hover:border-amber-500 hover:bg-amber-50/60"
+                ? "cursor-wait border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10"
+                : "cursor-pointer border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/5"
             }`}
           >
             <span className="text-3xl" aria-hidden="true">
               {isUploadingFlyer ? "⏳" : isExtractingFlyer ? "🔍" : formData.flyerUrl ? "✓" : "📎"}
             </span>
-            <span className="mt-3 text-sm font-semibold text-amber-950">
+            <span
+              className={`mt-3 text-sm font-semibold ${
+                !isUploadingFlyer && !isExtractingFlyer && !flyerFile
+                  ? "text-[var(--color-accent-cta)]"
+                  : "text-[var(--color-text-primary)]"
+              }`}
+            >
               {isUploadingFlyer
                 ? "Uploading to storage..."
                 : isExtractingFlyer
@@ -491,16 +503,16 @@ export function EventSubmissionForm() {
                     ? flyerFile.name
                     : "Choose a flyer to upload"}
             </span>
-            <span className="mt-1 text-xs text-amber-900/60">
+            <span className="mt-1 text-xs text-[var(--color-text-muted)]">
               JPEG, PNG, or PDF · Max 10MB
             </span>
             {flyerFile && (
-              <span className="mt-2 text-xs font-medium text-amber-800">
+              <span className="mt-2 text-xs font-medium text-[var(--color-accent-primary)]">
                 {formatFileSize(flyerFile.size)}
               </span>
             )}
             {formData.flyerUrl && !isUploadingFlyer && !isExtractingFlyer && (
-              <span className="mt-2 text-xs font-medium text-emerald-800">
+              <span className="mt-2 text-xs font-medium text-emerald-400">
                 Uploaded — review the details below
               </span>
             )}
@@ -523,7 +535,7 @@ export function EventSubmissionForm() {
                 type="button"
                 onClick={() => void fillFormFromFlyer()}
                 disabled={isExtractingFlyer}
-                className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-50 disabled:cursor-wait disabled:opacity-70"
+                className={`${themeSecondaryButtonClassName} disabled:cursor-wait disabled:opacity-70`}
               >
                 {isExtractingFlyer ? "Reading flyer…" : "Re-read flyer"}
               </button>
@@ -531,7 +543,7 @@ export function EventSubmissionForm() {
                 type="button"
                 onClick={clearFlyer}
                 disabled={isExtractingFlyer}
-                className="text-sm font-medium text-amber-800 hover:text-amber-950 disabled:opacity-60"
+                className="text-sm font-medium text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)] disabled:opacity-60"
               >
                 Remove file
               </button>
@@ -787,6 +799,7 @@ export function EventSubmissionForm() {
       <FormSection
         title="Homepage Featuring"
         description="Optional paid promotion on the main page."
+        titleClassName="text-[var(--color-accent-cta)]"
       >
         <div id="featurePlacement">
           <FeaturedPlacementField
@@ -805,20 +818,20 @@ export function EventSubmissionForm() {
         </div>
       </FormSection>
 
-      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 px-4 py-5 sm:px-6">
-        <p className="text-sm leading-6 text-amber-900/75">
+      <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
+        <p className={`leading-6 ${themeMutedTextClassName}`}>
           Upload your flyer first, then review the details below. Required fields are checked when
           you submit. Producer name will always be displayed on your listing. No account is required.
         </p>
         {errors.submit && (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
             {errors.submit}
           </p>
         )}
         <button
           type="submit"
           disabled={isSubmitting || isUploadingFlyer || isExtractingFlyer}
-          className="mt-5 w-full rounded-full bg-amber-800 px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className={`mt-5 w-full px-6 py-4 text-base disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${themePrimaryButtonClassName}`}
         >
           {isSubmitting
             ? featurePlacement !== "none"

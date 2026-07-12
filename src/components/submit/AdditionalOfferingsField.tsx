@@ -1,7 +1,11 @@
 "use client";
 
-const inputClassName =
-  "w-full rounded-xl border border-amber-200 bg-[#fffaf3] px-4 py-3 text-base text-amber-950 placeholder:text-amber-900/40 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20";
+import {
+  themeHintClassName,
+  themeInputClassName,
+  themeLabelClassName,
+  themeSecondaryButtonClassName,
+} from "@/lib/theme/form-classes";
 
 interface AdditionalOfferingsFieldProps {
   values: string[];
@@ -29,10 +33,10 @@ export function AdditionalOfferingsField({ values, onChange }: AdditionalOfferin
   return (
     <div>
       <div className="mb-3">
-        <p className="block text-sm font-semibold text-amber-950">Also at this rodeo</p>
-        <p className="mt-1 text-xs leading-5 text-amber-900/60">
-          Optional — list extra attractions like roughstock events, fan events, or concerts.
-          These are descriptive only and won&apos;t affect search or filters.
+        <p className={themeLabelClassName}>Also at this rodeo</p>
+        <p className={themeHintClassName}>
+          Optional — list extra attractions like roughstock events, fan events, or concerts. These
+          are descriptive only and won&apos;t affect search or filters.
         </p>
       </div>
       <div className="space-y-3">
@@ -43,14 +47,14 @@ export function AdditionalOfferingsField({ values, onChange }: AdditionalOfferin
               value={value}
               onChange={(e) => updateRow(index, e.target.value)}
               placeholder="Bull riding, mutton bustin', live concert..."
-              className={inputClassName}
+              className={themeInputClassName}
               aria-label={`Additional offering ${index + 1}`}
             />
             {rows.length > 1 && (
               <button
                 type="button"
                 onClick={() => removeRow(index)}
-                className="rounded-full border border-amber-200 px-4 py-3 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-50 sm:shrink-0"
+                className={`px-4 py-3 sm:shrink-0 ${themeSecondaryButtonClassName}`}
               >
                 Remove
               </button>
@@ -61,7 +65,7 @@ export function AdditionalOfferingsField({ values, onChange }: AdditionalOfferin
       <button
         type="button"
         onClick={addRow}
-        className="mt-3 text-sm font-semibold text-amber-800 hover:text-amber-950"
+        className="mt-3 text-sm font-semibold text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
       >
         + Add another offering
       </button>
