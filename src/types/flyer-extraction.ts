@@ -31,6 +31,7 @@ export interface FlyerExtractionResult {
   state: string | null;
   zipCode: string | null;
   discipline: FlyerExtractionDisciplineLabel | null;
+  disciplines: FlyerExtractionDisciplineLabel[];
   format: FlyerExtractionFormatLabel | null;
   rodeoLevel: FlyerExtractionRodeoLevelLabel | null;
   entryFee: string | null;

@@ -55,6 +55,12 @@ export default async function DashboardPage() {
         <p className="mt-2 text-amber-900/75">
           Signed in as {profile.email}. Manage saved searches, email alerts, and bookmarked events.
         </p>
+        <Link
+          href="/submit"
+          className="mt-4 inline-flex rounded-full border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-100"
+        >
+          Submit your event - Free
+        </Link>
       </div>
 
       <section className="space-y-4">

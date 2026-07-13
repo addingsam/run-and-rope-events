@@ -1,6 +1,7 @@
 import {
-  inferFlyerDisciplineFromText,
+  inferFlyerDisciplinesFromText,
   normalizeFlyerDiscipline,
+  normalizeFlyerDisciplines,
 } from "@/lib/flyer/flyer-disciplines";
 import {
   FLYER_EXTRACTION_FORMAT_LABELS,
@@ -54,6 +55,28 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
     throw new Error("Claude returned JSON that was not an object.");
   }
 
+  const parsedDisciplines = normalizeFlyerDisciplines(parsed.disciplines);
+  const legacyDiscipline = normalizeFlyerDiscipline(parsed.discipline);
+  const inferredDisciplines = inferFlyerDisciplinesFromText(
+    nullableString(parsed.eventName),
+    nullableString(parsed.classDivisionInfo),
+    nullableString(parsed.entryFee),
+    nullableString(parsed.prizePayoutInfo),
+    nullableString(parsed.additionalNotes),
+    nullableString(parsed.discipline),
+    ...(parsedDisciplines.length > 0
+      ? parsedDisciplines
+      : legacyDiscipline
+        ? [legacyDiscipline]
+        : []),
+  );
+  const disciplines =
+    parsedDisciplines.length > 0
+      ? parsedDisciplines
+      : legacyDiscipline
+        ? [legacyDiscipline]
+        : inferredDisciplines;
+
   return {
     eventName: nullableString(parsed.eventName),
     date: nullableString(parsed.date),
@@ -65,14 +88,8 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
     city: nullableString(parsed.city),
     state: nullableString(parsed.state),
     zipCode: nullableString(parsed.zipCode),
-    discipline:
-      normalizeFlyerDiscipline(parsed.discipline) ??
-      inferFlyerDisciplineFromText(
-        nullableString(parsed.eventName),
-        nullableString(parsed.classDivisionInfo),
-        nullableString(parsed.additionalNotes),
-        nullableString(parsed.discipline),
-      ),
+    discipline: disciplines[0] ?? null,
+    disciplines,
     format: enumOrNull(parsed.format, FLYER_EXTRACTION_FORMAT_LABELS),
     rodeoLevel: enumOrNull(parsed.rodeoLevel, FLYER_EXTRACTION_RODEO_LEVEL_LABELS),
     entryFee: nullableString(parsed.entryFee),

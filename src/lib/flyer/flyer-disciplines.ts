@@ -55,12 +55,41 @@ function canonicalDisciplineLabel(
   return null;
 }
 
+function dedupeDisciplineLabels(
+  labels: Array<FlyerExtractionDisciplineLabel | null | undefined>,
+): FlyerExtractionDisciplineLabel[] {
+  const seen = new Set<FlyerExtractionDisciplineLabel>();
+  const result: FlyerExtractionDisciplineLabel[] = [];
+
+  for (const label of labels) {
+    if (!label || seen.has(label)) {
+      continue;
+    }
+
+    seen.add(label);
+    result.push(label);
+  }
+
+  return result;
+}
+
 export function normalizeFlyerDiscipline(value: unknown): FlyerExtractionDisciplineLabel | null {
   if (typeof value !== "string") {
     return null;
   }
 
   return canonicalDisciplineLabel(value);
+}
+
+export function normalizeFlyerDisciplines(value: unknown): FlyerExtractionDisciplineLabel[] {
+  if (Array.isArray(value)) {
+    return dedupeDisciplineLabels(
+      value.map((item) => (typeof item === "string" ? canonicalDisciplineLabel(item) : null)),
+    );
+  }
+
+  const single = normalizeFlyerDiscipline(value);
+  return single ? [single] : [];
 }
 
 const DISCIPLINE_INFERENCE_PATTERNS: Array<{
@@ -84,19 +113,26 @@ const DISCIPLINE_INFERENCE_PATTERNS: Array<{
   },
 ];
 
-export function inferFlyerDisciplineFromText(...texts: Array<string | null | undefined>) {
+export function inferFlyerDisciplinesFromText(
+  ...texts: Array<string | null | undefined>
+): FlyerExtractionDisciplineLabel[] {
   const combined = texts.filter(Boolean).join("\n");
   if (!combined.trim()) {
-    return null;
+    return [];
   }
 
-  for (const { pattern, label } of DISCIPLINE_INFERENCE_PATTERNS) {
-    if (pattern.test(combined)) {
-      return label;
-    }
-  }
+  return dedupeDisciplineLabels(
+    DISCIPLINE_INFERENCE_PATTERNS.filter(({ pattern }) => pattern.test(combined)).map(
+      ({ label }) => label,
+    ),
+  );
+}
 
-  return null;
+/** @deprecated Use inferFlyerDisciplinesFromText */
+export function inferFlyerDisciplineFromText(
+  ...texts: Array<string | null | undefined>
+): FlyerExtractionDisciplineLabel | null {
+  return inferFlyerDisciplinesFromText(...texts)[0] ?? null;
 }
 
 export function disciplineLabelToValue(
@@ -107,4 +143,12 @@ export function disciplineLabelToValue(
   }
 
   return DISCIPLINE_LABEL_TO_VALUE[label] ?? null;
+}
+
+export function disciplineLabelsToValues(
+  labels: FlyerExtractionDisciplineLabel[],
+): SubmissionDiscipline[] {
+  return dedupeDisciplineLabels(labels)
+    .map((label) => disciplineLabelToValue(label))
+    .filter((value): value is SubmissionDiscipline => value !== null);
 }

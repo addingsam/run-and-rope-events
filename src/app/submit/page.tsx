@@ -36,9 +36,13 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
             Submit an event
           </h1>
+          <p className="mt-4 inline-flex rounded-full border border-emerald-400/40 bg-emerald-950/30 px-4 py-2 text-sm font-semibold text-emerald-300">
+            Free to list — no charge
+          </p>
           <p className={`mt-4 max-w-2xl text-base leading-7 sm:text-lg ${themeMutedTextClassName}`}>
             Upload your flyer first — we&apos;ll read it and pre-fill the form. Then review the
-            details, complete anything that&apos;s missing, and submit. No account is required.
+            details, complete anything that&apos;s missing, and submit. Listing your event in the
+            directory is completely free. No account or payment is required.
           </p>
         </div>
       </div>

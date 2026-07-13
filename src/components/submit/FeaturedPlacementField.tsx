@@ -21,8 +21,8 @@ const OPTIONS: Array<{
 }> = [
   {
     value: "none",
-    title: "Standard listing only",
-    description: "Submit your event to the directory at no extra cost.",
+    title: "Standard listing only (free)",
+    description: "List your event in the directory at no cost. No payment required.",
   },
   {
     value: "one_time",
@@ -50,9 +50,9 @@ export function FeaturedPlacementField({
           Homepage featuring (optional)
         </h3>
         <p className={`mt-2 leading-6 ${themeMutedTextClassName}`}>
-          {FEATURED_PLACEMENT.description} Featured events appear on the main homepage in the
-          Featured events section and are visible to everyone — including visitors without a paid
-          subscription.
+          Listing your event is free. {FEATURED_PLACEMENT.description} Featured events appear on the
+          main homepage in the Featured events section and are visible to everyone — including
+          visitors without a paid subscription.
         </p>
       </div>
 

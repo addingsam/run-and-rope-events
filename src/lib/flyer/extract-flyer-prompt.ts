@@ -15,7 +15,7 @@ export const FLYER_EXTRACTION_JSON_SCHEMA = `{
   "city": string | null,
   "state": string | null,
   "zipCode": string | null,
-  "discipline": one of [${FLYER_DISCIPLINE_SCHEMA}] or null,
+  "disciplines": array of zero or more values from [${FLYER_DISCIPLINE_SCHEMA}],
   "format": one of ["Jackpot", "Rodeo"] or null,
   "rodeoLevel": one of ["Youth", "Amateur", "Open", "Pro"] or null,
   "entryFee": string | null,
@@ -44,7 +44,7 @@ Rules:
 - When the flyer shows a month/day without a year, prefer the next upcoming occurrence of that date from today's calendar year. Do not assign a year that would make the event already past.
 - For state: prefer the two-letter US state code when clear; otherwise the state name as shown.
 - For zipCode: extract the 5-digit ZIP when visible on the flyer, including in the address line or near the venue/city.
-- discipline must be exactly one of the allowed labels or null.
+- disciplines must use only allowed labels. Include every distinct jackpot structure or discipline clearly listed on the flyer, such as both Team Roping and Breakaway Roping when both appear.
 - Map discipline abbreviations and organization names to the allowed labels when confident. Examples: CMSA or Cowboy Mounted Shooting Association -> "Cowboy Mounted Shooting"; bulldogging -> "Steer Wrestling / Bull Dogging".
 - format must be exactly "Jackpot" or "Rodeo" or null.
 - Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail are jackpot events, not rodeos. When any of those disciplines apply, set format to "Jackpot".

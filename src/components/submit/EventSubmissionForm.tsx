@@ -782,7 +782,7 @@ export function EventSubmissionForm() {
 
       <FormSection
         title="Homepage Featuring"
-        description="Optional paid promotion on the main page."
+        description="Optional paid promotion only — listing your event is free."
         titleClassName="text-[var(--color-accent-cta)]"
       >
         <div id="featurePlacement">
@@ -803,10 +803,14 @@ export function EventSubmissionForm() {
       </FormSection>
 
       <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
-        <p className={`leading-6 ${themeMutedTextClassName}`}>
-          A flyer upload is required. Review the details below and confirm venue name and street
-          address before submitting. Producer name will always be displayed on your listing. No
-          account is required.
+        <p className="text-base font-semibold text-[var(--color-text-primary)]">
+          Listing your event is free.
+        </p>
+        <p className={`mt-2 leading-6 ${themeMutedTextClassName}`}>
+          Submitting adds your event to the directory at no cost. A flyer upload is required —
+          review the details below and confirm venue name and street address before submitting.
+          Producer name will always be displayed on your listing. Homepage featuring below is
+          optional and is the only paid step.
         </p>
         {errors.submit && (
           <p className="mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
@@ -824,7 +828,7 @@ export function EventSubmissionForm() {
               : "Submitting..."
             : featurePlacement !== "none"
               ? "Submit event and continue to payment"
-              : "Submit event"}
+              : "Submit event — free"}
         </button>
       </div>
     </form>

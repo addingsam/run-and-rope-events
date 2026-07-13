@@ -38,13 +38,14 @@ export default async function Home() {
           <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/50 px-6 py-10 text-center">
             <p className="text-base font-medium text-amber-950">No featured events right now</p>
             <p className="mt-2 text-sm text-amber-900/70">
-              Producers can add paid homepage placement when submitting an event.
+              Listing an event is free. Producers can optionally add paid homepage placement when
+              submitting.
             </p>
             <Link
               href="/submit"
               className="mt-6 inline-flex rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
             >
-              Submit an event
+              Submit an event — free
             </Link>
           </div>
         )}
@@ -73,7 +74,7 @@ export default async function Home() {
               href="/submit"
               className="rounded-full bg-amber-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-amber-800"
             >
-              List your event
+              List your event — free
             </Link>
           </div>
         </div>

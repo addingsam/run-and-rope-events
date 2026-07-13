@@ -1,7 +1,7 @@
 import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
-  disciplineLabelToValue,
-  inferFlyerDisciplineFromText,
+  disciplineLabelsToValues,
+  inferFlyerDisciplinesFromText,
 } from "@/lib/flyer/flyer-disciplines";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
 import { US_STATES } from "@/lib/us-states";
@@ -108,16 +108,20 @@ export function applyFlyerExtractionToSubmission(
   const extractedFormat = sanitized.format
     ? FORMAT_LABEL_TO_VALUE[sanitized.format]
     : current.format;
-  const disciplineLabel =
-    sanitized.discipline ??
-    inferFlyerDisciplineFromText(
-      sanitized.eventName,
-      sanitized.classDivisionInfo,
-      sanitized.additionalNotes,
-      sanitized.contactName,
-    );
-  const discipline = disciplineLabelToValue(disciplineLabel);
-  const disciplines = discipline ? [discipline] : current.disciplines;
+  const extractedDisciplines =
+    sanitized.disciplines.length > 0
+      ? sanitized.disciplines
+      : inferFlyerDisciplinesFromText(
+          sanitized.eventName,
+          sanitized.classDivisionInfo,
+          sanitized.entryFee,
+          sanitized.prizePayoutInfo,
+          sanitized.additionalNotes,
+          sanitized.contactName,
+        );
+  const extractedDisciplineValues = disciplineLabelsToValues(extractedDisciplines);
+  const disciplines =
+    extractedDisciplineValues.length > 0 ? extractedDisciplineValues : current.disciplines;
   const format = resolveFormatFromDisciplines(disciplines, extractedFormat);
   const extractedLevel = sanitized.rodeoLevel
     ? RODEO_LEVEL_LABEL_TO_VALUE[sanitized.rodeoLevel] ?? null
@@ -156,5 +160,24 @@ export function applyFlyerExtractionToSubmission(
 }
 
 export function countPopulatedFlyerFields(extracted: FlyerExtractionResult) {
-  return Object.values(extracted).filter((value) => value !== null && value !== "").length;
+  let count = 0;
+
+  for (const [key, value] of Object.entries(extracted)) {
+    if (key === "discipline") {
+      continue;
+    }
+
+    if (key === "disciplines") {
+      if (Array.isArray(value) && value.length > 0) {
+        count += 1;
+      }
+      continue;
+    }
+
+    if (value !== null && value !== "") {
+      count += 1;
+    }
+  }
+
+  return count;
 }
