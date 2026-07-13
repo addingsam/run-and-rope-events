@@ -3,6 +3,7 @@
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useState } from "react";
 import type { PricingPlan } from "@/lib/stripe/plans";
+import { themePrimaryButtonClassName } from "@/lib/theme/form-classes";
 
 interface PricingPlanCardProps {
   plan: PricingPlan;
@@ -49,35 +50,33 @@ export function PricingPlanCard({ plan }: PricingPlanCardProps) {
 
   return (
     <article
-      className={`flex flex-col rounded-2xl border p-6 shadow-sm ${
+      className={`flex flex-col rounded-2xl border bg-white p-6 shadow-sm ${
         plan.highlighted
-          ? "border-amber-700 bg-amber-950 text-white shadow-lg"
-          : "border-amber-200 bg-white text-amber-950"
+          ? "border-[var(--color-accent-cta)] shadow-lg"
+          : "border-[var(--color-accent-primary)]/25"
       }`}
     >
       <div className="mb-4">
-        <h2 className="text-xl font-semibold">{plan.name}</h2>
-        <p className={`mt-2 text-sm ${plan.highlighted ? "text-amber-100" : "text-amber-900/70"}`}>
-          {plan.description}
-        </p>
+        <h2 className="text-xl font-semibold text-[var(--color-accent-cta)]">{plan.name}</h2>
+        <p className="mt-2 text-sm text-[var(--color-accent-primary)]/80">{plan.description}</p>
       </div>
 
       <div className="mb-2">
-        <p className="text-4xl font-bold">{plan.priceLabel}</p>
-        <p className={`text-sm ${plan.highlighted ? "text-amber-200" : "text-amber-900/60"}`}>
-          {plan.intervalLabel}
-        </p>
+        <p className="text-4xl font-bold text-[var(--color-accent-primary)]">{plan.priceLabel}</p>
+        <p className="text-sm text-[var(--color-accent-primary)]/70">{plan.intervalLabel}</p>
         {plan.monthlyEquivalentLabel && (
-          <p className={`mt-2 text-sm ${plan.highlighted ? "text-amber-100" : "text-amber-800"}`}>
+          <p className="mt-2 text-sm text-[var(--color-accent-primary)]/80">
             Works out to {plan.monthlyEquivalentLabel}
           </p>
         )}
       </div>
 
-      <ul className={`mb-6 space-y-2 text-sm ${plan.highlighted ? "text-amber-50" : "text-amber-900/80"}`}>
+      <ul className="mb-6 space-y-2 text-sm text-[var(--color-accent-primary)]/85">
         {plan.features.map((feature) => (
           <li key={feature} className="flex items-start gap-2">
-            <span aria-hidden="true">✓</span>
+            <span aria-hidden="true" className="text-[var(--color-accent-primary)]">
+              ✓
+            </span>
             <span>{feature}</span>
           </li>
         ))}
@@ -87,20 +86,12 @@ export function PricingPlanCard({ plan }: PricingPlanCardProps) {
         type="button"
         onClick={() => void handleSubscribe()}
         disabled={loading}
-        className={`mt-auto rounded-full px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
-          plan.highlighted
-            ? "bg-white text-amber-950 hover:bg-amber-50"
-            : "bg-amber-700 text-white hover:bg-amber-800"
-        }`}
+        className={`mt-auto px-4 py-3 disabled:opacity-60 ${themePrimaryButtonClassName}`}
       >
         {loading ? "Redirecting…" : "Subscribe now"}
       </button>
 
-      {error && (
-        <p className={`mt-3 text-sm ${plan.highlighted ? "text-amber-100" : "text-red-700"}`}>
-          {error}
-        </p>
-      )}
+      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
     </article>
   );
 }

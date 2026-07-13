@@ -16,6 +16,8 @@ import {
 import {
   applyFlyerExtractionToSubmission,
   countPopulatedFlyerFields,
+  EMPTY_FLYER_INFERRED_YEAR_FIELDS,
+  type FlyerInferredYearFields,
 } from "@/lib/flyer/apply-flyer-extraction";
 import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
@@ -123,6 +125,23 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function describeInferredYearDateFields(fields: FlyerInferredYearFields) {
+  const labels: string[] = [];
+  if (fields.startDate) labels.push("start date");
+  if (fields.endDate) labels.push("end date");
+  if (fields.entryDeadline) labels.push("entry deadline");
+
+  if (labels.length <= 1) {
+    return labels[0] ?? "";
+  }
+
+  if (labels.length === 2) {
+    return `${labels[0]} and ${labels[1]}`;
+  }
+
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
+}
+
 export function EventSubmissionForm() {
   const [formData, setFormData] = useState<EventSubmission>(EMPTY_EVENT_SUBMISSION);
   const [featurePlacement, setFeaturePlacement] = useState<FeaturedPlacementChoice>("none");
@@ -130,6 +149,9 @@ export function EventSubmissionForm() {
   const [isUploadingFlyer, setIsUploadingFlyer] = useState(false);
   const [isExtractingFlyer, setIsExtractingFlyer] = useState(false);
   const [flyerExtractionMessage, setFlyerExtractionMessage] = useState<string | null>(null);
+  const [inferredYearFields, setInferredYearFields] = useState<FlyerInferredYearFields>(
+    EMPTY_FLYER_INFERRED_YEAR_FIELDS,
+  );
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
@@ -181,9 +203,15 @@ export function EventSubmissionForm() {
     });
   }
 
+  function updateDateField(field: "startDate" | "endDate" | "entryDeadline", value: string) {
+    updateField(field, value);
+    setInferredYearFields((current) => ({ ...current, [field]: false }));
+  }
+
   function clearFlyer() {
     setFlyerFile(null);
     setFlyerExtractionMessage(null);
+    setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -202,6 +230,7 @@ export function EventSubmissionForm() {
     setFlyerFile(file);
     setIsUploadingFlyer(true);
     setFlyerExtractionMessage(null);
+    setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -257,6 +286,7 @@ export function EventSubmissionForm() {
 
     setIsExtractingFlyer(true);
     setFlyerExtractionMessage(null);
+    setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
     setErrors((current) => {
       const next = { ...current };
       delete next.flyerExtraction;
@@ -279,7 +309,13 @@ export function EventSubmissionForm() {
         throw new Error(data.error ?? "Could not extract details from this flyer.");
       }
 
-      setFormData((current) => applyFlyerExtractionToSubmission(current, data.extracted!));
+      let inferredFields = EMPTY_FLYER_INFERRED_YEAR_FIELDS;
+      setFormData((current) => {
+        const result = applyFlyerExtractionToSubmission(current, data.extracted!);
+        inferredFields = result.inferredYearFields;
+        return result.submission;
+      });
+      setInferredYearFields(inferredFields);
       setErrors({});
 
       const populatedCount = countPopulatedFlyerFields(
@@ -616,13 +652,23 @@ export function EventSubmissionForm() {
         title="Dates"
         description="Set your event dates and entry deadline."
       >
+        {Object.values(inferredYearFields).some(Boolean) && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p className="font-semibold">Please verify event dates</p>
+            <p className="mt-1 text-amber-900/90">
+              Your flyer did not include a year for the{" "}
+              {describeInferredYearDateFields(inferredYearFields)}. We filled in{" "}
+              {new Date().getFullYear()} — confirm each date is correct before submitting.
+            </p>
+          </div>
+        )}
         <div className="grid gap-5 sm:grid-cols-2">
           <TextInput
             name="startDate"
             label="Start Date"
             type="date"
             value={formData.startDate}
-            onChange={(e) => updateField("startDate", e.target.value)}
+            onChange={(e) => updateDateField("startDate", e.target.value)}
             error={errors.startDate}
           />
           <TextInput
@@ -630,7 +676,7 @@ export function EventSubmissionForm() {
             label="End Date"
             type="date"
             value={formData.endDate}
-            onChange={(e) => updateField("endDate", e.target.value)}
+            onChange={(e) => updateDateField("endDate", e.target.value)}
             error={errors.endDate}
             hint="Optional — for multi-day events."
           />
@@ -640,7 +686,7 @@ export function EventSubmissionForm() {
           label="Entry Deadline"
           type="date"
           value={formData.entryDeadline}
-          onChange={(e) => updateField("entryDeadline", e.target.value)}
+          onChange={(e) => updateDateField("entryDeadline", e.target.value)}
           error={errors.entryDeadline}
         />
         <TextArea

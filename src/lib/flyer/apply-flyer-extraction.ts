@@ -3,6 +3,10 @@ import {
   disciplineLabelsToValues,
   inferFlyerDisciplinesFromText,
 } from "@/lib/flyer/flyer-disciplines";
+import {
+  normalizeFlyerDate,
+  resolveFlyerEventDates,
+} from "@/lib/flyer/normalize-flyer-date";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
 import { US_STATES } from "@/lib/us-states";
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
@@ -11,6 +15,23 @@ import type {
   RodeoLevel,
   SubmissionFormat,
 } from "@/types/event-submission";
+
+export type FlyerInferredYearFields = {
+  startDate: boolean;
+  endDate: boolean;
+  entryDeadline: boolean;
+};
+
+export const EMPTY_FLYER_INFERRED_YEAR_FIELDS: FlyerInferredYearFields = {
+  startDate: false,
+  endDate: false,
+  entryDeadline: false,
+};
+
+export interface ApplyFlyerExtractionResult {
+  submission: EventSubmission;
+  inferredYearFields: FlyerInferredYearFields;
+}
 
 const FORMAT_LABEL_TO_VALUE: Record<string, SubmissionFormat> = {
   Jackpot: "jackpot",
@@ -42,24 +63,6 @@ function normalizeState(value: string | null) {
   return byName?.value ?? "";
 }
 
-function normalizeStartDate(value: string | null) {
-  if (!value) {
-    return "";
-  }
-
-  const isoMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (isoMatch) {
-    return isoMatch[1];
-  }
-
-  const parsed = Date.parse(value);
-  if (!Number.isNaN(parsed)) {
-    return new Date(parsed).toISOString().slice(0, 10);
-  }
-
-  return "";
-}
-
 function buildDescription(extracted: FlyerExtractionResult, existingDescription: string) {
   const parts: string[] = [];
 
@@ -71,7 +74,7 @@ function buildDescription(extracted: FlyerExtractionResult, existingDescription:
     parts.push("Rodeo level noted on flyer: Pro");
   }
 
-  if (extracted.date && !normalizeStartDate(extracted.date)) {
+  if (extracted.date && !normalizeFlyerDate(extracted.date).date) {
     parts.push(`Date from flyer: ${extracted.date}`);
   }
 
@@ -96,14 +99,11 @@ function parseZipFromAddress(address: string | null) {
   return match?.[1] ?? "";
 }
 
-function normalizeOptionalDate(value: string | null) {
-  return normalizeStartDate(value);
-}
-
 export function applyFlyerExtractionToSubmission(
   current: EventSubmission,
   extracted: FlyerExtractionResult,
-): EventSubmission {
+  referenceDate: Date = new Date(),
+): ApplyFlyerExtractionResult {
   const sanitized = sanitizeFlyerExtractionLocation(extracted);
   const extractedFormat = sanitized.format
     ? FORMAT_LABEL_TO_VALUE[sanitized.format]
@@ -133,29 +133,46 @@ export function applyFlyerExtractionToSubmission(
         : current.rodeoLevels
       : [];
   const zipFromAddress = parseZipFromAddress(sanitized.address);
+  const entryDeadline = normalizeFlyerDate(sanitized.entryDeadline, referenceDate);
+  const resolvedDates = resolveFlyerEventDates(
+    sanitized.date,
+    sanitized.endDate,
+    current.startDate,
+    current.endDate,
+    referenceDate,
+  );
 
   return {
-    ...current,
-    eventName: sanitized.eventName ?? current.eventName,
-    format,
-    rodeoLevels,
-    disciplines,
-    additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
-    startDate: normalizeStartDate(sanitized.date) || current.startDate,
-    endDate: normalizeOptionalDate(sanitized.endDate) || current.endDate,
-    entryDeadline: normalizeOptionalDate(sanitized.entryDeadline) || current.entryDeadline,
-    classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
-    venueName: sanitized.venueName ?? "",
-    streetAddress: sanitized.address ?? "",
-    city: sanitized.city ?? "",
-    state: normalizeState(sanitized.state) || "",
-    zipCode: sanitized.zipCode ?? zipFromAddress ?? "",
-    producerName: sanitized.contactName ?? current.producerName,
-    contactEmail: sanitized.contactEmail ?? current.contactEmail,
-    contactPhone: sanitized.contactPhone ?? current.contactPhone,
-    entryFee: sanitized.entryFee ?? current.entryFee,
-    prizePayoutInfo: sanitized.prizePayoutInfo ?? current.prizePayoutInfo,
-    description: buildDescription(sanitized, current.description),
+    submission: {
+      ...current,
+      eventName: sanitized.eventName ?? current.eventName,
+      format,
+      rodeoLevels,
+      disciplines,
+      additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
+      startDate: resolvedDates.startDate,
+      endDate: resolvedDates.endDate,
+      entryDeadline: entryDeadline.date || current.entryDeadline,
+      classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
+      venueName: sanitized.venueName ?? "",
+      streetAddress: sanitized.address ?? "",
+      city: sanitized.city ?? "",
+      state: normalizeState(sanitized.state) || "",
+      zipCode: sanitized.zipCode ?? zipFromAddress ?? "",
+      producerName: sanitized.contactName ?? current.producerName,
+      contactEmail: sanitized.contactEmail ?? current.contactEmail,
+      contactPhone: sanitized.contactPhone ?? current.contactPhone,
+      entryFee: sanitized.entryFee ?? current.entryFee,
+      prizePayoutInfo: sanitized.prizePayoutInfo ?? current.prizePayoutInfo,
+      description: buildDescription(sanitized, current.description),
+    },
+    inferredYearFields: {
+      startDate: resolvedDates.startYearInferred,
+      endDate: resolvedDates.endYearInferred,
+      entryDeadline: Boolean(
+        sanitized.entryDeadline && entryDeadline.yearInferred && entryDeadline.date,
+      ),
+    },
   };
 }
 

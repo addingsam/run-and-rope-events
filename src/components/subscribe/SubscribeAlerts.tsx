@@ -14,7 +14,7 @@ export function SubscribeAlerts() {
 
   if (canceled) {
     return (
-      <div className="mx-auto mb-8 max-w-2xl rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+      <div className="mx-auto mb-8 max-w-2xl rounded-2xl border border-[var(--color-accent-primary)]/25 bg-white px-5 py-4 text-sm text-[var(--color-accent-primary)]">
         Checkout was canceled. Pick a plan below when you are ready.
       </div>
     );
@@ -28,9 +28,9 @@ export function SubscribeAlerts() {
       : "You are signed in. Complete checkout below to activate your subscription.";
 
   return (
-    <div className="mx-auto mb-8 max-w-2xl rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
-      <h2 className="text-lg font-semibold text-amber-950">{title}</h2>
-      <p className="mt-2 text-sm text-amber-900/80">{description}</p>
+    <div className="mx-auto mb-8 max-w-2xl rounded-2xl border border-[var(--color-accent-primary)]/25 bg-white px-5 py-4">
+      <h2 className="text-lg font-semibold text-[var(--color-accent-primary)]">{title}</h2>
+      <p className="mt-2 text-sm text-[var(--color-accent-primary)]/80">{description}</p>
     </div>
   );
 }

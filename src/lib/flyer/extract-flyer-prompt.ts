@@ -6,9 +6,9 @@ const FLYER_DISCIPLINE_SCHEMA = FLYER_EXTRACTION_DISCIPLINE_LABELS.map((label) =
 
 export const FLYER_EXTRACTION_JSON_SCHEMA = `{
   "eventName": string | null,
-  "date": string | null,
-  "endDate": string | null,
-  "entryDeadline": string | null,
+  "date": string | null,  // event start; omit year when not printed on flyer
+  "endDate": string | null,  // last day ONLY when flyer shows a multi-day range; null for single-day events
+  "entryDeadline": string | null,  // omit year when not printed on flyer
   "time": string | null,
   "venueName": string | null,
   "address": string | null,
@@ -40,8 +40,10 @@ Rules:
 - city and state: extract when the flyer shows a place like "Lincoln Nebraska" or "Lincoln, NE". Put the city in city and the state in state; leave venueName and address null unless a venue or street address is also printed.
 - zipCode: null unless a ZIP code is visibly printed on the flyer. Do not guess ZIP codes from city names.
 - If the flyer only shows a city/region without a named venue or street address, set venueName and address to null and populate only city and/or state.
-- For date: prefer ISO 8601 (YYYY-MM-DD) when the full date is clear; otherwise use the exact date text shown.
-- When the flyer shows a month/day without a year, prefer the next upcoming occurrence of that date from today's calendar year. Do not assign a year that would make the event already past.
+- For date, endDate, and entryDeadline: prefer ISO 8601 (YYYY-MM-DD) when the full date including year is clearly printed on the flyer.
+- date is the event start day. endDate is the last day ONLY when the flyer explicitly shows a multi-day range or multiple event days (for example "March 15-17", "Fri-Sun", or separate start and end dates). When the flyer lists only one calendar day, set date to that day and endDate to null. Do not infer, guess, or extend a single-day event to a multi-day range.
+- When a date on the flyer omits the year (for example "March 15" or "9/12"), return it without a year using formats like "March 15", "03-15", or "9/12". Do not infer or guess a year — the submitter's form will add the current calendar year for verification.
+- When the flyer explicitly shows a year, always include that year in the extracted date.
 - For state: prefer the two-letter US state code when clear; otherwise the state name as shown.
 - For zipCode: extract the 5-digit ZIP when visible on the flyer, including in the address line or near the venue/city.
 - disciplines must use only allowed labels. Include every distinct jackpot structure or discipline clearly listed on the flyer, such as both Team Roping and Breakaway Roping when both appear.

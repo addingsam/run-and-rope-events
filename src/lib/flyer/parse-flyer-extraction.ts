@@ -3,6 +3,7 @@ import {
   normalizeFlyerDiscipline,
   normalizeFlyerDisciplines,
 } from "@/lib/flyer/flyer-disciplines";
+import { normalizeFlyerDate } from "@/lib/flyer/normalize-flyer-date";
 import {
   FLYER_EXTRACTION_FORMAT_LABELS,
   FLYER_EXTRACTION_RODEO_LEVEL_LABELS,
@@ -33,6 +34,32 @@ function enumOrNull<T extends string>(value: unknown, allowed: readonly T[]) {
   }
 
   return allowed.includes(parsed as T) ? (parsed as T) : null;
+}
+
+function sanitizeExtractedEventDates(
+  startDate: string | null,
+  endDate: string | null,
+): { date: string | null; endDate: string | null } {
+  if (!startDate) {
+    return { date: null, endDate: null };
+  }
+
+  if (!endDate) {
+    return { date: startDate, endDate: null };
+  }
+
+  const normalizedStart = normalizeFlyerDate(startDate);
+  const normalizedEnd = normalizeFlyerDate(endDate);
+
+  if (
+    normalizedStart.date &&
+    normalizedEnd.date &&
+    normalizedStart.date === normalizedEnd.date
+  ) {
+    return { date: startDate, endDate: null };
+  }
+
+  return { date: startDate, endDate };
 }
 
 export function stripJsonCodeFences(text: string) {
@@ -77,10 +104,14 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
         ? [legacyDiscipline]
         : inferredDisciplines;
 
+  const rawDate = nullableString(parsed.date);
+  const rawEndDate = nullableString(parsed.endDate);
+  const { date, endDate } = sanitizeExtractedEventDates(rawDate, rawEndDate);
+
   return {
     eventName: nullableString(parsed.eventName),
-    date: nullableString(parsed.date),
-    endDate: nullableString(parsed.endDate),
+    date,
+    endDate,
     entryDeadline: nullableString(parsed.entryDeadline),
     time: nullableString(parsed.time),
     venueName: nullableString(parsed.venueName),

@@ -15,9 +15,11 @@ export default function SubscribePage() {
         <SubscribeAlerts />
       </Suspense>
 
-      <div className="mx-auto mb-10 max-w-2xl text-center">
-        <h1 className="text-3xl font-bold text-amber-950">Subscribe to {APP_NAME}</h1>
-        <p className="mt-3 text-amber-900/75">
+      <div className="mx-auto mb-10 max-w-2xl rounded-2xl border border-[var(--color-accent-primary)]/25 bg-white px-6 py-8 text-center shadow-sm">
+        <h1 className="text-3xl font-bold text-[var(--color-accent-primary)]">
+          Subscribe to {APP_NAME}
+        </h1>
+        <p className="mt-3 text-[var(--color-accent-primary)]/80">
           Unlock nationwide event search, saved lists, email alerts, and full event details.
           Checkout is handled securely by Stripe.
         </p>
