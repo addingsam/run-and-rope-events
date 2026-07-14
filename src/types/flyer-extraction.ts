@@ -19,10 +19,11 @@ export const FLYER_EXTRACTION_RODEO_LEVEL_LABELS = [
 export type FlyerExtractionRodeoLevelLabel =
   (typeof FLYER_EXTRACTION_RODEO_LEVEL_LABELS)[number];
 
-/** One stop on a series flyer — distinct date(s) and location from shared event details. */
+/** One stop on a series flyer — distinct date(s), location, and entry deadline from shared event details. */
 export interface FlyerExtractionEventEntry {
   date: string | null;
   endDate: string | null;
+  entryDeadline: string | null;
   venueName: string | null;
   address: string | null;
   city: string | null;

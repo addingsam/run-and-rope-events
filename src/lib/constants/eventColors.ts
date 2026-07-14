@@ -9,6 +9,10 @@ export const FALLBACK_EVENT_COLOR = "#9CA3AF";
  * Colors apply to jackpot events and discipline badges.
  */
 export const DISCIPLINE_COLORS: Record<SubmissionDiscipline, string> = {
+  bareback_riding: "#DC2626",
+  saddle_bronc: "#D97706",
+  bull_riding: "#7C3AED",
+  ranch_bronc_riding: "#0D9488",
   barrel_racing: "#EF4444",
   breakaway_roping: "#A855F7",
   calf_roping: "#3B82F6",
@@ -31,6 +35,16 @@ export const RODEO_LEVEL_COLORS: Record<string, string> = {
 };
 
 const legacyDisciplineAliases: Record<string, SubmissionDiscipline> = {
+  bareback_riding: "bareback_riding",
+  "bareback-riding": "bareback_riding",
+  bareback: "bareback_riding",
+  saddle_bronc: "saddle_bronc",
+  "saddle-bronc": "saddle_bronc",
+  bull_riding: "bull_riding",
+  "bull-riding": "bull_riding",
+  ranch_bronc_riding: "ranch_bronc_riding",
+  "ranch-bronc-riding": "ranch_bronc_riding",
+  "ranch-bronc": "ranch_bronc_riding",
   barrel_racing: "barrel_racing",
   "barrel-racing": "barrel_racing",
   breakaway_roping: "breakaway_roping",

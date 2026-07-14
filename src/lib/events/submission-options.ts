@@ -12,6 +12,10 @@ export const RODEO_LEVEL_OPTIONS = [
 ] as const satisfies readonly { value: RodeoLevel; label: string }[];
 
 export const DISCIPLINE_OPTIONS = [
+  { value: "bareback_riding", label: "Bareback Riding (BB)" },
+  { value: "saddle_bronc", label: "Saddle Bronc (SB)" },
+  { value: "bull_riding", label: "Bull Riding (BR)" },
+  { value: "ranch_bronc_riding", label: "Ranch Bronc Riding (RB)" },
   { value: "barrel_racing", label: "Barrel Racing" },
   { value: "team_roping", label: "Team Roping" },
   { value: "calf_roping", label: "Calf Roping" },
@@ -23,6 +27,13 @@ export const DISCIPLINE_OPTIONS = [
   { value: "obstacle_trail", label: "Obstacle & Trail" },
 ] as const satisfies readonly { value: SubmissionDiscipline; label: string }[];
 
+export const RODEO_ROUGH_STOCK_DISCIPLINES = [
+  "bareback_riding",
+  "saddle_bronc",
+  "bull_riding",
+  "ranch_bronc_riding",
+] as const satisfies readonly SubmissionDiscipline[];
+
 export const JACKPOT_ONLY_DISCIPLINES = [
   "cowboy_mounted_shooting",
   "ranch_horse",
@@ -31,6 +42,29 @@ export const JACKPOT_ONLY_DISCIPLINES = [
 
 export function isJackpotOnlyDiscipline(discipline: SubmissionDiscipline) {
   return (JACKPOT_ONLY_DISCIPLINES as readonly SubmissionDiscipline[]).includes(discipline);
+}
+
+export function isRodeoRoughStockDiscipline(discipline: SubmissionDiscipline) {
+  return (RODEO_ROUGH_STOCK_DISCIPLINES as readonly SubmissionDiscipline[]).includes(discipline);
+}
+
+export function getDisciplineOptionsForFormat(format: SubmissionFormat) {
+  if (format === "jackpot") {
+    return DISCIPLINE_OPTIONS.filter((option) => !isRodeoRoughStockDiscipline(option.value));
+  }
+
+  return DISCIPLINE_OPTIONS;
+}
+
+export function filterDisciplinesForFormat(
+  disciplines: SubmissionDiscipline[],
+  format: SubmissionFormat,
+): SubmissionDiscipline[] {
+  if (format === "jackpot") {
+    return disciplines.filter((discipline) => !isRodeoRoughStockDiscipline(discipline));
+  }
+
+  return disciplines;
 }
 
 export function resolveFormatFromDisciplines(
@@ -69,6 +103,10 @@ export function getDisciplineLabel(discipline: SubmissionDiscipline) {
 }
 
 const legacyDisciplineLabelMap: Record<string, string> = {
+  bareback_riding: "Bareback Riding (BB)",
+  saddle_bronc: "Saddle Bronc (SB)",
+  bull_riding: "Bull Riding (BR)",
+  ranch_bronc_riding: "Ranch Bronc Riding (RB)",
   barrel_racing: "Barrel Racing",
   team_roping: "Team Roping",
   calf_roping: "Calf Roping",

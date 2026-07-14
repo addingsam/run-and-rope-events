@@ -10,6 +10,7 @@ import { CheckboxGroup, SelectInput, TextArea, TextInput } from "@/components/su
 import {
   DISCIPLINE_OPTIONS,
   FORMAT_OPTIONS,
+  getDisciplineOptionsForFormat,
   RODEO_LEVEL_OPTIONS,
 } from "@/lib/events/submission-options";
 import { US_STATES } from "@/lib/us-states";
@@ -170,7 +171,7 @@ export function AdminEventEditDialog({
 
             <CheckboxGroup
               label="Disciplines"
-              options={DISCIPLINE_OPTIONS}
+              options={getDisciplineOptionsForFormat(formData.format)}
               values={formData.disciplines}
               onChange={(disciplines) =>
                 updateField("disciplines", disciplines as SubmissionDiscipline[])

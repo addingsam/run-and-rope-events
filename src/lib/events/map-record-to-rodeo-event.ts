@@ -8,6 +8,10 @@ function isEventFormat(value: string | null): value is EventFormat {
 
 function isEventDiscipline(value: string): value is EventDiscipline {
   return [
+    "bareback_riding",
+    "saddle_bronc",
+    "bull_riding",
+    "ranch_bronc_riding",
     "barrel_racing",
     "team_roping",
     "calf_roping",

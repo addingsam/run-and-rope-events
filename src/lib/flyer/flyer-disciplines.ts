@@ -13,6 +13,16 @@ export const DISCIPLINE_LABEL_TO_VALUE = Object.fromEntries(
 ) as Record<FlyerExtractionDisciplineLabel, SubmissionDiscipline>;
 
 const DISCIPLINE_ALIAS_TO_LABEL: Record<string, FlyerExtractionDisciplineLabel> = {
+  bb: "Bareback Riding (BB)",
+  bareback: "Bareback Riding (BB)",
+  "bareback riding": "Bareback Riding (BB)",
+  sb: "Saddle Bronc (SB)",
+  "saddle bronc": "Saddle Bronc (SB)",
+  br: "Bull Riding (BR)",
+  "bull riding": "Bull Riding (BR)",
+  rb: "Ranch Bronc Riding (RB)",
+  "ranch bronc": "Ranch Bronc Riding (RB)",
+  "ranch bronc riding": "Ranch Bronc Riding (RB)",
   cmsa: "Cowboy Mounted Shooting",
   "cowboy mounted shooting association": "Cowboy Mounted Shooting",
   "cowboy mounted shooting": "Cowboy Mounted Shooting",
@@ -96,6 +106,10 @@ const DISCIPLINE_INFERENCE_PATTERNS: Array<{
   pattern: RegExp;
   label: FlyerExtractionDisciplineLabel;
 }> = [
+  { pattern: /\bbareback(?:\s+riding)?\b/i, label: "Bareback Riding (BB)" },
+  { pattern: /\bsaddle bronc\b/i, label: "Saddle Bronc (SB)" },
+  { pattern: /\bbull riding\b/i, label: "Bull Riding (BR)" },
+  { pattern: /\branch bronc(?:\s+riding)?\b/i, label: "Ranch Bronc Riding (RB)" },
   {
     pattern: /\b(?:cmsa|cowboy mounted shooting(?:\s+association)?|mounted shooting)\b/i,
     label: "Cowboy Mounted Shooting",

@@ -48,6 +48,8 @@ export function parseBatchEvents(formData: FormData): BatchEventEntry[] {
         return {
           startDate: typeof event.startDate === "string" ? event.startDate.trim() : "",
           endDate: typeof event.endDate === "string" ? event.endDate.trim() : "",
+          entryDeadline:
+            typeof event.entryDeadline === "string" ? event.entryDeadline.trim() : "",
           venueName: typeof event.venueName === "string" ? event.venueName.trim() : "",
           streetAddress:
             typeof event.streetAddress === "string" ? event.streetAddress.trim() : "",

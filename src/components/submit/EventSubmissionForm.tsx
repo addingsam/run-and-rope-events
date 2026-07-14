@@ -12,7 +12,9 @@ import {
 import { CheckboxGroup, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import {
   DISCIPLINE_OPTIONS,
+  filterDisciplinesForFormat,
   FORMAT_OPTIONS,
+  getDisciplineOptionsForFormat,
   RODEO_LEVEL_OPTIONS,
 } from "@/lib/events/submission-options";
 import {
@@ -270,6 +272,7 @@ export function EventSubmissionForm() {
     setFormData((current) => ({
       ...current,
       format,
+      disciplines: filterDisciplinesForFormat(current.disciplines, format),
       rodeoLevels: format === "rodeo" ? current.rodeoLevels : [],
       additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
     }));
@@ -793,7 +796,7 @@ export function EventSubmissionForm() {
               ? "Select all jackpot structures that apply to this event."
               : "Select all disciplines that apply to this event."
           }
-          options={DISCIPLINE_OPTIONS}
+          options={getDisciplineOptionsForFormat(formData.format)}
           values={formData.disciplines}
           onChange={(values) => handleDisciplinesChange(values as SubmissionDiscipline[])}
           error={errors.disciplines}
@@ -872,14 +875,18 @@ export function EventSubmissionForm() {
             </button>
           </>
         )}
-        <TextInput
-          name="entryDeadline"
-          label="Entry Deadline"
-          type="date"
-          value={formData.entryDeadline}
-          onChange={(e) => updateDateField("entryDeadline", e.target.value)}
-          error={errors.entryDeadline}
-        />
+        {!isMultiEventBatch ? (
+          <TextInput
+            name="entryDeadline"
+            label="Entry Deadline"
+            type="date"
+            required
+            value={formData.entryDeadline}
+            onChange={(e) => updateDateField("entryDeadline", e.target.value)}
+            error={errors.entryDeadline}
+            hint="Last day entries must be called in or submitted."
+          />
+        ) : null}
         <TextArea
           name="classDivisionInfo"
           label="Class or Division Info"

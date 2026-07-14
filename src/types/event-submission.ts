@@ -5,6 +5,10 @@ export type SubmissionSource = "flyer" | "scrape";
 export type RodeoLevel = "youth" | "open" | "amateur";
 
 export type SubmissionDiscipline =
+  | "bareback_riding"
+  | "saddle_bronc"
+  | "bull_riding"
+  | "ranch_bronc_riding"
   | "barrel_racing"
   | "team_roping"
   | "calf_roping"
@@ -18,6 +22,7 @@ export type SubmissionDiscipline =
 export interface BatchEventEntry {
   startDate: string;
   endDate: string;
+  entryDeadline: string;
   venueName: string;
   streetAddress: string;
   city: string;
@@ -28,6 +33,7 @@ export interface BatchEventEntry {
 export const EMPTY_BATCH_EVENT_ENTRY: BatchEventEntry = {
   startDate: "",
   endDate: "",
+  entryDeadline: "",
   venueName: "",
   streetAddress: "",
   city: "",

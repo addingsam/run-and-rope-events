@@ -145,12 +145,14 @@ function mapExtractedEventToBatchEntry(
     "",
     referenceDate,
   );
+  const entryDeadline = normalizeFlyerDate(entry.entryDeadline, referenceDate);
   const zipFromAddress = parseZipFromAddress(sanitized.address);
 
   return {
     batchEvent: {
       startDate: resolvedDates.startDate,
       endDate: resolvedDates.endDate,
+      entryDeadline: entryDeadline.date,
       venueName: sanitized.venueName ?? "",
       streetAddress: sanitized.address ?? "",
       city: sanitized.city ?? "",

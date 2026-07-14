@@ -25,6 +25,7 @@ export function expandSubmissionToMultiEventBatch(
     ...submission,
     startDate: event.startDate.trim(),
     endDate: event.endDate.trim() || event.startDate.trim(),
+    entryDeadline: event.entryDeadline.trim(),
     venueName: event.venueName.trim(),
     streetAddress: event.streetAddress.trim(),
     city: event.city.trim(),

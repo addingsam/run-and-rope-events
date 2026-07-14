@@ -48,6 +48,10 @@ export function validateEventSubmission(
     errors.endDate = "End date must be on or after the start date.";
   }
 
+  if (!data.entryDeadline.trim()) {
+    errors.entryDeadline = "Entry deadline is required.";
+  }
+
   if (data.entryDeadline && data.startDate && data.entryDeadline > data.startDate) {
     errors.entryDeadline = "Entry deadline should be before the event start date.";
   }

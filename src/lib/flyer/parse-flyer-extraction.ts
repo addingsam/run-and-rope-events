@@ -86,6 +86,7 @@ function parseFlyerExtractionEventEntry(value: unknown): FlyerExtractionEventEnt
   const entry: FlyerExtractionEventEntry = {
     date,
     endDate,
+    entryDeadline: nullableString(value.entryDeadline),
     venueName: nullableString(value.venueName),
     address: nullableString(value.address),
     city: nullableString(value.city),

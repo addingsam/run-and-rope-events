@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       delete errors.state;
       delete errors.startDate;
       delete errors.endDate;
+      delete errors.entryDeadline;
     }
 
     if (Object.keys(errors).length > 0) {

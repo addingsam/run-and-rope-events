@@ -44,6 +44,7 @@ export function BatchEventsField({
       {
         startDate: "",
         endDate: "",
+        entryDeadline: "",
         venueName: "",
         streetAddress: "",
         city: "",
@@ -115,6 +116,21 @@ export function BatchEventsField({
                   }
                   error={errors[`batchEvents.${index}.endDate`]}
                   hint="Optional — for multi-day stops."
+                />
+              </div>
+
+              <div className="mt-4">
+                <TextInput
+                  name={`batchEvents.${index}.entryDeadline`}
+                  label="Entry Deadline"
+                  type="date"
+                  required
+                  value={event.entryDeadline}
+                  onChange={(changeEvent) =>
+                    updateEvent(index, "entryDeadline", changeEvent.target.value)
+                  }
+                  error={errors[`batchEvents.${index}.entryDeadline`]}
+                  hint="Last day entries must be called in or submitted."
                 />
               </div>
 

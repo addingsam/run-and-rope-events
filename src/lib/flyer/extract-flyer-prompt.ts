@@ -32,6 +32,7 @@ export const FLYER_EXTRACTION_JSON_SCHEMA = `{
 const FLYER_EXTRACTION_EVENT_SCHEMA = `{
   "date": null,
   "endDate": null,
+  "entryDeadline": null,
   "venueName": null,
   "address": null,
   "city": null,
@@ -64,6 +65,8 @@ Rules:
 - zipCode: null unless a ZIP code is visibly printed on the flyer. Do not guess ZIP codes from city names.
 - If the flyer only shows a city/region without a named venue or street address, set venueName and address to null and populate only city and/or state.
 - For date, endDate, and entryDeadline: prefer ISO 8601 (YYYY-MM-DD) when the full date including year is clearly printed on the flyer.
+- entryDeadline is the last day or date entries must be submitted, called in, or paid by. Look for phrases like "call in by," "entries close," "entry deadline," or per-stop call-in windows on series schedules.
+- For series schedules in events, put each stop's entryDeadline inside that event object when the flyer shows a call-in or entry close date for that stop.
 - date is the primary or first event day. endDate is the last day ONLY when the flyer explicitly shows one event spanning consecutive days (for example "March 15-17", "Fri-Sun"). When the flyer lists only one calendar day, set date to that day, eventDates to [], and endDate to null.
 - eventDates is for multiple SEPARATE event days at the SAME location on one flyer — shared venue, city, and other details apply to each date (for example "June 5, 12 & 19", a schedule table, or a list of Saturdays at one arena). Put every distinct separate event day in eventDates. When eventDates has two or more entries, set date to the first listed day, endDate to null, and events to []. Do not use eventDates for a single multi-day range; use date + endDate for that instead.
 - events is for multiple DISTINCT events on one flyer — each with its own date(s) and location (for example a rodeo series listing "May 22-23 McALESTER, OK - Round-Up Club Arena" followed by other cities and venues). Put one object per distinct event in events with that event's date, endDate (when it spans consecutive days), venueName, address, city, state, and zipCode. When events has two or more entries, set top-level date, endDate, eventDates, venueName, address, city, state, and zipCode to null and put all per-event details only inside events.
@@ -75,7 +78,7 @@ Rules:
 - For state: prefer the two-letter US state code when clear; otherwise the state name as shown.
 - For zipCode: extract the 5-digit ZIP when visible on the flyer, including in the address line or near the venue/city.
 - disciplines must use only allowed labels. Include every distinct jackpot structure or discipline clearly listed on the flyer, such as both Team Roping and Breakaway Roping when both appear.
-- Map discipline abbreviations and organization names to the allowed labels when confident. Examples: CMSA or Cowboy Mounted Shooting Association -> "Cowboy Mounted Shooting"; bulldogging -> "Steer Wrestling / Bull Dogging".
+- Map discipline abbreviations and organization names to the allowed labels when confident. Examples: CMSA or Cowboy Mounted Shooting Association -> "Cowboy Mounted Shooting"; BB or Bareback -> "Bareback Riding (BB)"; SB or Saddle Bronc -> "Saddle Bronc (SB)"; BR or Bull Riding -> "Bull Riding (BR)"; RB or Ranch Bronc -> "Ranch Bronc Riding (RB)"; bulldogging -> "Steer Wrestling / Bull Dogging".
 - format must be exactly "Jackpot" or "Rodeo" or null.
 - Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail are jackpot events, not rodeos. When any of those disciplines apply, set format to "Jackpot".
 - rodeoLevel must be exactly one of Youth, Amateur, Open, Pro, or null.
