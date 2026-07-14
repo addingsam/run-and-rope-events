@@ -81,6 +81,10 @@ export function MapSelectionPanel({
   }
 
   if (selection.type === "event" && !isSubscriber) {
+    const entry = findSelectedEntry(selection, results);
+    const location =
+      entry?.kind === "event" ? `${entry.item.city}, ${entry.item.state}` : null;
+
     return (
       <div
         className={`absolute bottom-3 left-3 right-3 z-10 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm ${themePanelClassName}`}
@@ -100,6 +104,11 @@ export function MapSelectionPanel({
             <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
               Subscribe to see event details
             </h3>
+            {location ? (
+              <p className="mt-2 text-base font-medium text-[var(--color-text-primary)]">
+                {location}
+              </p>
+            ) : null}
             <p className={`mt-2 ${themeMutedTextClassName}`}>
               Event names, dates, fees, and full listings are available to subscribers. Pro WPRA/PRCA
               rodeos remain free to browse.

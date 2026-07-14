@@ -29,11 +29,8 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-accent-primary)]">
               {formatMilesAlongRoute(event.distanceMiles)}
             </p>
-            <h3 className="mt-1 truncate text-lg font-semibold text-[var(--color-text-primary)]/70 blur-[2px]">
-              {event.title}
-            </h3>
-            <p className={`mt-2 ${themeMutedTextClassName}`}>
-              {event.city}, {event.state} · {formatEventDate(event.eventDate)}
+            <p className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
+              {event.city}, {event.state}
             </p>
           </div>
           <div className="shrink-0 text-center">

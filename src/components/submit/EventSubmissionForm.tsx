@@ -699,7 +699,7 @@ export function EventSubmissionForm() {
 
       <FormSection
         title="Venue & Location"
-        description="Venue name and street address are required when submitting from a flyer. Add anything the flyer didn't capture."
+        description="Venue or arena name, city, and state are required. Street address and zip are optional — add them if your flyer includes them."
       >
         <TextInput
           name="venueName"
@@ -712,7 +712,6 @@ export function EventSubmissionForm() {
         <TextInput
           name="streetAddress"
           label="Street Address"
-          required
           value={formData.streetAddress}
           onChange={(e) => updateField("streetAddress", e.target.value)}
           error={errors.streetAddress}
@@ -722,6 +721,7 @@ export function EventSubmissionForm() {
             <TextInput
               name="city"
               label="City"
+              required
               value={formData.city}
               onChange={(e) => updateField("city", e.target.value)}
               error={errors.city}
@@ -731,6 +731,7 @@ export function EventSubmissionForm() {
             <SelectInput
               name="state"
               label="State"
+              required
               value={formData.state}
               onChange={(e) => updateField("state", e.target.value)}
               error={errors.state}
@@ -746,7 +747,7 @@ export function EventSubmissionForm() {
               value={formData.zipCode}
               onChange={(e) => updateField("zipCode", e.target.value)}
               error={errors.zipCode}
-              hint="Required — add if your flyer didn't include it."
+              hint="Optional — add if your flyer includes it."
             />
           </div>
         </div>
@@ -854,7 +855,7 @@ export function EventSubmissionForm() {
         </p>
         <p className={`mt-2 leading-6 ${themeMutedTextClassName}`}>
           Submitting adds your event to the directory at no cost. A flyer upload is required —
-          review the details below and confirm venue name and street address before submitting.
+          review the details below and confirm venue name, city, and state before submitting.
           Producer name will always be displayed on your listing. Homepage featuring below is
           optional and is the only paid step.
         </p>

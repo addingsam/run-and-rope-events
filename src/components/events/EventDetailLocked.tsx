@@ -14,18 +14,22 @@ export function EventDetailLocked({ event }: EventDetailLockedProps) {
   return (
     <div className="space-y-8">
       <section className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden">
-        <div className="min-h-[280px] bg-gradient-to-br from-[var(--color-accent-primary)] via-[var(--color-accent-primary)]/80 to-[var(--color-background)] blur-sm sm:min-h-[340px]" />
-        <div className="absolute inset-0 flex items-center justify-center bg-black/55 px-4">
+        <div className="relative min-h-[280px] bg-[var(--color-background)] sm:min-h-[340px]">
+          <div className="absolute inset-0 bg-[var(--color-accent-primary)]/35" />
+          <div className="absolute inset-0 backdrop-blur-3xl" />
+          <div className="absolute inset-0 bg-[var(--color-background)]/85" />
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center px-4">
           <div className="max-w-md text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-surface)]/30 text-3xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-surface)]/50 text-3xl">
               🔒
             </div>
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
               Subscribe to unlock event details
             </h1>
             <p className="mt-3 text-sm leading-6 text-[var(--color-text-muted)]">
-              Full listings for {event.title} are available to subscribers. Pro WPRA/PRCA rodeos
-              remain free to browse from search results.
+              Full event listings are available to subscribers. Pro WPRA/PRCA rodeos remain free to
+              browse from search results.
             </p>
             <Link href="/subscribe" className={`mt-5 inline-flex ${themePrimaryButtonClassName}`}>
               View subscription plans

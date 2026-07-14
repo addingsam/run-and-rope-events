@@ -36,18 +36,12 @@ export function validateEventSubmission(
     }
   }
 
-  if (source === "flyer") {
-    if (!data.venueName.trim()) {
-      errors.venueName = "Venue name is required when submitting from a flyer.";
-    }
-    if (!data.streetAddress.trim()) {
-      errors.streetAddress = "Street address is required when submitting from a flyer.";
-    }
+  if (!data.venueName.trim()) {
+    errors.venueName = "Venue or arena name is required.";
   }
 
   if (!data.city.trim()) errors.city = "City is required.";
   if (!data.state) errors.state = "State is required.";
-  if (!data.zipCode.trim()) errors.zipCode = "Zip code is required.";
   if (!data.producerName.trim()) errors.producerName = "Producer name is required.";
 
   if (data.endDate && data.startDate && data.endDate < data.startDate) {
