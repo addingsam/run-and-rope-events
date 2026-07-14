@@ -56,5 +56,6 @@ export interface FlyerExtractionResult {
   contactName: string | null;
   contactPhone: string | null;
   contactEmail: string | null;
+  producerWebsite: string | null;
   additionalNotes: string | null;
 }

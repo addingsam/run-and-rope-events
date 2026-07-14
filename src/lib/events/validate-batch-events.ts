@@ -45,9 +45,7 @@ export function validateBatchEvents(events: BatchEventEntry[]): Record<string, s
     }
 
     const entryDeadline = event.entryDeadline.trim();
-    if (!entryDeadline) {
-      errors[`batchEvents.${index}.entryDeadline`] = "Entry deadline is required.";
-    } else if (startDate && entryDeadline > startDate) {
+    if (entryDeadline && startDate && entryDeadline > startDate) {
       errors[`batchEvents.${index}.entryDeadline`] =
         "Entry deadline should be before the event start date.";
     }

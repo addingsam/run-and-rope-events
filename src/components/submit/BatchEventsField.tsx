@@ -124,13 +124,12 @@ export function BatchEventsField({
                   name={`batchEvents.${index}.entryDeadline`}
                   label="Entry Deadline"
                   type="date"
-                  required
                   value={event.entryDeadline}
                   onChange={(changeEvent) =>
                     updateEvent(index, "entryDeadline", changeEvent.target.value)
                   }
                   error={errors[`batchEvents.${index}.entryDeadline`]}
-                  hint="Last day entries must be called in or submitted."
+                  hint="Optional — last day entries must be called in or submitted."
                 />
               </div>
 

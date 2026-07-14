@@ -1,5 +1,6 @@
 import type { EventSubmission, SubmissionSource } from "@/types/event-submission";
 import { isJackpotOnlyDiscipline, isRodeoRoughStockDiscipline } from "@/lib/events/submission-options";
+import { isValidWebsiteUrl } from "@/lib/events/normalize-website-url";
 
 export type SubmissionValidationErrors = Record<string, string>;
 
@@ -55,10 +56,6 @@ export function validateEventSubmission(
     errors.endDate = "End date must be on or after the start date.";
   }
 
-  if (!data.entryDeadline.trim()) {
-    errors.entryDeadline = "Entry deadline is required.";
-  }
-
   if (data.entryDeadline && data.startDate && data.entryDeadline > data.startDate) {
     errors.entryDeadline = "Entry deadline should be before the event start date.";
   }
@@ -71,8 +68,8 @@ export function validateEventSubmission(
     errors.submitterEmail = "Enter a valid email address.";
   }
 
-  if (data.producerWebsite && !/^https?:\/\/.+/i.test(data.producerWebsite)) {
-    errors.producerWebsite = "Enter a valid URL starting with http:// or https://.";
+  if (data.producerWebsite.trim() && !isValidWebsiteUrl(data.producerWebsite)) {
+    errors.producerWebsite = "Enter a valid website such as www.example.com or example.com.";
   }
 
   return errors;

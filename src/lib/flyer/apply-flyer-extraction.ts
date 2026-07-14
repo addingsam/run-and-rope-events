@@ -9,6 +9,10 @@ import {
   resolveFlyerEventDates,
 } from "@/lib/flyer/normalize-flyer-date";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
+import {
+  extractWebsiteFromText,
+  normalizeWebsiteUrl,
+} from "@/lib/events/normalize-website-url";
 import { US_STATES } from "@/lib/us-states";
 import type { FlyerExtractionEventEntry, FlyerExtractionResult } from "@/types/flyer-extraction";
 import type {
@@ -96,6 +100,27 @@ function buildDescription(extracted: FlyerExtractionResult, existingDescription:
   return existingDescription ? `${existingDescription}\n\n${block}` : block;
 }
 
+function resolveProducerWebsite(extracted: FlyerExtractionResult) {
+  if (extracted.producerWebsite) {
+    const normalized = normalizeWebsiteUrl(extracted.producerWebsite);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return (
+    extractWebsiteFromText(
+      extracted.producerWebsite,
+      extracted.additionalNotes,
+      extracted.classDivisionInfo,
+      extracted.prizePayoutInfo,
+      extracted.contactName,
+      extracted.eventName,
+      extracted.entryFee,
+    ) ?? ""
+  );
+}
+
 function parseZipFromAddress(address: string | null) {
   if (!address) {
     return "";
@@ -135,6 +160,7 @@ function mapExtractedEventToBatchEntry(
     contactName: null,
     contactPhone: null,
     contactEmail: null,
+    producerWebsite: null,
     additionalNotes: null,
   });
 
@@ -278,6 +304,7 @@ export function applyFlyerExtractionToSubmission(
           ? singleMappedEvent.batchEvent.zipCode
           : sanitized.zipCode ?? zipFromAddress ?? "",
       producerName: sanitized.contactName ?? current.producerName,
+      producerWebsite: resolveProducerWebsite(sanitized) || current.producerWebsite,
       contactEmail: sanitized.contactEmail ?? current.contactEmail,
       contactPhone: sanitized.contactPhone ?? current.contactPhone,
       entryFee: sanitized.entryFee ?? current.entryFee,

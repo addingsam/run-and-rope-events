@@ -4,6 +4,7 @@ import {
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
+import { normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
 import { submissionSourceToRecordSource } from "@/lib/events/validate-submission";
 import { geocodeCityState } from "@/lib/geocoding/geocode-city-state";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -72,7 +73,7 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
     contact_name: submission.producerName.trim(),
     contact_email: toNullable(submission.contactEmail),
     contact_phone: toNullable(submission.contactPhone),
-    website_link: toNullable(submission.producerWebsite),
+    website_link: toNullable(normalizeWebsiteUrl(submission.producerWebsite)),
     description: buildDescription(submission),
     flyer_url: toNullable(submission.flyerUrl),
     submitter_email: toNullable(submission.submitterEmail),

@@ -26,6 +26,7 @@ export const FLYER_EXTRACTION_JSON_SCHEMA = `{
   "contactName": null,
   "contactPhone": null,
   "contactEmail": null,
+  "producerWebsite": null,
   "additionalNotes": null
 }`;
 
@@ -41,7 +42,7 @@ const FLYER_EXTRACTION_EVENT_SCHEMA = `{
 }`;
 
 const FLYER_EXTRACTION_FIELD_RULES = `Field rules:
-- eventName, date, endDate, entryDeadline, time, venueName, address, city, state, zipCode, entryFee, prizePayoutInfo, classDivisionInfo, contactName, contactPhone, contactEmail, additionalNotes: string or null.
+- eventName, date, endDate, entryDeadline, time, venueName, address, city, state, zipCode, entryFee, prizePayoutInfo, classDivisionInfo, contactName, contactPhone, contactEmail, producerWebsite, additionalNotes: string or null.
 - eventDates: JSON array of strings for separate event days at the SAME location, or [] when not applicable.
 - events: JSON array of per-event objects (${FLYER_EXTRACTION_EVENT_SCHEMA}) for series schedules where each stop has its own date(s) and location. Use [] when not applicable.
 - disciplines: JSON array using only these labels: [${FLYER_DISCIPLINE_SCHEMA}].
@@ -85,6 +86,7 @@ Rules:
 - Put prize money, added money, payout percentages, or payout structure in prizePayoutInfo.
 - Put class, division, age group, or side-pot details in classDivisionInfo.
 - For contactName, contactPhone, and contactEmail, extract the EVENT PRODUCER/ORGANIZER only — the entity hosting, presenting, or producing the event. Look for phrases like "produced by," "presented by," "in conjunction with," a company name near the top of the flyer, or a logo described as the host organization.
+- producerWebsite: extract the event producer or organization's website when printed on the flyer. Include values such as www.example.com, example.com, or full https:// URLs. Do not include social media profile URLs unless that is the only website shown.
 - Do NOT use SPONSORS or VENDORS for these contact fields. Sponsors and vendors include food trucks, construction companies, photographers, and other businesses whose logos or contact info appear in sidebar or footer sponsor blocks, often smaller and grouped with other sponsor logos.
 - Do not extract vendor or sponsor contact info (food vendors, photographers, general sponsors) as the Producer Name or Producer Contact fields, even if their contact details are the most prominent or clearly formatted contact block on the flyer. Prioritize the entity described as hosting, presenting, or producing the event.
 - If only sponsor/vendor contact info is visible and no producer/organizer is identifiable, set contactName, contactPhone, and contactEmail to null.

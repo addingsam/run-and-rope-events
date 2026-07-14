@@ -229,6 +229,8 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
     contactName: nullableString(parsed.contactName),
     contactPhone: nullableString(parsed.contactPhone),
     contactEmail: nullableString(parsed.contactEmail),
+    producerWebsite:
+      nullableString(parsed.producerWebsite) ?? nullableString(parsed.website),
     additionalNotes: nullableString(parsed.additionalNotes),
   };
 }

@@ -880,11 +880,10 @@ export function EventSubmissionForm() {
             name="entryDeadline"
             label="Entry Deadline"
             type="date"
-            required
             value={formData.entryDeadline}
             onChange={(e) => updateDateField("entryDeadline", e.target.value)}
             error={errors.entryDeadline}
-            hint="Last day entries must be called in or submitted."
+            hint="Optional — last day entries must be called in or submitted."
           />
         ) : null}
         <TextArea
@@ -968,12 +967,13 @@ export function EventSubmissionForm() {
         <TextInput
           name="producerWebsite"
           label="Producer Website"
-          type="url"
+          type="text"
           encouraged
           value={formData.producerWebsite}
           onChange={(e) => updateField("producerWebsite", e.target.value)}
           error={errors.producerWebsite}
-          placeholder="https://example.com"
+          placeholder="www.example.com"
+          hint="Optional — www. or .com/.net addresses are accepted."
         />
         <div className="grid gap-5 sm:grid-cols-2">
           <TextInput
