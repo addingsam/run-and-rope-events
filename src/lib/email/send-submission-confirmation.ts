@@ -1,5 +1,5 @@
 import { APP_NAME } from "@/lib/constants";
-import { getResendClient, getResendFromAddress } from "@/lib/email/resend";
+import { getResendClient, getResendDeliveryFailureMessage, getResendFromAddress } from "@/lib/email/resend";
 import { getSubmissionConfirmationRecipients } from "@/lib/email/submission-confirmation-recipients";
 import type { EventSubmission } from "@/types/event-submission";
 
@@ -107,14 +107,8 @@ function buildBatchConfirmationHtml(eventName: string, formattedDates: string[])
 }
 
 function logResendDeliveryIssue(email: string, reason: string) {
-  if (reason.includes("only send testing emails to your own email address")) {
-    console.error(
-      `Submission confirmation blocked by Resend test mode for ${email}. Verify a sending domain in Resend and update RESEND_FROM_EMAIL.`,
-    );
-    return;
-  }
-
-  console.error(`Failed to send submission confirmation to ${email}:`, reason);
+  const message = getResendDeliveryFailureMessage(reason);
+  console.error(`Failed to send submission confirmation to ${email}: ${message}`);
 }
 
 export async function sendSubmissionConfirmation({
@@ -199,7 +193,7 @@ export async function sendSubmissionConfirmationEmails(
       sent.push(email);
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Unknown email delivery error.";
-      failed.push({ email, reason });
+      failed.push({ email, reason: getResendDeliveryFailureMessage(reason) });
       logResendDeliveryIssue(email, reason);
     }
   }
@@ -229,7 +223,7 @@ export async function sendBatchSubmissionConfirmationEmails(
       sent.push(email);
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Unknown email delivery error.";
-      failed.push({ email, reason });
+      failed.push({ email, reason: getResendDeliveryFailureMessage(reason) });
       logResendDeliveryIssue(email, reason);
     }
   }

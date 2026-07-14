@@ -578,13 +578,29 @@ export function EventSubmissionForm() {
       const sentEmails = data.confirmationEmails?.sent ?? [];
       const failedEmails = data.confirmationEmails?.failed ?? [];
 
-      if (sentEmails.length > 0) {
+      if (sentEmails.length > 0 && failedEmails.length === 0) {
         setSubmittedEmail(sentEmails.join(", "));
         setConfirmationNotice(null);
+      } else if (sentEmails.length > 0 && failedEmails.length > 0) {
+        setSubmittedEmail(sentEmails.join(", "));
+        const failedAddresses = failedEmails.map((entry) => entry.email).join(", ");
+        const testModeFailure = failedEmails.some((entry) =>
+          entry.reason.includes("Resend account owner"),
+        );
+        setConfirmationNotice(
+          testModeFailure
+            ? `We could not email ${failedAddresses} because Resend is still in test mode. Verify jackpotandrodeoevents.com in Resend and update RESEND_FROM_EMAIL in production.`
+            : `We could not email ${failedAddresses} right now.`,
+        );
       } else if (failedEmails.length > 0) {
         setSubmittedEmail("");
+        const testModeFailure = failedEmails.some((entry) =>
+          entry.reason.includes("Resend account owner"),
+        );
         setConfirmationNotice(
-          "Your event was saved, but we could not send a confirmation email right now. Our team still received your submission.",
+          testModeFailure
+            ? "Your event was saved, but confirmation email is limited to the Resend account owner until a sending domain is verified."
+            : "Your event was saved, but we could not send a confirmation email right now. Our team still received your submission.",
         );
       } else {
         setSubmittedEmail("");
