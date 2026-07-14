@@ -6,7 +6,8 @@ const FLYER_DISCIPLINE_SCHEMA = FLYER_EXTRACTION_DISCIPLINE_LABELS.map((label) =
 
 export const FLYER_EXTRACTION_JSON_SCHEMA = `{
   "eventName": string | null,
-  "date": string | null,  // event start; omit year when not printed on flyer
+  "date": string | null,  // primary/first event day; omit year when not printed on flyer
+  "eventDates": array of string,  // every distinct separate event day when flyer lists multiple dates
   "endDate": string | null,  // last day ONLY when flyer shows a multi-day range; null for single-day events
   "entryDeadline": string | null,  // omit year when not printed on flyer
   "time": string | null,
@@ -41,7 +42,9 @@ Rules:
 - zipCode: null unless a ZIP code is visibly printed on the flyer. Do not guess ZIP codes from city names.
 - If the flyer only shows a city/region without a named venue or street address, set venueName and address to null and populate only city and/or state.
 - For date, endDate, and entryDeadline: prefer ISO 8601 (YYYY-MM-DD) when the full date including year is clearly printed on the flyer.
-- date is the event start day. endDate is the last day ONLY when the flyer explicitly shows a multi-day range or multiple event days (for example "March 15-17", "Fri-Sun", or separate start and end dates). When the flyer lists only one calendar day, set date to that day and endDate to null. Do not infer, guess, or extend a single-day event to a multi-day range.
+- date is the primary or first event day. endDate is the last day ONLY when the flyer explicitly shows one event spanning consecutive days (for example "March 15-17", "Fri-Sun"). When the flyer lists only one calendar day, set date to that day, eventDates to [], and endDate to null.
+- eventDates is for multiple SEPARATE event listings on one flyer — the same details apply to each date (for example "June 5, 12 & 19", a schedule table, or a list of Saturdays). Put every distinct separate event day in eventDates. When eventDates has two or more entries, set date to the first listed day and endDate to null. Do not use eventDates for a single multi-day range; use date + endDate for that instead.
+- When only one event day appears on the flyer, return eventDates as an empty array [].
 - When a date on the flyer omits the year (for example "March 15" or "9/12"), return it without a year using formats like "March 15", "03-15", or "9/12". Do not infer or guess a year — the submitter's form will add the current calendar year for verification.
 - When the flyer explicitly shows a year, always include that year in the extracted date.
 - For state: prefer the two-letter US state code when clear; otherwise the state name as shown.

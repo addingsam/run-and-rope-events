@@ -5,6 +5,7 @@ import {
 } from "@/lib/flyer/flyer-disciplines";
 import {
   normalizeFlyerDate,
+  normalizeFlyerDateList,
   resolveFlyerEventDates,
 } from "@/lib/flyer/normalize-flyer-date";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
@@ -31,6 +32,8 @@ export const EMPTY_FLYER_INFERRED_YEAR_FIELDS: FlyerInferredYearFields = {
 export interface ApplyFlyerExtractionResult {
   submission: EventSubmission;
   inferredYearFields: FlyerInferredYearFields;
+  batchEventDates: string[];
+  batchDatesYearInferred: boolean[];
 }
 
 const FORMAT_LABEL_TO_VALUE: Record<string, SubmissionFormat> = {
@@ -141,6 +144,16 @@ export function applyFlyerExtractionToSubmission(
     current.endDate,
     referenceDate,
   );
+  const extractedBatchDates =
+    sanitized.eventDates.length > 0
+      ? sanitized.eventDates
+      : sanitized.date
+        ? [sanitized.date]
+        : [];
+  const normalizedBatch = normalizeFlyerDateList(extractedBatchDates, referenceDate);
+  const batchEventDates =
+    normalizedBatch.dates.length >= 2 ? normalizedBatch.dates : [];
+  const useBatchDates = batchEventDates.length >= 2;
 
   return {
     submission: {
@@ -150,8 +163,8 @@ export function applyFlyerExtractionToSubmission(
       rodeoLevels,
       disciplines,
       additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
-      startDate: resolvedDates.startDate,
-      endDate: resolvedDates.endDate,
+      startDate: useBatchDates ? batchEventDates[0] : resolvedDates.startDate,
+      endDate: useBatchDates ? batchEventDates[0] : resolvedDates.endDate,
       entryDeadline: entryDeadline.date || current.entryDeadline,
       classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
       venueName: sanitized.venueName ?? "",
@@ -167,12 +180,16 @@ export function applyFlyerExtractionToSubmission(
       description: buildDescription(sanitized, current.description),
     },
     inferredYearFields: {
-      startDate: resolvedDates.startYearInferred,
-      endDate: resolvedDates.endYearInferred,
+      startDate: useBatchDates
+        ? normalizedBatch.yearInferred.some(Boolean)
+        : resolvedDates.startYearInferred,
+      endDate: useBatchDates ? false : resolvedDates.endYearInferred,
       entryDeadline: Boolean(
         sanitized.entryDeadline && entryDeadline.yearInferred && entryDeadline.date,
       ),
     },
+    batchEventDates,
+    batchDatesYearInferred: useBatchDates ? normalizedBatch.yearInferred : [],
   };
 }
 
@@ -185,6 +202,13 @@ export function countPopulatedFlyerFields(extracted: FlyerExtractionResult) {
     }
 
     if (key === "disciplines") {
+      if (Array.isArray(value) && value.length > 0) {
+        count += 1;
+      }
+      continue;
+    }
+
+    if (key === "eventDates") {
       if (Array.isArray(value) && value.length > 0) {
         count += 1;
       }

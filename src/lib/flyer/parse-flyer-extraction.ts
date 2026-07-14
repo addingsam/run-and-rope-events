@@ -36,6 +36,16 @@ function enumOrNull<T extends string>(value: unknown, allowed: readonly T[]) {
   return allowed.includes(parsed as T) ? (parsed as T) : null;
 }
 
+function nullableStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => nullableString(item))
+    .filter((item): item is string => Boolean(item));
+}
+
 function sanitizeExtractedEventDates(
   startDate: string | null,
   endDate: string | null,
@@ -107,10 +117,12 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
   const rawDate = nullableString(parsed.date);
   const rawEndDate = nullableString(parsed.endDate);
   const { date, endDate } = sanitizeExtractedEventDates(rawDate, rawEndDate);
+  const eventDates = nullableStringArray(parsed.eventDates);
 
   return {
     eventName: nullableString(parsed.eventName),
     date,
+    eventDates,
     endDate,
     entryDeadline: nullableString(parsed.entryDeadline),
     time: nullableString(parsed.time),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BatchEventDatesField } from "@/components/submit/BatchEventDatesField";
 import { FormSection } from "@/components/submit/FormSection";
 import { AdditionalOfferingsField } from "@/components/submit/AdditionalOfferingsField";
 import {
@@ -33,6 +34,8 @@ import {
 } from "@/lib/theme/form-classes";
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 import { validateEventSubmission } from "@/lib/events/validate-submission";
+import { validateBatchEventDates } from "@/lib/events/validate-batch-dates";
+import { uniqueSortedEventDates } from "@/lib/events/expand-batch-submissions";
 import {
   EMPTY_EVENT_SUBMISSION,
   type EventSubmission,
@@ -48,9 +51,10 @@ type FormErrors = Partial<
     | "disciplines"
     | "featurePlacement"
     | "flyerExtraction"
-    | "submit",
+    | "submit"
+    | "eventDates",
     string
-  >
+  > & Record<`eventDates.${number}`, string>
 >;
 
 const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
@@ -63,6 +67,7 @@ const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
   "startDate",
   "endDate",
   "entryDeadline",
+  "eventDates",
   "venueName",
   "streetAddress",
   "city",
@@ -102,10 +107,18 @@ function scrollToFirstFormError(errors: FormErrors) {
 function validateForm(
   data: EventSubmission,
   featurePlacement: FeaturedPlacementChoice,
+  batchEventDates: string[],
 ): FormErrors {
   const errors: FormErrors = validateEventSubmission(data, "flyer");
 
-  if (featurePlacement !== "none") {
+  if (batchEventDates.length >= 2) {
+    Object.assign(errors, validateBatchEventDates(batchEventDates));
+
+    if (featurePlacement !== "none") {
+      errors.featurePlacement =
+        "Homepage featuring applies to one event at a time. Submit the dates first, then feature each listing after approval.";
+    }
+  } else if (featurePlacement !== "none") {
     const email = data.submitterEmail.trim() || data.contactEmail.trim();
     if (!email) {
       errors.featurePlacement =
@@ -152,9 +165,43 @@ export function EventSubmissionForm() {
   const [inferredYearFields, setInferredYearFields] = useState<FlyerInferredYearFields>(
     EMPTY_FLYER_INFERRED_YEAR_FIELDS,
   );
+  const [batchEventDates, setBatchEventDates] = useState<string[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submittedEventCount, setSubmittedEventCount] = useState(1);
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const isBatchMode = batchEventDates.length >= 2;
+
+  function startBatchMode() {
+    const initialDates = formData.startDate ? [formData.startDate, ""] : ["", ""];
+    setBatchEventDates(initialDates);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.startDate;
+      delete next.endDate;
+      return next;
+    });
+  }
+
+  function handleBatchDatesChange(dates: string[]) {
+    if (dates.length < 2) {
+      setBatchEventDates([]);
+      if (dates[0]?.trim()) {
+        updateField("startDate", dates[0].trim());
+        updateField("endDate", dates[0].trim());
+      }
+      return;
+    }
+
+    setBatchEventDates(dates);
+    const filledDates = uniqueSortedEventDates(dates.map((date) => date.trim()).filter(Boolean));
+    if (filledDates[0]) {
+      updateField("startDate", filledDates[0]);
+      updateField("endDate", filledDates[0]);
+    }
+    setInferredYearFields((current) => ({ ...current, startDate: false, endDate: false }));
+  }
+
   const [confirmationNotice, setConfirmationNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -212,6 +259,7 @@ export function EventSubmissionForm() {
     setFlyerFile(null);
     setFlyerExtractionMessage(null);
     setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
+    setBatchEventDates([]);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -231,6 +279,7 @@ export function EventSubmissionForm() {
     setIsUploadingFlyer(true);
     setFlyerExtractionMessage(null);
     setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
+    setBatchEventDates([]);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -310,11 +359,14 @@ export function EventSubmissionForm() {
       }
 
       let inferredFields = EMPTY_FLYER_INFERRED_YEAR_FIELDS;
+      let extractedBatchDates: string[] = [];
       setFormData((current) => {
         const result = applyFlyerExtractionToSubmission(current, data.extracted!);
         inferredFields = result.inferredYearFields;
+        extractedBatchDates = result.batchEventDates;
         return result.submission;
       });
+      setBatchEventDates(extractedBatchDates);
       setInferredYearFields(inferredFields);
       setErrors({});
 
@@ -322,9 +374,11 @@ export function EventSubmissionForm() {
         sanitizeFlyerExtractionLocation(data.extracted),
       );
       setFlyerExtractionMessage(
-        populatedCount > 0
-          ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
-          : "No confident details were found on this flyer. Please complete the form manually.",
+        extractedBatchDates.length >= 2
+          ? `Filled shared details and ${extractedBatchDates.length} event dates from your flyer. Each date will be submitted as a separate listing.`
+          : populatedCount > 0
+            ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
+            : "No confident details were found on this flyer. Please complete the form manually.",
       );
     } catch (error) {
       setErrors((current) => ({
@@ -358,7 +412,7 @@ export function EventSubmissionForm() {
       return;
     }
 
-    const validationErrors = validateForm(formData, featurePlacement);
+    const validationErrors = validateForm(formData, featurePlacement, batchEventDates);
     if (Object.keys(validationErrors).length > 0) {
       const errorCount = Object.keys(validationErrors).length;
       setErrors({
@@ -385,6 +439,10 @@ export function EventSubmissionForm() {
         if (value) body.append(key, value);
       });
 
+      if (isBatchMode) {
+        batchEventDates.forEach((date) => body.append("eventDates", date));
+      }
+
       const response = await fetch("/api/events/submit", {
         method: "POST",
         body,
@@ -392,6 +450,8 @@ export function EventSubmissionForm() {
 
       const data = (await response.json()) as {
         eventId?: string;
+        eventIds?: string[];
+        eventCount?: number;
         error?: string;
         confirmationEmails?: {
           sent: string[];
@@ -399,11 +459,11 @@ export function EventSubmissionForm() {
         };
       };
 
-      if (!response.ok || !data.eventId) {
+      if (!response.ok || (!data.eventId && !(data.eventIds && data.eventIds.length > 0))) {
         throw new Error(data.error ?? "Submission failed");
       }
 
-      if (featurePlacement !== "none") {
+      if (featurePlacement !== "none" && !isBatchMode) {
         const checkoutEmail = formData.submitterEmail.trim() || formData.contactEmail.trim();
         const checkoutResponse = await fetch("/api/stripe/feature-checkout", {
           method: "POST",
@@ -449,9 +509,11 @@ export function EventSubmissionForm() {
       }
 
       setSubmitted(true);
+      setSubmittedEventCount(data.eventCount ?? 1);
       setFormData(EMPTY_EVENT_SUBMISSION);
       setFeaturePlacement("none");
       setFlyerFile(null);
+      setBatchEventDates([]);
       setErrors({});
     } catch (submitError) {
       setErrors({
@@ -471,10 +533,12 @@ export function EventSubmissionForm() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-accent-primary)]/20 text-2xl text-[var(--color-accent-cta)]">
           ✓
         </div>
-        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Event submitted</h2>
+        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+          {submittedEventCount > 1 ? `${submittedEventCount} events submitted` : "Event submitted"}
+        </h2>
         <p className={`mx-auto mt-3 max-w-md leading-7 ${themeMutedTextClassName}`}>
-          Thanks for listing your event. We&apos;ll review the details and publish it to the
-          directory soon.
+          Thanks for listing your event{submittedEventCount > 1 ? "s" : ""}. We&apos;ll review the
+          details and publish {submittedEventCount > 1 ? "each listing" : "it"} to the directory soon.
           {submittedEmail
             ? ` A confirmation was sent to ${submittedEmail}.`
             : confirmationNotice
@@ -650,7 +714,11 @@ export function EventSubmissionForm() {
 
       <FormSection
         title="Dates"
-        description="Set your event dates and entry deadline."
+        description={
+          isBatchMode
+            ? "Each date below becomes its own event listing with the same flyer and details."
+            : "Set your event dates and entry deadline."
+        }
       >
         {Object.values(inferredYearFields).some(Boolean) && (
           <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
@@ -662,25 +730,38 @@ export function EventSubmissionForm() {
             </p>
           </div>
         )}
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextInput
-            name="startDate"
-            label="Start Date"
-            type="date"
-            value={formData.startDate}
-            onChange={(e) => updateDateField("startDate", e.target.value)}
-            error={errors.startDate}
+        {isBatchMode ? (
+          <BatchEventDatesField
+            dates={batchEventDates}
+            errors={errors}
+            onChange={handleBatchDatesChange}
           />
-          <TextInput
-            name="endDate"
-            label="End Date"
-            type="date"
-            value={formData.endDate}
-            onChange={(e) => updateDateField("endDate", e.target.value)}
-            error={errors.endDate}
-            hint="Optional — for multi-day events."
-          />
-        </div>
+        ) : (
+          <>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <TextInput
+                name="startDate"
+                label="Start Date"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => updateDateField("startDate", e.target.value)}
+                error={errors.startDate}
+              />
+              <TextInput
+                name="endDate"
+                label="End Date"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => updateDateField("endDate", e.target.value)}
+                error={errors.endDate}
+                hint="Optional — for multi-day events."
+              />
+            </div>
+            <button type="button" onClick={startBatchMode} className={themeSecondaryButtonClassName}>
+              This flyer covers multiple dates
+            </button>
+          </>
+        )}
         <TextInput
           name="entryDeadline"
           label="Entry Deadline"
@@ -827,27 +908,36 @@ export function EventSubmissionForm() {
         />
       </FormSection>
 
-      <FormSection
-        title="Homepage Featuring"
-        description="Optional paid promotion only — listing your event is free."
-        titleClassName="text-[var(--color-accent-cta)]"
-      >
-        <div id="featurePlacement">
-          <FeaturedPlacementField
-            value={featurePlacement}
-            onChange={(value) => {
-              setFeaturePlacement(value);
-              setErrors((current) => {
-                const next = { ...current };
-                delete next.featurePlacement;
-                delete next.submit;
-                return next;
-              });
-            }}
-            error={errors.featurePlacement}
-          />
+      {!isBatchMode ? (
+        <FormSection
+          title="Homepage Featuring"
+          description="Optional paid promotion only — listing your event is free."
+          titleClassName="text-[var(--color-accent-cta)]"
+        >
+          <div id="featurePlacement">
+            <FeaturedPlacementField
+              value={featurePlacement}
+              onChange={(value) => {
+                setFeaturePlacement(value);
+                setErrors((current) => {
+                  const next = { ...current };
+                  delete next.featurePlacement;
+                  delete next.submit;
+                  return next;
+                });
+              }}
+              error={errors.featurePlacement}
+            />
+          </div>
+        </FormSection>
+      ) : (
+        <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
+          <p className={`text-sm ${themeMutedTextClassName}`}>
+            Homepage featuring is available for each listing after approval. Submit your dates now,
+            then feature individual events from your confirmation email or the dashboard.
+          </p>
         </div>
-      </FormSection>
+      )}
 
       <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
         <p className="text-base font-semibold text-[var(--color-text-primary)]">
@@ -870,12 +960,14 @@ export function EventSubmissionForm() {
           className={`mt-5 w-full px-6 py-4 text-base disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${themePrimaryButtonClassName}`}
         >
           {isSubmitting
-            ? featurePlacement !== "none"
+            ? featurePlacement !== "none" && !isBatchMode
               ? "Submitting and starting checkout..."
               : "Submitting..."
-            : featurePlacement !== "none"
-              ? "Submit event and continue to payment"
-              : "Submit event — free"}
+            : isBatchMode
+              ? `Submit ${batchEventDates.filter((date) => date.trim()).length} events — free`
+              : featurePlacement !== "none"
+                ? "Submit event and continue to payment"
+                : "Submit event — free"}
         </button>
       </div>
     </form>

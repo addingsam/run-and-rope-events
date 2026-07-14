@@ -104,3 +104,13 @@ export async function saveEventSubmission(submission: EventSubmission) {
 
   return data;
 }
+
+export async function saveEventSubmissions(submissions: EventSubmission[]) {
+  const saved = [];
+
+  for (const submission of submissions) {
+    saved.push(await saveEventSubmission(submission));
+  }
+
+  return saved;
+}

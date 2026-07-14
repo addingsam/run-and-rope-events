@@ -149,3 +149,34 @@ export function resolveFlyerEventDates(
       : Boolean(extractedEnd && end.yearInferred),
   };
 }
+
+export function normalizeFlyerDateList(
+  values: string[],
+  referenceDate: Date = new Date(),
+): { dates: string[]; yearInferred: boolean[] } {
+  const dates: string[] = [];
+  const yearInferred: boolean[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    const normalized = normalizeFlyerDate(value, referenceDate);
+    if (!normalized.date || seen.has(normalized.date)) {
+      continue;
+    }
+
+    seen.add(normalized.date);
+    dates.push(normalized.date);
+    yearInferred.push(normalized.yearInferred);
+  }
+
+  const paired = dates.map((date, index) => ({
+    date,
+    yearInferred: yearInferred[index],
+  }));
+  paired.sort((left, right) => left.date.localeCompare(right.date));
+
+  return {
+    dates: paired.map((item) => item.date),
+    yearInferred: paired.map((item) => item.yearInferred),
+  };
+}

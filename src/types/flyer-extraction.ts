@@ -22,6 +22,8 @@ export type FlyerExtractionRodeoLevelLabel =
 export interface FlyerExtractionResult {
   eventName: string | null;
   date: string | null;
+  /** Separate event days when one flyer lists multiple distinct dates (not a multi-day range). */
+  eventDates: string[];
   endDate: string | null;
   entryDeadline: string | null;
   time: string | null;

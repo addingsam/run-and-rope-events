@@ -18,6 +18,13 @@ function parseSubmissionSource(value: FormDataEntryValue | null): SubmissionSour
   return getString(value) === "scrape" ? "scrape" : "flyer";
 }
 
+export function parseBatchEventDates(formData: FormData): string[] {
+  return formData
+    .getAll("eventDates")
+    .map((value) => getString(value))
+    .filter(Boolean);
+}
+
 export function parseSubmissionFormData(
   formData: FormData,
   options?: { source?: SubmissionSource },
