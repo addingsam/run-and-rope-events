@@ -25,7 +25,7 @@ import {
   SEARCH_RADIUS_OPTIONS,
   SEARCH_RODEO_LEVEL_OPTIONS,
 } from "@/lib/events/search-options";
-import { DISCIPLINE_OPTIONS } from "@/lib/events/submission-options";
+import { filterDisciplinesForFormat, getDisciplineOptionsForFormat } from "@/lib/events/submission-options";
 import {
   filterEventItemsByMapOverlay,
   filterResultsByMapOverlay,
@@ -572,10 +572,11 @@ export function EventSearchPage({
 
       if (patch.format === "jackpot") {
         next.rodeoLevels = [];
+        next.disciplines = filterDisciplinesForFormat(next.disciplines, "jackpot");
       }
 
       if (patch.format === "rodeo") {
-        next.disciplines = [];
+        next.disciplines = filterDisciplinesForFormat(next.disciplines, "rodeo");
       }
 
       return next;
@@ -810,7 +811,7 @@ export function EventSearchPage({
                 <CheckboxGroup
                   label="Jackpot structure"
                   hint="Leave unchecked to include all jackpot structures."
-                  options={DISCIPLINE_OPTIONS}
+                  options={getDisciplineOptionsForFormat("jackpot")}
                   values={formState.disciplines}
                   onChange={(disciplines) =>
                     updateFormState({ disciplines: disciplines as SubmissionDiscipline[] })

@@ -53,7 +53,7 @@ export function getDisciplineOptionsForFormat(format: SubmissionFormat) {
     return DISCIPLINE_OPTIONS.filter((option) => !isRodeoRoughStockDiscipline(option.value));
   }
 
-  return DISCIPLINE_OPTIONS;
+  return DISCIPLINE_OPTIONS.filter((option) => !isJackpotOnlyDiscipline(option.value));
 }
 
 export function filterDisciplinesForFormat(
@@ -64,7 +64,7 @@ export function filterDisciplinesForFormat(
     return disciplines.filter((discipline) => !isRodeoRoughStockDiscipline(discipline));
   }
 
-  return disciplines;
+  return disciplines.filter((discipline) => !isJackpotOnlyDiscipline(discipline));
 }
 
 export function resolveFormatFromDisciplines(

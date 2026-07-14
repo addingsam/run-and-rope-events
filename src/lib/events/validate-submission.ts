@@ -1,5 +1,5 @@
 import type { EventSubmission, SubmissionSource } from "@/types/event-submission";
-import { isJackpotOnlyDiscipline } from "@/lib/events/submission-options";
+import { isJackpotOnlyDiscipline, isRodeoRoughStockDiscipline } from "@/lib/events/submission-options";
 
 export type SubmissionValidationErrors = Record<string, string>;
 
@@ -27,6 +27,13 @@ export function validateEventSubmission(
   ) {
     errors.format =
       "Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail events use Jackpot format.";
+  }
+  if (
+    data.format === "jackpot" &&
+    data.disciplines.some((discipline) => isRodeoRoughStockDiscipline(discipline))
+  ) {
+    errors.format =
+      "Bareback Riding, Saddle Bronc, Bull Riding, and Ranch Bronc Riding are rodeo disciplines.";
   }
   if (!data.startDate) errors.startDate = "Start date is required.";
   else {

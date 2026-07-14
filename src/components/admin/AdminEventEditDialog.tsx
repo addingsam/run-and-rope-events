@@ -9,6 +9,7 @@ import {
 import { CheckboxGroup, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import {
   DISCIPLINE_OPTIONS,
+  filterDisciplinesForFormat,
   FORMAT_OPTIONS,
   getDisciplineOptionsForFormat,
   RODEO_LEVEL_OPTIONS,
@@ -131,6 +132,10 @@ export function AdminEventEditDialog({
                 onChange={(changeEvent) => {
                   const format = changeEvent.target.value as SubmissionFormat;
                   updateField("format", format);
+                  updateField(
+                    "disciplines",
+                    filterDisciplinesForFormat(formData.disciplines, format),
+                  );
                   if (format !== "rodeo") {
                     updateField("rodeoLevels", []);
                     updateField("additionalOfferings", []);
