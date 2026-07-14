@@ -278,11 +278,7 @@ function canAutoSearch(state: SearchFormState) {
   );
 }
 
-function getSelectionKey(entry: SearchResultEntry, isSubscriber: boolean) {
-  if (!isSubscriber && entry.kind === "event") {
-    return `state:${entry.item.state.toUpperCase()}`;
-  }
-
+function getSelectionKey(entry: SearchResultEntry) {
   return getResultKey(entry);
 }
 
@@ -630,7 +626,7 @@ export function EventSearchPage({
   }
 
   function renderResultCard(entry: SearchResultEntry) {
-    const key = getSelectionKey(entry, isSubscriber);
+    const key = getSelectionKey(entry);
 
     if (entry.kind === "pro_rodeo") {
       if (formState.mode === "route") {
@@ -1139,7 +1135,7 @@ export function EventSearchPage({
             }
           >
             {overlayFilteredSearchResults.map((entry) => {
-              const key = getSelectionKey(entry, isSubscriber);
+              const key = getSelectionKey(entry);
               const isSelected = selectedKey === key;
 
               return (

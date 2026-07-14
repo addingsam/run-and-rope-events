@@ -28,6 +28,10 @@ export default clerkMiddleware(async (auth, request) => {
     return;
   }
 
+  if (request.nextUrl.pathname === "/events") {
+    return;
+  }
+
   const eventDetailMatch = request.nextUrl.pathname.match(/^\/events\/([^/]+)$/);
   if (eventDetailMatch) {
     const eventId = eventDetailMatch[1];

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   themeActiveToggleClassName,
   themeInactiveToggleClassName,
@@ -12,12 +11,10 @@ export type DrawingTool = "none" | "pin-radius" | "freehand" | "rectangle";
 
 interface MapDrawingToolbarProps {
   activeTool: DrawingTool;
-  isSubscriber: boolean;
   pinRadiusMiles: number;
   onToolChange: (tool: DrawingTool) => void;
   onPinRadiusChange: (miles: number) => void;
   onClear: () => void;
-  onLockedClick: () => void;
 }
 
 const TOOLS: { id: DrawingTool; label: string }[] = [
@@ -28,19 +25,12 @@ const TOOLS: { id: DrawingTool; label: string }[] = [
 
 export function MapDrawingToolbar({
   activeTool,
-  isSubscriber,
   pinRadiusMiles,
   onToolChange,
   onPinRadiusChange,
   onClear,
-  onLockedClick,
 }: MapDrawingToolbarProps) {
   function handleToolClick(tool: DrawingTool) {
-    if (!isSubscriber) {
-      onLockedClick();
-      return;
-    }
-
     onToolChange(activeTool === tool ? "none" : tool);
   }
 
@@ -59,9 +49,8 @@ export function MapDrawingToolbar({
             onClick={() => handleToolClick(tool.id)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
               activeTool === tool.id ? themeActiveToggleClassName : themeInactiveToggleClassName
-            } ${!isSubscriber ? "opacity-70" : ""}`}
+            }`}
           >
-            {!isSubscriber ? "🔒 " : ""}
             {tool.label}
           </button>
         ))}
@@ -74,7 +63,7 @@ export function MapDrawingToolbar({
         </button>
       </div>
 
-      {activeTool === "pin-radius" && isSubscriber && (
+      {activeTool === "pin-radius" && (
         <div className="mt-3">
           <label className="text-xs font-medium text-[var(--color-text-primary)]">
             Radius: {pinRadiusMiles} mi
@@ -92,18 +81,6 @@ export function MapDrawingToolbar({
             Click the map to drop a pin.
           </p>
         </div>
-      )}
-
-      {!isSubscriber && (
-        <p className={`mt-2 text-[11px] ${themeMutedTextClassName}`}>
-          Drawing tools require a subscription.{" "}
-          <Link
-            href="/subscribe"
-            className="font-semibold text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
-          >
-            Subscribe
-          </Link>
-        </p>
       )}
     </div>
   );

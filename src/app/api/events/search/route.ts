@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireActiveEventAccess } from "@/lib/auth/event-access";
 import { geocodeLocationQuery } from "@/lib/geocoding/geocode-query";
 import { searchAlongRoute } from "@/lib/events/search-along-route";
 import { searchEvents } from "@/lib/events/search-events";
@@ -76,14 +75,6 @@ async function resolveCoordinates({
 }
 
 export async function GET(request: Request) {
-  try {
-    await requireActiveEventAccess();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Access denied.";
-    const status = message.includes("Authentication") ? 401 : 403;
-    return NextResponse.json({ error: message }, { status });
-  }
-
   const { searchParams } = new URL(request.url);
 
   const mode = (searchParams.get("mode") ?? "radius") as SearchMode;

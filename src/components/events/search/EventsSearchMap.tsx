@@ -7,7 +7,6 @@ import { MapDrawingToolbar, type DrawingTool } from "@/components/events/search/
 import { MapSelectionPanel } from "@/components/events/search/MapSelectionPanel";
 import {
   createProRodeoMarkerElement,
-  createStateClusterElement,
 } from "@/lib/mapbox/map-markers";
 import {
   bindEventClusterInteractions,
@@ -17,11 +16,7 @@ import {
   syncEventSelection,
   updateEventsGeoJsonSource,
 } from "@/lib/mapbox/event-cluster-layers";
-import {
-  aggregateEventCountsByState,
-  getStateCentroid,
-  getStateLabel,
-} from "@/lib/mapbox/state-centroids";
+import { getStateCentroid } from "@/lib/mapbox/state-centroids";
 import {
   createCircleGeoJson,
   getResultKey,
@@ -270,7 +265,6 @@ export function EventsSearchMap({
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const freehandPointsRef = useRef<[number, number][]>([]);
   const activeToolRef = useRef<DrawingTool>("none");
-  const isSubscriberRef = useRef(isSubscriber);
   const pinRadiusMilesRef = useRef(25);
   const drawingRef = useRef(false);
   const rectangleStartRef = useRef<mapboxgl.LngLat | null>(null);
@@ -285,7 +279,6 @@ export function EventsSearchMap({
   const [activeTool, setActiveTool] = useState<DrawingTool>("none");
   const [pinRadiusMiles, setPinRadiusMiles] = useState(25);
   const [pinRadiusDrawing, setPinRadiusDrawing] = useState<PinRadiusDrawing | null>(null);
-  const [showSubscribePrompt, setShowSubscribePrompt] = useState(false);
   const [freehandPoints, setFreehandPoints] = useState<[number, number][]>([]);
   const [rectangleStart, setRectangleStart] = useState<mapboxgl.LngLat | null>(null);
   const [rectangleEnd, setRectangleEnd] = useState<mapboxgl.LngLat | null>(null);
@@ -304,10 +297,6 @@ export function EventsSearchMap({
   }, []);
 
   useEffect(() => {
-    isSubscriberRef.current = isSubscriber;
-  }, [isSubscriber]);
-
-  useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
 
@@ -322,9 +311,8 @@ export function EventsSearchMap({
     }
 
     const canvas = map.getCanvas();
-    canvas.style.cursor =
-      isSubscriber && activeTool !== "none" ? "crosshair" : "";
-  }, [activeTool, isSubscriber, mapReady]);
+    canvas.style.cursor = activeTool !== "none" ? "crosshair" : "";
+  }, [activeTool, mapReady]);
 
   const clearMarkers = useCallback(() => {
     for (const marker of markersRef.current) {
@@ -338,11 +326,6 @@ export function EventsSearchMap({
     setActiveTool("none");
     activeToolRef.current = "none";
     drawingRef.current = false;
-
-    if (!isSubscriber) {
-      return;
-    }
-
     overlayHydratedRef.current = false;
     setPinRadiusDrawing(null);
     setFreehandPoints([]);
@@ -377,7 +360,7 @@ export function EventsSearchMap({
         map.removeSource(sourceId);
       }
     }
-  }, [isSubscriber, onSelect]);
+  }, [onSelect]);
 
   const updatePinRadiusLayer = useCallback((drawing: PinRadiusDrawing | null) => {
     const map = mapRef.current;
@@ -476,10 +459,6 @@ export function EventsSearchMap({
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
     function handleMouseDown(event: mapboxgl.MapMouseEvent) {
-      if (!isSubscriberRef.current) {
-        return;
-      }
-
       const tool = activeToolRef.current;
       if (tool === "none") {
         return;
@@ -518,11 +497,11 @@ export function EventsSearchMap({
     }
 
     function handleMouseMove(event: mapboxgl.MapMouseEvent) {
-      if (isSubscriberRef.current && activeToolRef.current !== "none") {
+      if (activeToolRef.current !== "none") {
         map.getCanvas().style.cursor = "crosshair";
       }
 
-      if (!drawingRef.current || !isSubscriberRef.current) {
+      if (!drawingRef.current) {
         return;
       }
 
@@ -548,7 +527,7 @@ export function EventsSearchMap({
     }
 
     function finishDrawing() {
-      if (!drawingRef.current || !isSubscriberRef.current) {
+      if (!drawingRef.current) {
         return;
       }
 
@@ -617,15 +596,6 @@ export function EventsSearchMap({
       return;
     }
 
-    if (!isSubscriber) {
-      clusterCleanupRef.current?.();
-      clusterCleanupRef.current = null;
-      if (map.isStyleLoaded()) {
-        removeEventClusterLayers(map);
-      }
-      return;
-    }
-
     const setupLayers = () => {
       ensureEventClusterLayers(map);
       if (!clusterCleanupRef.current) {
@@ -641,11 +611,19 @@ export function EventsSearchMap({
     }
 
     map.once("load", setupLayers);
-  }, [mapReady, isSubscriber]);
+
+    return () => {
+      clusterCleanupRef.current?.();
+      clusterCleanupRef.current = null;
+      if (map.isStyleLoaded()) {
+        removeEventClusterLayers(map);
+      }
+    };
+  }, [mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !isSubscriber) {
+    if (!map || !mapReady) {
       return;
     }
 
@@ -655,7 +633,7 @@ export function EventsSearchMap({
 
     updateEventsGeoJsonSource(map, buildEventsGeoJson(results));
     syncEventSelection(map, selectedKey, results);
-  }, [results, selectedKey, mapReady, isSubscriber]);
+  }, [results, selectedKey, mapReady]);
 
   useEffect(() => {
     if (!mapReady || typeof navigator === "undefined" || !navigator.geolocation) {
@@ -780,36 +758,6 @@ export function EventsSearchMap({
 
     clearMarkers();
 
-    if (!isSubscriber) {
-      const stateCounts = aggregateEventCountsByState(results);
-
-      for (const [stateCode, count] of stateCounts) {
-        const centroid = getStateCentroid(stateCode);
-        if (!centroid) {
-          continue;
-        }
-
-        const key = `state:${stateCode}`;
-        const selected = selectedKey === key;
-        const element = createStateClusterElement(
-          stateCode,
-          getStateLabel(stateCode),
-          count,
-          selected,
-        );
-
-        element.addEventListener("click", (clickEvent) => {
-          clickEvent.stopPropagation();
-          onSelect(key);
-        });
-
-        const marker = new mapboxgl.Marker({ element })
-          .setLngLat([centroid.lng, centroid.lat])
-          .addTo(map);
-        markersRef.current.push(marker);
-      }
-    }
-
     for (const entry of results) {
       if (entry.kind !== "pro_rodeo") {
         continue;
@@ -859,7 +807,6 @@ export function EventsSearchMap({
     }
   }, [
     results,
-    isSubscriber,
     selectedKey,
     onSelect,
     clearMarkers,
@@ -1012,12 +959,10 @@ export function EventsSearchMap({
 
       <MapDrawingToolbar
         activeTool={activeTool}
-        isSubscriber={isSubscriber}
         pinRadiusMiles={pinRadiusMiles}
         onToolChange={handleToolChange}
         onPinRadiusChange={setPinRadiusMiles}
         onClear={clearDrawings}
-        onLockedClick={() => setShowSubscribePrompt(true)}
       />
 
       {selection && (
@@ -1027,32 +972,6 @@ export function EventsSearchMap({
           isSubscriber={isSubscriber}
           onClose={() => onSelect(null)}
         />
-      )}
-
-      {showSubscribePrompt && !isSubscriber && (
-        <div
-          className={`absolute bottom-3 left-3 right-3 z-10 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]`}
-        >
-          <button
-            type="button"
-            onClick={() => setShowSubscribePrompt(false)}
-            className="absolute right-3 top-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-          >
-            ✕
-          </button>
-          <h3 className="pr-8 text-lg font-semibold text-[var(--color-text-primary)]">
-            Subscribe to draw on the map
-          </h3>
-          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-            Pin radius, freehand, and box drawing tools unlock with a subscription.
-          </p>
-          <a
-            href="/subscribe"
-            className="mt-4 inline-flex rounded-full bg-[var(--color-accent-cta)] px-4 py-2 text-sm font-semibold text-[var(--color-background)] hover:opacity-90"
-          >
-            View plans
-          </a>
-        </div>
       )}
     </div>
   );

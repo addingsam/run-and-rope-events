@@ -16,11 +16,7 @@ interface UpcomingEventsGridProps {
   onCardRef: (key: string, element: HTMLDivElement | null) => void;
 }
 
-function getUpcomingCardKey(event: EventSearchResultItem, isSubscriber: boolean) {
-  if (!isSubscriber) {
-    return `state:${event.state.toUpperCase()}`;
-  }
-
+function getUpcomingCardKey(event: EventSearchResultItem) {
   return `event:${event.id}`;
 }
 
@@ -61,7 +57,7 @@ export function UpcomingEventsGrid({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {events.map((event) => {
-            const key = getUpcomingCardKey(event, isSubscriber);
+            const key = getUpcomingCardKey(event);
             const isSelected = selectedKey === key;
 
             return (

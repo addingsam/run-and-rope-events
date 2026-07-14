@@ -80,6 +80,39 @@ export function MapSelectionPanel({
     );
   }
 
+  if (selection.type === "event" && !isSubscriber) {
+    return (
+      <div
+        className={`absolute bottom-3 left-3 right-3 z-10 p-4 shadow-lg sm:left-auto sm:right-3 sm:max-w-sm ${themePanelClassName}`}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+        >
+          ✕
+        </button>
+        <div className="flex items-start gap-3 pr-8">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-background)] text-xl">
+            🔒
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              Subscribe to see event details
+            </h3>
+            <p className={`mt-2 ${themeMutedTextClassName}`}>
+              Event names, dates, fees, and full listings are available to subscribers. Pro WPRA/PRCA
+              rodeos remain free to browse.
+            </p>
+          </div>
+        </div>
+        <Link href="/subscribe" className={`mt-4 inline-flex ${themePrimaryButtonClassName}`}>
+          View plans
+        </Link>
+      </div>
+    );
+  }
+
   const entry = findSelectedEntry(selection, results);
   if (!entry) {
     return null;
@@ -124,10 +157,6 @@ export function MapSelectionPanel({
         </a>
       </div>
     );
-  }
-
-  if (!isSubscriber) {
-    return null;
   }
 
   const event = entry.item;
