@@ -1,4 +1,4 @@
-import type { EventSubmission } from "@/types/event-submission";
+import type { BatchEventEntry, EventSubmission } from "@/types/event-submission";
 
 export function uniqueSortedEventDates(dates: string[]): string[] {
   return [...new Set(dates.map((date) => date.trim()).filter(Boolean))].sort();
@@ -14,5 +14,21 @@ export function expandSubmissionToBatch(
     ...submission,
     startDate: date,
     endDate: date,
+  }));
+}
+
+export function expandSubmissionToMultiEventBatch(
+  submission: EventSubmission,
+  events: BatchEventEntry[],
+): EventSubmission[] {
+  return events.map((event) => ({
+    ...submission,
+    startDate: event.startDate.trim(),
+    endDate: event.endDate.trim() || event.startDate.trim(),
+    venueName: event.venueName.trim(),
+    streetAddress: event.streetAddress.trim(),
+    city: event.city.trim(),
+    state: event.state.trim(),
+    zipCode: event.zipCode.trim(),
   }));
 }

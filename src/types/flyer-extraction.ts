@@ -19,11 +19,24 @@ export const FLYER_EXTRACTION_RODEO_LEVEL_LABELS = [
 export type FlyerExtractionRodeoLevelLabel =
   (typeof FLYER_EXTRACTION_RODEO_LEVEL_LABELS)[number];
 
+/** One stop on a series flyer — distinct date(s) and location from shared event details. */
+export interface FlyerExtractionEventEntry {
+  date: string | null;
+  endDate: string | null;
+  venueName: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+}
+
 export interface FlyerExtractionResult {
   eventName: string | null;
   date: string | null;
   /** Separate event days when one flyer lists multiple distinct dates (not a multi-day range). */
   eventDates: string[];
+  /** Multiple distinct events (series schedule) — each with its own date(s) and location. */
+  events: FlyerExtractionEventEntry[];
   endDate: string | null;
   entryDeadline: string | null;
   time: string | null;

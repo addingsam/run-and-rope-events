@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BatchEventDatesField } from "@/components/submit/BatchEventDatesField";
+import { BatchEventsField } from "@/components/submit/BatchEventsField";
 import { FormSection } from "@/components/submit/FormSection";
 import { AdditionalOfferingsField } from "@/components/submit/AdditionalOfferingsField";
 import {
@@ -35,9 +36,11 @@ import {
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 import { validateEventSubmission } from "@/lib/events/validate-submission";
 import { validateBatchEventDates } from "@/lib/events/validate-batch-dates";
+import { validateBatchEvents } from "@/lib/events/validate-batch-events";
 import { uniqueSortedEventDates } from "@/lib/events/expand-batch-submissions";
 import {
   EMPTY_EVENT_SUBMISSION,
+  type BatchEventEntry,
   type EventSubmission,
   type RodeoLevel,
   type SubmissionDiscipline,
@@ -52,9 +55,10 @@ type FormErrors = Partial<
     | "featurePlacement"
     | "flyerExtraction"
     | "submit"
-    | "eventDates",
+    | "eventDates"
+    | "batchEvents",
     string
-  > & Record<`eventDates.${number}`, string>
+  > & Record<`eventDates.${number}`, string> & Record<`batchEvents.${number}.${string}`, string>
 >;
 
 const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
@@ -68,6 +72,7 @@ const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
   "endDate",
   "entryDeadline",
   "eventDates",
+  "batchEvents",
   "venueName",
   "streetAddress",
   "city",
@@ -108,10 +113,24 @@ function validateForm(
   data: EventSubmission,
   featurePlacement: FeaturedPlacementChoice,
   batchEventDates: string[],
+  batchEvents: BatchEventEntry[],
 ): FormErrors {
   const errors: FormErrors = validateEventSubmission(data, "flyer");
+  const isMultiEventBatch = batchEvents.length >= 2;
 
-  if (batchEventDates.length >= 2) {
+  if (isMultiEventBatch) {
+    Object.assign(errors, validateBatchEvents(batchEvents));
+    delete errors.venueName;
+    delete errors.city;
+    delete errors.state;
+    delete errors.startDate;
+    delete errors.endDate;
+
+    if (featurePlacement !== "none") {
+      errors.featurePlacement =
+        "Homepage featuring applies to one event at a time. Submit the events first, then feature each listing after approval.";
+    }
+  } else if (batchEventDates.length >= 2) {
     Object.assign(errors, validateBatchEventDates(batchEventDates));
 
     if (featurePlacement !== "none") {
@@ -166,11 +185,17 @@ export function EventSubmissionForm() {
     EMPTY_FLYER_INFERRED_YEAR_FIELDS,
   );
   const [batchEventDates, setBatchEventDates] = useState<string[]>([]);
+  const [batchEvents, setBatchEvents] = useState<BatchEventEntry[]>([]);
+  const [batchEventsYearInferred, setBatchEventsYearInferred] = useState<
+    Array<{ startDate: boolean; endDate: boolean }>
+  >([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submittedEventCount, setSubmittedEventCount] = useState(1);
   const [submittedEmail, setSubmittedEmail] = useState("");
-  const isBatchMode = batchEventDates.length >= 2;
+  const isMultiEventBatch = batchEvents.length >= 2;
+  const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;
+  const isBatchMode = isMultiEventBatch || isSameVenueBatch;
 
   function startBatchMode() {
     const initialDates = formData.startDate ? [formData.startDate, ""] : ["", ""];
@@ -186,6 +211,8 @@ export function EventSubmissionForm() {
   function handleBatchDatesChange(dates: string[]) {
     if (dates.length < 2) {
       setBatchEventDates([]);
+      setBatchEvents([]);
+      setBatchEventsYearInferred([]);
       if (dates[0]?.trim()) {
         updateField("startDate", dates[0].trim());
         updateField("endDate", dates[0].trim());
@@ -193,6 +220,8 @@ export function EventSubmissionForm() {
       return;
     }
 
+    setBatchEvents([]);
+    setBatchEventsYearInferred([]);
     setBatchEventDates(dates);
     const filledDates = uniqueSortedEventDates(dates.map((date) => date.trim()).filter(Boolean));
     if (filledDates[0]) {
@@ -200,6 +229,38 @@ export function EventSubmissionForm() {
       updateField("endDate", filledDates[0]);
     }
     setInferredYearFields((current) => ({ ...current, startDate: false, endDate: false }));
+  }
+
+  function handleBatchEventsChange(events: BatchEventEntry[]) {
+    if (events.length < 2) {
+      setBatchEvents([]);
+      setBatchEventsYearInferred([]);
+      const first = events[0];
+      if (first) {
+        updateField("startDate", first.startDate);
+        updateField("endDate", first.endDate || first.startDate);
+        updateField("venueName", first.venueName);
+        updateField("streetAddress", first.streetAddress);
+        updateField("city", first.city);
+        updateField("state", first.state);
+        updateField("zipCode", first.zipCode);
+      }
+      return;
+    }
+
+    setBatchEventDates([]);
+    setBatchEvents(events);
+    const first = events[0];
+    if (first) {
+      updateField("startDate", first.startDate);
+      updateField("endDate", first.endDate || first.startDate);
+      updateField("venueName", first.venueName);
+      updateField("streetAddress", first.streetAddress);
+      updateField("city", first.city);
+      updateField("state", first.state);
+      updateField("zipCode", first.zipCode);
+    }
+    setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
   }
 
   const [confirmationNotice, setConfirmationNotice] = useState<string | null>(null);
@@ -260,6 +321,8 @@ export function EventSubmissionForm() {
     setFlyerExtractionMessage(null);
     setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
     setBatchEventDates([]);
+    setBatchEvents([]);
+    setBatchEventsYearInferred([]);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -280,6 +343,8 @@ export function EventSubmissionForm() {
     setFlyerExtractionMessage(null);
     setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
     setBatchEventDates([]);
+    setBatchEvents([]);
+    setBatchEventsYearInferred([]);
     updateField("flyerUrl", "");
     setErrors((current) => {
       const next = { ...current };
@@ -336,6 +401,9 @@ export function EventSubmissionForm() {
     setIsExtractingFlyer(true);
     setFlyerExtractionMessage(null);
     setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
+    setBatchEventDates([]);
+    setBatchEvents([]);
+    setBatchEventsYearInferred([]);
     setErrors((current) => {
       const next = { ...current };
       delete next.flyerExtraction;
@@ -360,13 +428,19 @@ export function EventSubmissionForm() {
 
       let inferredFields = EMPTY_FLYER_INFERRED_YEAR_FIELDS;
       let extractedBatchDates: string[] = [];
+      let extractedBatchEvents: BatchEventEntry[] = [];
+      let extractedBatchEventsYearInferred: Array<{ startDate: boolean; endDate: boolean }> = [];
       setFormData((current) => {
         const result = applyFlyerExtractionToSubmission(current, data.extracted!);
         inferredFields = result.inferredYearFields;
         extractedBatchDates = result.batchEventDates;
+        extractedBatchEvents = result.batchEvents;
+        extractedBatchEventsYearInferred = result.batchEventsYearInferred;
         return result.submission;
       });
       setBatchEventDates(extractedBatchDates);
+      setBatchEvents(extractedBatchEvents);
+      setBatchEventsYearInferred(extractedBatchEventsYearInferred);
       setInferredYearFields(inferredFields);
       setErrors({});
 
@@ -374,11 +448,13 @@ export function EventSubmissionForm() {
         sanitizeFlyerExtractionLocation(data.extracted),
       );
       setFlyerExtractionMessage(
-        extractedBatchDates.length >= 2
-          ? `Filled shared details and ${extractedBatchDates.length} event dates from your flyer. Each date will be submitted as a separate listing.`
-          : populatedCount > 0
-            ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
-            : "No confident details were found on this flyer. Please complete the form manually.",
+        extractedBatchEvents.length >= 2
+          ? `Filled shared details and ${extractedBatchEvents.length} distinct events from your flyer. Each will be submitted as a separate listing.`
+          : extractedBatchDates.length >= 2
+            ? `Filled shared details and ${extractedBatchDates.length} event dates from your flyer. Each date will be submitted as a separate listing.`
+            : populatedCount > 0
+              ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
+              : "No confident details were found on this flyer. Please complete the form manually.",
       );
     } catch (error) {
       setErrors((current) => ({
@@ -412,7 +488,12 @@ export function EventSubmissionForm() {
       return;
     }
 
-    const validationErrors = validateForm(formData, featurePlacement, batchEventDates);
+    const validationErrors = validateForm(
+      formData,
+      featurePlacement,
+      batchEventDates,
+      batchEvents,
+    );
     if (Object.keys(validationErrors).length > 0) {
       const errorCount = Object.keys(validationErrors).length;
       setErrors({
@@ -439,7 +520,9 @@ export function EventSubmissionForm() {
         if (value) body.append(key, value);
       });
 
-      if (isBatchMode) {
+      if (isMultiEventBatch) {
+        body.append("batchEvents", JSON.stringify(batchEvents));
+      } else if (isSameVenueBatch) {
         batchEventDates.forEach((date) => body.append("eventDates", date));
       }
 
@@ -514,6 +597,8 @@ export function EventSubmissionForm() {
       setFeaturePlacement("none");
       setFlyerFile(null);
       setBatchEventDates([]);
+      setBatchEvents([]);
+      setBatchEventsYearInferred([]);
       setErrors({});
     } catch (submitError) {
       setErrors({
@@ -715,12 +800,14 @@ export function EventSubmissionForm() {
       <FormSection
         title="Dates"
         description={
-          isBatchMode
-            ? "Each date below becomes its own event listing with the same flyer and details."
-            : "Set your event dates and entry deadline."
+          isMultiEventBatch
+            ? "Review each event stop below. Shared details (name, format, disciplines) apply to every listing."
+            : isSameVenueBatch
+              ? "Each date below becomes its own event listing with the same flyer and details."
+              : "Set your event dates and entry deadline."
         }
       >
-        {Object.values(inferredYearFields).some(Boolean) && (
+        {Object.values(inferredYearFields).some(Boolean) && !isMultiEventBatch && (
           <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
             <p className="font-semibold">Please verify event dates</p>
             <p className="mt-1 text-amber-900/90">
@@ -730,7 +817,14 @@ export function EventSubmissionForm() {
             </p>
           </div>
         )}
-        {isBatchMode ? (
+        {isMultiEventBatch ? (
+          <BatchEventsField
+            events={batchEvents}
+            errors={errors}
+            yearInferred={batchEventsYearInferred}
+            onChange={handleBatchEventsChange}
+          />
+        ) : isSameVenueBatch ? (
           <BatchEventDatesField
             dates={batchEventDates}
             errors={errors}
@@ -778,61 +872,63 @@ export function EventSubmissionForm() {
         />
       </FormSection>
 
-      <FormSection
-        title="Venue & Location"
-        description="Venue or arena name, city, and state are required. Street address and zip are optional — add them if your flyer includes them."
-      >
-        <TextInput
-          name="venueName"
-          label="Venue Name"
-          required
-          value={formData.venueName}
-          onChange={(e) => updateField("venueName", e.target.value)}
-          error={errors.venueName}
-        />
-        <TextInput
-          name="streetAddress"
-          label="Street Address"
-          value={formData.streetAddress}
-          onChange={(e) => updateField("streetAddress", e.target.value)}
-          error={errors.streetAddress}
-        />
-        <div className="grid gap-5 sm:grid-cols-3">
-          <div className="sm:col-span-1">
-            <TextInput
-              name="city"
-              label="City"
-              required
-              value={formData.city}
-              onChange={(e) => updateField("city", e.target.value)}
-              error={errors.city}
-            />
+      {!isMultiEventBatch ? (
+        <FormSection
+          title="Venue & Location"
+          description="Venue or arena name, city, and state are required. Street address and zip are optional — add them if your flyer includes them."
+        >
+          <TextInput
+            name="venueName"
+            label="Venue Name"
+            required
+            value={formData.venueName}
+            onChange={(e) => updateField("venueName", e.target.value)}
+            error={errors.venueName}
+          />
+          <TextInput
+            name="streetAddress"
+            label="Street Address"
+            value={formData.streetAddress}
+            onChange={(e) => updateField("streetAddress", e.target.value)}
+            error={errors.streetAddress}
+          />
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div className="sm:col-span-1">
+              <TextInput
+                name="city"
+                label="City"
+                required
+                value={formData.city}
+                onChange={(e) => updateField("city", e.target.value)}
+                error={errors.city}
+              />
+            </div>
+            <div className="sm:col-span-1">
+              <SelectInput
+                name="state"
+                label="State"
+                required
+                value={formData.state}
+                onChange={(e) => updateField("state", e.target.value)}
+                error={errors.state}
+                placeholder="Select state"
+                options={US_STATES}
+              />
+            </div>
+            <div className="sm:col-span-1">
+              <TextInput
+                name="zipCode"
+                label="Zip Code"
+                inputMode="numeric"
+                value={formData.zipCode}
+                onChange={(e) => updateField("zipCode", e.target.value)}
+                error={errors.zipCode}
+                hint="Optional — add if your flyer includes it."
+              />
+            </div>
           </div>
-          <div className="sm:col-span-1">
-            <SelectInput
-              name="state"
-              label="State"
-              required
-              value={formData.state}
-              onChange={(e) => updateField("state", e.target.value)}
-              error={errors.state}
-              placeholder="Select state"
-              options={US_STATES}
-            />
-          </div>
-          <div className="sm:col-span-1">
-            <TextInput
-              name="zipCode"
-              label="Zip Code"
-              inputMode="numeric"
-              value={formData.zipCode}
-              onChange={(e) => updateField("zipCode", e.target.value)}
-              error={errors.zipCode}
-              hint="Optional — add if your flyer includes it."
-            />
-          </div>
-        </div>
-      </FormSection>
+        </FormSection>
+      ) : null}
 
       <FormSection
         title="Producer & Contact"
@@ -964,7 +1060,7 @@ export function EventSubmissionForm() {
               ? "Submitting and starting checkout..."
               : "Submitting..."
             : isBatchMode
-              ? `Submit ${batchEventDates.filter((date) => date.trim()).length} events — free`
+              ? `Submit ${isMultiEventBatch ? batchEvents.length : batchEventDates.filter((date) => date.trim()).length} events — free`
               : featurePlacement !== "none"
                 ? "Submit event and continue to payment"
                 : "Submit event — free"}

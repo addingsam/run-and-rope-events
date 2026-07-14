@@ -7,6 +7,7 @@ import { normalizeFlyerDate } from "@/lib/flyer/normalize-flyer-date";
 import {
   FLYER_EXTRACTION_FORMAT_LABELS,
   FLYER_EXTRACTION_RODEO_LEVEL_LABELS,
+  type FlyerExtractionEventEntry,
   type FlyerExtractionResult,
 } from "@/types/flyer-extraction";
 
@@ -37,13 +38,14 @@ function enumOrNull<T extends string>(value: unknown, allowed: readonly T[]) {
 }
 
 function nullableStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => nullableString(item))
+      .filter((item): item is string => Boolean(item));
   }
 
-  return value
-    .map((item) => nullableString(item))
-    .filter((item): item is string => Boolean(item));
+  const singleValue = nullableString(value);
+  return singleValue ? [singleValue] : [];
 }
 
 function sanitizeExtractedEventDates(
@@ -72,21 +74,104 @@ function sanitizeExtractedEventDates(
   return { date: startDate, endDate };
 }
 
+function parseFlyerExtractionEventEntry(value: unknown): FlyerExtractionEventEntry | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const rawDate = nullableString(value.date);
+  const rawEndDate = nullableString(value.endDate);
+  const { date, endDate } = sanitizeExtractedEventDates(rawDate, rawEndDate);
+
+  const entry: FlyerExtractionEventEntry = {
+    date,
+    endDate,
+    venueName: nullableString(value.venueName),
+    address: nullableString(value.address),
+    city: nullableString(value.city),
+    state: nullableString(value.state),
+    zipCode: nullableString(value.zipCode),
+  };
+
+  if (!entry.date && !entry.venueName && !entry.city) {
+    return null;
+  }
+
+  return entry;
+}
+
+function parseFlyerExtractionEvents(value: unknown): FlyerExtractionEventEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => parseFlyerExtractionEventEntry(item))
+    .filter((item): item is FlyerExtractionEventEntry => item !== null);
+}
+
 export function stripJsonCodeFences(text: string) {
   const trimmed = text.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   return fenced ? fenced[1].trim() : trimmed;
 }
 
-export function parseFlyerExtractionResponse(text: string): FlyerExtractionResult {
-  const cleaned = stripJsonCodeFences(text);
-  let parsed: unknown;
+function extractJsonObjectText(text: string) {
+  const trimmed = text.trim();
+  const fencedBlocks = [...trimmed.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)]
+    .map((match) => match[1].trim())
+    .filter((block) => block.startsWith("{"));
 
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    throw new Error("Claude returned a response that was not valid JSON.");
+  if (fencedBlocks.length > 0) {
+    return fencedBlocks.sort((left, right) => right.length - left.length)[0];
   }
+
+  if (trimmed.startsWith("{")) {
+    return trimmed;
+  }
+
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    return trimmed.slice(start, end + 1);
+  }
+
+  return trimmed;
+}
+
+function repairCommonJsonIssues(json: string) {
+  return json.replace(/,\s*([}\]])/g, "$1");
+}
+
+function parseJsonObject(text: string): unknown {
+  const candidates = [
+    stripJsonCodeFences(text),
+    extractJsonObjectText(text),
+    repairCommonJsonIssues(stripJsonCodeFences(text)),
+    repairCommonJsonIssues(extractJsonObjectText(text)),
+  ];
+
+  const seen = new Set<string>();
+  for (const candidate of candidates) {
+    const normalized = candidate.trim();
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+
+    seen.add(normalized);
+
+    try {
+      return JSON.parse(normalized);
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("Claude returned a response that was not valid JSON.");
+}
+
+export function parseFlyerExtractionResponse(text: string): FlyerExtractionResult {
+  const parsed = parseJsonObject(text);
 
   if (!isRecord(parsed)) {
     throw new Error("Claude returned JSON that was not an object.");
@@ -118,11 +203,13 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
   const rawEndDate = nullableString(parsed.endDate);
   const { date, endDate } = sanitizeExtractedEventDates(rawDate, rawEndDate);
   const eventDates = nullableStringArray(parsed.eventDates);
+  const events = parseFlyerExtractionEvents(parsed.events);
 
   return {
     eventName: nullableString(parsed.eventName),
     date,
-    eventDates,
+    eventDates: events.length >= 2 ? [] : eventDates,
+    events,
     endDate,
     entryDeadline: nullableString(parsed.entryDeadline),
     time: nullableString(parsed.time),

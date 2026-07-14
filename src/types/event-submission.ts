@@ -15,6 +15,26 @@ export type SubmissionDiscipline =
   | "ranch_horse"
   | "obstacle_trail";
 
+export interface BatchEventEntry {
+  startDate: string;
+  endDate: string;
+  venueName: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export const EMPTY_BATCH_EVENT_ENTRY: BatchEventEntry = {
+  startDate: "",
+  endDate: "",
+  venueName: "",
+  streetAddress: "",
+  city: "",
+  state: "",
+  zipCode: "",
+};
+
 export interface EventSubmission {
   eventName: string;
   format: SubmissionFormat;

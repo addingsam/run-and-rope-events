@@ -118,7 +118,7 @@ async function callAnthropicVision(content: AnthropicContentBlock[]) {
     },
     body: JSON.stringify({
       model: ANTHROPIC_MODEL,
-      max_tokens: 1500,
+      max_tokens: 8192,
       system: FLYER_EXTRACTION_SYSTEM_PROMPT,
       messages: [
         {

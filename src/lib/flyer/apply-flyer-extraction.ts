@@ -10,8 +10,9 @@ import {
 } from "@/lib/flyer/normalize-flyer-date";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
 import { US_STATES } from "@/lib/us-states";
-import type { FlyerExtractionResult } from "@/types/flyer-extraction";
+import type { FlyerExtractionEventEntry, FlyerExtractionResult } from "@/types/flyer-extraction";
 import type {
+  BatchEventEntry,
   EventSubmission,
   RodeoLevel,
   SubmissionFormat,
@@ -34,6 +35,8 @@ export interface ApplyFlyerExtractionResult {
   inferredYearFields: FlyerInferredYearFields;
   batchEventDates: string[];
   batchDatesYearInferred: boolean[];
+  batchEvents: BatchEventEntry[];
+  batchEventsYearInferred: Array<{ startDate: boolean; endDate: boolean }>;
 }
 
 const FORMAT_LABEL_TO_VALUE: Record<string, SubmissionFormat> = {
@@ -102,6 +105,65 @@ function parseZipFromAddress(address: string | null) {
   return match?.[1] ?? "";
 }
 
+function mapExtractedEventToBatchEntry(
+  entry: FlyerExtractionEventEntry,
+  referenceDate: Date,
+): {
+  batchEvent: BatchEventEntry;
+  yearInferred: { startDate: boolean; endDate: boolean };
+} {
+  const sanitized = sanitizeFlyerExtractionLocation({
+    eventName: null,
+    date: entry.date,
+    eventDates: [],
+    events: [],
+    endDate: entry.endDate,
+    entryDeadline: null,
+    time: null,
+    venueName: entry.venueName,
+    address: entry.address,
+    city: entry.city,
+    state: entry.state,
+    zipCode: entry.zipCode,
+    discipline: null,
+    disciplines: [],
+    format: null,
+    rodeoLevel: null,
+    entryFee: null,
+    prizePayoutInfo: null,
+    classDivisionInfo: null,
+    contactName: null,
+    contactPhone: null,
+    contactEmail: null,
+    additionalNotes: null,
+  });
+
+  const resolvedDates = resolveFlyerEventDates(
+    sanitized.date,
+    sanitized.endDate,
+    "",
+    "",
+    referenceDate,
+  );
+  const zipFromAddress = parseZipFromAddress(sanitized.address);
+
+  return {
+    batchEvent: {
+      startDate: resolvedDates.startDate,
+      endDate: resolvedDates.endDate,
+      venueName: sanitized.venueName ?? "",
+      streetAddress: sanitized.address ?? "",
+      city: sanitized.city ?? "",
+      state: normalizeState(sanitized.state) || "",
+      zipCode: sanitized.zipCode ?? zipFromAddress ?? "",
+    },
+    yearInferred: {
+      startDate: resolvedDates.startYearInferred,
+      endDate: resolvedDates.endYearInferred,
+    },
+  };
+}
+
 export function applyFlyerExtractionToSubmission(
   current: EventSubmission,
   extracted: FlyerExtractionResult,
@@ -155,6 +217,15 @@ export function applyFlyerExtractionToSubmission(
     normalizedBatch.dates.length >= 2 ? normalizedBatch.dates : [];
   const useBatchDates = batchEventDates.length >= 2;
 
+  const mappedBatchEvents = sanitized.events.map((entry) =>
+    mapExtractedEventToBatchEntry(entry, referenceDate),
+  );
+  const batchEvents =
+    mappedBatchEvents.length >= 2 ? mappedBatchEvents.map((item) => item.batchEvent) : [];
+  const useBatchEvents = batchEvents.length >= 2;
+  const singleMappedEvent = mappedBatchEvents.length === 1 ? mappedBatchEvents[0] : null;
+  const firstBatchEvent = batchEvents[0] ?? singleMappedEvent?.batchEvent;
+
   return {
     submission: {
       ...current,
@@ -163,15 +234,47 @@ export function applyFlyerExtractionToSubmission(
       rodeoLevels,
       disciplines,
       additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
-      startDate: useBatchDates ? batchEventDates[0] : resolvedDates.startDate,
-      endDate: useBatchDates ? batchEventDates[0] : resolvedDates.endDate,
+      startDate: useBatchEvents
+        ? firstBatchEvent!.startDate
+        : singleMappedEvent
+          ? singleMappedEvent.batchEvent.startDate
+          : useBatchDates
+            ? batchEventDates[0]
+            : resolvedDates.startDate,
+      endDate: useBatchEvents
+        ? firstBatchEvent!.endDate
+        : singleMappedEvent
+          ? singleMappedEvent.batchEvent.endDate
+          : useBatchDates
+            ? batchEventDates[0]
+            : resolvedDates.endDate,
       entryDeadline: entryDeadline.date || current.entryDeadline,
       classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
-      venueName: sanitized.venueName ?? "",
-      streetAddress: sanitized.address ?? "",
-      city: sanitized.city ?? "",
-      state: normalizeState(sanitized.state) || "",
-      zipCode: sanitized.zipCode ?? zipFromAddress ?? "",
+      venueName: useBatchEvents
+        ? firstBatchEvent!.venueName
+        : singleMappedEvent
+          ? singleMappedEvent.batchEvent.venueName
+          : sanitized.venueName ?? "",
+      streetAddress: useBatchEvents
+        ? firstBatchEvent!.streetAddress
+        : singleMappedEvent
+          ? singleMappedEvent.batchEvent.streetAddress
+          : sanitized.address ?? "",
+      city: useBatchEvents
+        ? firstBatchEvent!.city
+        : singleMappedEvent
+          ? singleMappedEvent.batchEvent.city
+          : sanitized.city ?? "",
+      state: useBatchEvents
+        ? firstBatchEvent!.state
+        : singleMappedEvent
+          ? singleMappedEvent.batchEvent.state
+          : normalizeState(sanitized.state) || "",
+      zipCode: useBatchEvents
+        ? firstBatchEvent!.zipCode
+        : singleMappedEvent
+          ? singleMappedEvent.batchEvent.zipCode
+          : sanitized.zipCode ?? zipFromAddress ?? "",
       producerName: sanitized.contactName ?? current.producerName,
       contactEmail: sanitized.contactEmail ?? current.contactEmail,
       contactPhone: sanitized.contactPhone ?? current.contactPhone,
@@ -180,16 +283,30 @@ export function applyFlyerExtractionToSubmission(
       description: buildDescription(sanitized, current.description),
     },
     inferredYearFields: {
-      startDate: useBatchDates
-        ? normalizedBatch.yearInferred.some(Boolean)
-        : resolvedDates.startYearInferred,
-      endDate: useBatchDates ? false : resolvedDates.endYearInferred,
+      startDate: useBatchEvents
+        ? mappedBatchEvents[0]?.yearInferred.startDate ?? false
+        : singleMappedEvent
+          ? singleMappedEvent.yearInferred.startDate
+          : useBatchDates
+            ? normalizedBatch.yearInferred.some(Boolean)
+            : resolvedDates.startYearInferred,
+      endDate: useBatchEvents
+        ? mappedBatchEvents[0]?.yearInferred.endDate ?? false
+        : singleMappedEvent
+          ? singleMappedEvent.yearInferred.endDate
+          : useBatchDates
+            ? false
+            : resolvedDates.endYearInferred,
       entryDeadline: Boolean(
         sanitized.entryDeadline && entryDeadline.yearInferred && entryDeadline.date,
       ),
     },
-    batchEventDates,
+    batchEventDates: useBatchEvents ? [] : batchEventDates,
     batchDatesYearInferred: useBatchDates ? normalizedBatch.yearInferred : [],
+    batchEvents,
+    batchEventsYearInferred: useBatchEvents
+      ? mappedBatchEvents.map((item) => item.yearInferred)
+      : [],
   };
 }
 
@@ -209,6 +326,13 @@ export function countPopulatedFlyerFields(extracted: FlyerExtractionResult) {
     }
 
     if (key === "eventDates") {
+      if (Array.isArray(value) && value.length > 0) {
+        count += 1;
+      }
+      continue;
+    }
+
+    if (key === "events") {
       if (Array.isArray(value) && value.length > 0) {
         count += 1;
       }

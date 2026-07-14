@@ -5,33 +5,55 @@ const FLYER_DISCIPLINE_SCHEMA = FLYER_EXTRACTION_DISCIPLINE_LABELS.map((label) =
 ).join(", ");
 
 export const FLYER_EXTRACTION_JSON_SCHEMA = `{
-  "eventName": string | null,
-  "date": string | null,  // primary/first event day; omit year when not printed on flyer
-  "eventDates": array of string,  // every distinct separate event day when flyer lists multiple dates
-  "endDate": string | null,  // last day ONLY when flyer shows a multi-day range; null for single-day events
-  "entryDeadline": string | null,  // omit year when not printed on flyer
-  "time": string | null,
-  "venueName": string | null,
-  "address": string | null,
-  "city": string | null,
-  "state": string | null,
-  "zipCode": string | null,
-  "disciplines": array of zero or more values from [${FLYER_DISCIPLINE_SCHEMA}],
-  "format": one of ["Jackpot", "Rodeo"] or null,
-  "rodeoLevel": one of ["Youth", "Amateur", "Open", "Pro"] or null,
-  "entryFee": string | null,
-  "prizePayoutInfo": string | null,
-  "classDivisionInfo": string | null,
-  "contactName": string | null,  // event producer/organizer name (not sponsors or vendors)
-  "contactPhone": string | null,  // producer/organizer phone (not sponsors or vendors)
-  "contactEmail": string | null,  // producer/organizer email (not sponsors or vendors)
-  "additionalNotes": string | null
+  "eventName": null,
+  "date": null,
+  "eventDates": [],
+  "events": [],
+  "endDate": null,
+  "entryDeadline": null,
+  "time": null,
+  "venueName": null,
+  "address": null,
+  "city": null,
+  "state": null,
+  "zipCode": null,
+  "disciplines": [],
+  "format": null,
+  "rodeoLevel": null,
+  "entryFee": null,
+  "prizePayoutInfo": null,
+  "classDivisionInfo": null,
+  "contactName": null,
+  "contactPhone": null,
+  "contactEmail": null,
+  "additionalNotes": null
 }`;
+
+const FLYER_EXTRACTION_EVENT_SCHEMA = `{
+  "date": null,
+  "endDate": null,
+  "venueName": null,
+  "address": null,
+  "city": null,
+  "state": null,
+  "zipCode": null
+}`;
+
+const FLYER_EXTRACTION_FIELD_RULES = `Field rules:
+- eventName, date, endDate, entryDeadline, time, venueName, address, city, state, zipCode, entryFee, prizePayoutInfo, classDivisionInfo, contactName, contactPhone, contactEmail, additionalNotes: string or null.
+- eventDates: JSON array of strings for separate event days at the SAME location, or [] when not applicable.
+- events: JSON array of per-event objects (${FLYER_EXTRACTION_EVENT_SCHEMA}) for series schedules where each stop has its own date(s) and location. Use [] when not applicable.
+- disciplines: JSON array using only these labels: [${FLYER_DISCIPLINE_SCHEMA}].
+- format: "Jackpot", "Rodeo", or null.
+- rodeoLevel: "Youth", "Amateur", "Open", "Pro", or null.`;
 
 export const FLYER_EXTRACTION_SYSTEM_PROMPT = `You extract structured event details from rodeo and jackpot event flyers for a US event directory.
 
-Return ONLY valid JSON matching this schema (no markdown, no code fences, no commentary):
+Return ONLY one valid JSON object. No markdown, no code fences, no commentary, and no text before or after the JSON.
+Use this exact shape with real string values or null:
 ${FLYER_EXTRACTION_JSON_SCHEMA}
+
+${FLYER_EXTRACTION_FIELD_RULES}
 
 Rules:
 - Use null for any field you cannot read confidently from the flyer. Do not guess.
@@ -43,8 +65,11 @@ Rules:
 - If the flyer only shows a city/region without a named venue or street address, set venueName and address to null and populate only city and/or state.
 - For date, endDate, and entryDeadline: prefer ISO 8601 (YYYY-MM-DD) when the full date including year is clearly printed on the flyer.
 - date is the primary or first event day. endDate is the last day ONLY when the flyer explicitly shows one event spanning consecutive days (for example "March 15-17", "Fri-Sun"). When the flyer lists only one calendar day, set date to that day, eventDates to [], and endDate to null.
-- eventDates is for multiple SEPARATE event listings on one flyer — the same details apply to each date (for example "June 5, 12 & 19", a schedule table, or a list of Saturdays). Put every distinct separate event day in eventDates. When eventDates has two or more entries, set date to the first listed day and endDate to null. Do not use eventDates for a single multi-day range; use date + endDate for that instead.
-- When only one event day appears on the flyer, return eventDates as an empty array [].
+- eventDates is for multiple SEPARATE event days at the SAME location on one flyer — shared venue, city, and other details apply to each date (for example "June 5, 12 & 19", a schedule table, or a list of Saturdays at one arena). Put every distinct separate event day in eventDates. When eventDates has two or more entries, set date to the first listed day, endDate to null, and events to []. Do not use eventDates for a single multi-day range; use date + endDate for that instead.
+- events is for multiple DISTINCT events on one flyer — each with its own date(s) and location (for example a rodeo series listing "May 22-23 McALESTER, OK - Round-Up Club Arena" followed by other cities and venues). Put one object per distinct event in events with that event's date, endDate (when it spans consecutive days), venueName, address, city, state, and zipCode. When events has two or more entries, set top-level date, endDate, eventDates, venueName, address, city, state, and zipCode to null and put all per-event details only inside events.
+- Use eventDates OR events, never both. Prefer events when each listed stop has a different city or venue.
+- Rodeo series schedules (multiple cities/arenas, shared rules and producer) should use events with format "Rodeo" and the appropriate rodeoLevel (for example "Open" for open rodeos).
+- When only one event appears on the flyer, return eventDates as [] and events as [].
 - When a date on the flyer omits the year (for example "March 15" or "9/12"), return it without a year using formats like "March 15", "03-15", or "9/12". Do not infer or guess a year — the submitter's form will add the current calendar year for verification.
 - When the flyer explicitly shows a year, always include that year in the extracted date.
 - For state: prefer the two-letter US state code when clear; otherwise the state name as shown.
@@ -63,4 +88,4 @@ Rules:
 - Put other relevant details that do not fit other fields into additionalNotes.`;
 
 export const FLYER_EXTRACTION_USER_PROMPT =
-  "Extract all event details you can confidently read from this flyer. Return only the JSON object.";
+  "Extract all event details you can confidently read from this flyer. Reply with only the JSON object.";

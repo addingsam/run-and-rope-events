@@ -1,4 +1,5 @@
 import type {
+  BatchEventEntry,
   EventSubmission,
   RodeoLevel,
   SubmissionDiscipline,
@@ -23,6 +24,50 @@ export function parseBatchEventDates(formData: FormData): string[] {
     .getAll("eventDates")
     .map((value) => getString(value))
     .filter(Boolean);
+}
+
+export function parseBatchEvents(formData: FormData): BatchEventEntry[] {
+  const raw = getString(formData.get("batchEvents"));
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((item) => {
+        if (typeof item !== "object" || item === null) {
+          return null;
+        }
+
+        const event = item as Record<string, unknown>;
+        return {
+          startDate: typeof event.startDate === "string" ? event.startDate.trim() : "",
+          endDate: typeof event.endDate === "string" ? event.endDate.trim() : "",
+          venueName: typeof event.venueName === "string" ? event.venueName.trim() : "",
+          streetAddress:
+            typeof event.streetAddress === "string" ? event.streetAddress.trim() : "",
+          city: typeof event.city === "string" ? event.city.trim() : "",
+          state: typeof event.state === "string" ? event.state.trim() : "",
+          zipCode: typeof event.zipCode === "string" ? event.zipCode.trim() : "",
+        } satisfies BatchEventEntry;
+      })
+      .filter((event): event is BatchEventEntry => event !== null)
+      .filter(
+        (event) =>
+          event.startDate ||
+          event.endDate ||
+          event.venueName ||
+          event.city ||
+          event.state,
+      );
+  } catch {
+    return [];
+  }
 }
 
 export function parseSubmissionFormData(
