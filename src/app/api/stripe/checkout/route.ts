@@ -33,6 +33,7 @@ export async function POST(request: Request) {
       mode: "subscription",
       customer_email: email,
       client_reference_id: userId,
+      allow_promotion_codes: true,
       line_items: [
         {
           price: priceId,

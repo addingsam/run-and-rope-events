@@ -41,6 +41,14 @@ Run migration `supabase/migrations/20260709183000_add_stripe_subscription_id.sql
 
 Checkout lives at `/subscribe`. After payment, Stripe webhooks upsert the `subscribers` row with `subscription_status`, `stripe_customer_id`, `stripe_subscription_id`, and `subscription_expires_at`.
 
+#### Test access with promotion codes
+
+Checkout accepts Stripe promotion codes (`allow_promotion_codes` is enabled). To give testers free access:
+
+1. In Stripe → **Products → Coupons**, create a **100% off** coupon with duration **Once** (one billing period free — monthly or annual depending on the plan they choose).
+2. In **Promotion codes**, create a code linked to that coupon (e.g. `BETA2026`).
+3. Share the code with testers. At `/subscribe` checkout, they click **Add promotion code**, enter the code, and complete checkout for $0. The webhook still activates their subscription for that period.
+
 Run the Supabase migration `supabase/migrations/20260709181000_clerk_user_ids.sql` so profile IDs store Clerk user IDs.
 
 ## Clerk Dashboard setup
