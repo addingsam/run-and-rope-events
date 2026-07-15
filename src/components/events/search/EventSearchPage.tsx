@@ -222,7 +222,18 @@ function buildSearchParams(state: SearchFormState) {
   return params;
 }
 
-function stateFromSearchParams(searchParams: URLSearchParams): SearchFormState {
+function mapSearchUrl(pathname: string, state: SearchFormState) {
+  const params = buildSearchParams(state);
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+function stateFromSearchParams(
+  searchParams: URLSearchParams,
+  options: { includeDates?: boolean } = {},
+): SearchFormState {
+  const includeDates = options.includeDates ?? false;
+
   return {
     mode: parseMode(searchParams.get("mode")),
     format: (searchParams.get("format") as SearchFormat | null) ?? "either",
@@ -245,8 +256,8 @@ function stateFromSearchParams(searchParams: URLSearchParams): SearchFormState {
       ? Number(searchParams.get("destinationLng"))
       : null,
     bufferMiles: parseBuffer(searchParams.get("buffer")),
-    startDate: searchParams.get("startDate") ?? "",
-    endDate: searchParams.get("endDate") ?? "",
+    startDate: includeDates ? (searchParams.get("startDate") ?? "") : "",
+    endDate: includeDates ? (searchParams.get("endDate") ?? "") : "",
   };
 }
 
@@ -533,19 +544,21 @@ export function EventSearchPage({
       return;
     }
 
-    const urlState = stateFromSearchParams(searchParams);
+    const isExplicitSearchRun = searchParams.get(SEARCH_RUN_PARAM) === "1";
+    const urlState = stateFromSearchParams(searchParams, { includeDates: false });
     if (urlState.mode === "map") {
       setFormState(urlState);
-      router.replace(`${pathname}?${buildSearchParams(urlState).toString()}`, { scroll: false });
+      router.replace(mapSearchUrl(pathname, urlState), { scroll: false });
       return;
     }
 
-    const urlStateForSearch = stateFromSearchParams(searchParams);
-    if (searchParams.get(SEARCH_RUN_PARAM) === "1" && canAutoSearch(urlStateForSearch)) {
+    const urlStateForSearch = stateFromSearchParams(searchParams, {
+      includeDates: isExplicitSearchRun,
+    });
+    if (isExplicitSearchRun && canAutoSearch(urlStateForSearch)) {
       setFormState(urlStateForSearch);
       void runSearch(urlStateForSearch);
-      const params = buildSearchParams(urlStateForSearch);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      router.replace(mapSearchUrl(pathname, urlStateForSearch), { scroll: false });
       return;
     }
 
@@ -581,6 +594,18 @@ export function EventSearchPage({
 
       return next;
     });
+  }
+
+  function updateSearchDate(field: "startDate" | "endDate", value: string) {
+    setFormState((current) => {
+      const next = { ...current, [field]: value };
+      router.replace(mapSearchUrl(pathname, next), { scroll: false });
+      return next;
+    });
+  }
+
+  function clearSearchDate(field: "startDate" | "endDate") {
+    updateSearchDate(field, "");
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -822,30 +847,60 @@ export function EventSearchPage({
 
             <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
               <div>
-                <label htmlFor="startDate" className={themeLabelClassName}>
+                <label htmlFor="searchStartDate" className={themeLabelClassName}>
                   Start date
                 </label>
-                <input
-                  id="startDate"
-                  name="startDate"
-                  type="date"
-                  value={formState.startDate}
-                  onChange={(event) => updateFormState({ startDate: event.target.value })}
-                  className={themeInputClassName}
-                />
+                <p className={`mb-2 ${themeMutedTextClassName}`}>
+                  Optional — leave blank to include all dates.
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="searchStartDate"
+                    name="searchStartDate"
+                    type="date"
+                    autoComplete="off"
+                    value={formState.startDate}
+                    onChange={(event) => updateSearchDate("startDate", event.target.value)}
+                    className={`${themeInputClassName} min-w-0 flex-1`}
+                  />
+                  {formState.startDate ? (
+                    <button
+                      type="button"
+                      onClick={() => clearSearchDate("startDate")}
+                      className={themeSecondaryButtonClassName}
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <div>
-                <label htmlFor="endDate" className={themeLabelClassName}>
+                <label htmlFor="searchEndDate" className={themeLabelClassName}>
                   End date
                 </label>
-                <input
-                  id="endDate"
-                  name="endDate"
-                  type="date"
-                  value={formState.endDate}
-                  onChange={(event) => updateFormState({ endDate: event.target.value })}
-                  className={themeInputClassName}
-                />
+                <p className={`mb-2 ${themeMutedTextClassName}`}>
+                  Optional — leave blank to include all dates.
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="searchEndDate"
+                    name="searchEndDate"
+                    type="date"
+                    autoComplete="off"
+                    value={formState.endDate}
+                    onChange={(event) => updateSearchDate("endDate", event.target.value)}
+                    className={`${themeInputClassName} min-w-0 flex-1`}
+                  />
+                  {formState.endDate ? (
+                    <button
+                      type="button"
+                      onClick={() => clearSearchDate("endDate")}
+                      className={themeSecondaryButtonClassName}
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
 
