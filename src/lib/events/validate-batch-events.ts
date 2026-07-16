@@ -1,4 +1,5 @@
 import type { BatchEventEntry } from "@/types/event-submission";
+import { resolveVenueName } from "@/lib/events/resolve-venue-name";
 
 export function validateBatchEvents(events: BatchEventEntry[]): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -32,7 +33,14 @@ export function validateBatchEvents(events: BatchEventEntry[]): Record<string, s
       errors[`batchEvents.${index}.endDate`] = "End date must be on or after the start date.";
     }
 
-    if (!event.venueName.trim()) {
+    const resolvedVenueName = resolveVenueName({
+      venueName: event.venueName,
+      city: event.city,
+      state: event.state,
+      textSources: [event.venueName, event.city, event.state],
+    });
+
+    if (!resolvedVenueName.trim()) {
       errors[`batchEvents.${index}.venueName`] = "Venue or arena name is required.";
     }
 

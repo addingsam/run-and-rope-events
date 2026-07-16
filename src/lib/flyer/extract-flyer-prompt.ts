@@ -61,11 +61,11 @@ ${FLYER_EXTRACTION_FIELD_RULES}
 Rules:
 - Use null for any field you cannot read confidently from the flyer. Do not guess.
 - Location precision is critical. Never invent, infer, or look up venue names, street addresses, or ZIP codes.
-- venueName: ONLY the printed name of the arena, fairgrounds, rodeo grounds, or event facility. Must be null if the flyer does not name a specific venue. A city or region alone (e.g. "Lincoln Nebraska" or "Lincoln, NE") is NOT a venue name.
+- venueName: the printed arena, fairgrounds, rodeo grounds, or event facility name when clearly shown. Also use Roundup Club, RUC, or names ending in Arena (such as "Round-Up Club Arena") as venueName when those appear on the flyer. Use an obvious official venue name when one is printed. Do not put city or region alone in venueName — put those in city and state instead; when no facility name appears, leave venueName null and the app will use the event town as the venue name.
 - address: ONLY a printed street address, highway/road line, or PO Box. Must be null if no street-level address appears on the flyer. Do not construct an address from city and state.
-- city and state: extract when the flyer shows a place like "Lincoln Nebraska" or "Lincoln, NE". Put the city in city and the state in state; leave venueName and address null unless a venue or street address is also printed.
+- city and state: extract when the flyer shows a place like "Lincoln Nebraska" or "Lincoln, NE". Put the city in city and the state in state.
 - zipCode: null unless a ZIP code is visibly printed on the flyer. Do not guess ZIP codes from city names.
-- If the flyer only shows a city/region without a named venue or street address, set venueName and address to null and populate only city and/or state.
+- If the flyer only shows a city/region without a named venue or street address, set venueName and address to null and populate city and/or state.
 - For date, endDate, and entryDeadline: prefer ISO 8601 (YYYY-MM-DD) when the full date including year is clearly printed on the flyer.
 - entryDeadline is the last day or date entries must be submitted, called in, or paid by. Look for phrases like "call in by," "entries close," "entry deadline," or per-stop call-in windows on series schedules. Use null unless the flyer explicitly states an entry deadline — do not copy the event date or infer a deadline.
 - For series schedules in events, put each stop's entryDeadline inside that event object when the flyer shows a call-in or entry close date for that stop.
@@ -82,7 +82,7 @@ Rules:
 - For state: prefer the two-letter US state code when clear; otherwise the state name as shown.
 - For zipCode: extract the 5-digit ZIP when visible on the flyer, including in the address line or near the venue/city.
 - disciplines must use only allowed labels. Include every distinct jackpot structure or discipline clearly listed on the flyer, such as both Team Roping and Breakaway Roping when both appear.
-- Map discipline abbreviations and organization names to the allowed labels when confident. Examples: CMSA or Cowboy Mounted Shooting Association -> "Cowboy Mounted Shooting"; BB or Bareback -> "Bareback Riding (BB)"; SB or Saddle Bronc -> "Saddle Bronc (SB)"; RB or Ranch Bronc -> "Ranch Bronc Riding (RB)"; BR, CBR, or CGBR -> "Barrel Racing (BR/CBR/CGBR)"; SW, BD, or Bull Dogging -> "Steer Wrestling / Bull Dogging (SW/BD)"; BA, CBA, or BAW -> "Breakaway Roping (BA/CBA/BAW)"; CR, TD, Tie Down, or Tie Down Roping -> "Calf Roping / Tie Down Roping (CR/TD)"; Bull Riding -> "Bull Riding" when spelled out on the flyer.
+- Map discipline abbreviations and organization names to the allowed labels when confident. Examples: CMSA or Cowboy Mounted Shooting Association -> "Cowboy Mounted Shooting"; BB or Bareback -> "Bareback Riding (BB)"; SB or Saddle Bronc -> "Saddle Bronc (SB)"; BR or Bull Riding -> "Bull Riding (BR)"; RB or Ranch Bronc -> "Ranch Bronc Riding (RB)"; CBR or CGBR -> "Barrel Racing (CBR/CGBR)"; SW, BD, or Bull Dogging -> "Steer Wrestling / Bull Dogging (SW/BD)"; BA, CBA, BAW, or CGBKR -> "Breakaway Roping (BA/CBA/BAW/CGBKR)"; SR or SRADM -> "Steer Roping (SR/SRADM)"; CR, TD, Tie Down, or Tie Down Roping -> "Calf Roping / Tie Down Roping (CR/TD)".
 - format must be exactly "Jackpot" or "Rodeo" or null.
 - Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail are jackpot events, not rodeos. When any of those disciplines apply, set format to "Jackpot".
 - rodeoLevel must be exactly one of Youth, Amateur, Open, Pro, or null.

@@ -6,6 +6,7 @@ import {
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
 import { resolveSubmissionRodeoLevels } from "@/lib/events/amateur-rodeo-associations";
 import { normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
+import { normalizeEventSubmissionVenue } from "@/lib/events/resolve-venue-name";
 import { submissionSourceToRecordSource } from "@/lib/events/validate-submission";
 import { geocodeCityState } from "@/lib/geocoding/geocode-city-state";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -46,49 +47,50 @@ function normalizeAdditionalOfferings(offerings: string[]) {
 }
 
 export function mapSubmissionToEventRecord(submission: EventSubmission): EventRecordInsert {
+  const normalizedSubmission = normalizeEventSubmissionVenue(submission);
   const rodeoLevels =
-    submission.format === "rodeo"
+    normalizedSubmission.format === "rodeo"
       ? resolveSubmissionRodeoLevels(
-          submission.rodeoLevels,
-          submission.eventName,
-          submission.producerName,
-          submission.classDivisionInfo,
-          submission.description,
-          submission.prizePayoutInfo,
+          normalizedSubmission.rodeoLevels,
+          normalizedSubmission.eventName,
+          normalizedSubmission.producerName,
+          normalizedSubmission.classDivisionInfo,
+          normalizedSubmission.description,
+          normalizedSubmission.prizePayoutInfo,
         )
       : [];
 
   return {
     status: "pending",
-    event_name: submission.eventName.trim(),
-    event_type: submission.disciplines.join(","),
-    event_format: submission.format,
+    event_name: normalizedSubmission.eventName.trim(),
+    event_type: normalizedSubmission.disciplines.join(","),
+    event_format: normalizedSubmission.format,
     rodeo_level:
-      submission.format === "rodeo" ? serializeRodeoLevels(rodeoLevels) : null,
-    disciplines: submission.disciplines,
+      normalizedSubmission.format === "rodeo" ? serializeRodeoLevels(rodeoLevels) : null,
+    disciplines: normalizedSubmission.disciplines,
     additional_offerings:
-      submission.format === "rodeo"
-        ? normalizeAdditionalOfferings(submission.additionalOfferings)
+      normalizedSubmission.format === "rodeo"
+        ? normalizeAdditionalOfferings(normalizedSubmission.additionalOfferings)
         : null,
-    event_date: submission.startDate,
-    event_end_date: toNullable(submission.endDate),
-    venue_name: submission.venueName.trim(),
-    address_street: submission.streetAddress.trim(),
-    address_city: submission.city.trim(),
-    address_state: submission.state.trim(),
-    address_zip: submission.zipCode.trim(),
+    event_date: normalizedSubmission.startDate,
+    event_end_date: toNullable(normalizedSubmission.endDate),
+    venue_name: normalizedSubmission.venueName.trim(),
+    address_street: normalizedSubmission.streetAddress.trim(),
+    address_city: normalizedSubmission.city.trim(),
+    address_state: normalizedSubmission.state.trim(),
+    address_zip: normalizedSubmission.zipCode.trim(),
     latitude: null,
     longitude: null,
-    entry_fee: toNullableRaw(submission.entryFee),
-    prize_info: toNullable(submission.prizePayoutInfo),
-    contact_name: submission.producerName.trim(),
-    contact_email: toNullable(submission.contactEmail),
-    contact_phone: toNullable(submission.contactPhone),
-    website_link: toNullable(normalizeWebsiteUrl(submission.producerWebsite)),
-    description: buildDescription(submission, rodeoLevels),
-    flyer_url: toNullable(submission.flyerUrl),
-    submitter_email: toNullable(submission.submitterEmail),
-    source: submissionSourceToRecordSource(submission.source ?? "flyer"),
+    entry_fee: toNullableRaw(normalizedSubmission.entryFee),
+    prize_info: toNullable(normalizedSubmission.prizePayoutInfo),
+    contact_name: normalizedSubmission.producerName.trim(),
+    contact_email: toNullable(normalizedSubmission.contactEmail),
+    contact_phone: toNullable(normalizedSubmission.contactPhone),
+    website_link: toNullable(normalizeWebsiteUrl(normalizedSubmission.producerWebsite)),
+    description: buildDescription(normalizedSubmission, rodeoLevels),
+    flyer_url: toNullable(normalizedSubmission.flyerUrl),
+    submitter_email: toNullable(normalizedSubmission.submitterEmail),
+    source: submissionSourceToRecordSource(normalizedSubmission.source ?? "flyer"),
   };
 }
 

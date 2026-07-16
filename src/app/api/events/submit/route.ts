@@ -8,6 +8,10 @@ import {
   parseBatchEvents,
   parseSubmissionFormData,
 } from "@/lib/events/parse-submission";
+import {
+  normalizeBatchEventsVenue,
+  normalizeEventSubmissionVenue,
+} from "@/lib/events/resolve-venue-name";
 import { saveEventSubmission, saveEventSubmissions } from "@/lib/events/save-submission";
 import {
   sendBatchSubmissionConfirmationEmails,
@@ -22,8 +26,11 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const submission = parseSubmissionFormData(formData);
-    const batchEvents = parseBatchEvents(formData);
+    const submission = normalizeEventSubmissionVenue(parseSubmissionFormData(formData));
+    const batchEvents = normalizeBatchEventsVenue(
+      parseBatchEvents(formData),
+      { eventName: submission.eventName },
+    );
     const batchEventDates = parseBatchEventDates(formData);
     const isMultiEventBatch = batchEvents.length >= 2;
     const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;

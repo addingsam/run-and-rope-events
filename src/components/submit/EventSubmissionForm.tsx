@@ -900,7 +900,7 @@ export function EventSubmissionForm() {
       {!isMultiEventBatch ? (
         <FormSection
           title="Venue & Location"
-          description="Venue or arena name, city, and state are required. Street address and zip are optional — add them if your flyer includes them."
+          description="Venue or arena name, city, and state are required. Use Roundup Club, RUC, or an arena name when shown on the flyer. If no venue is listed, the event city is used as the venue name. Street address and zip are optional."
         >
           <TextInput
             name="venueName"

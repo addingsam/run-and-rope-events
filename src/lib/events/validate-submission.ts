@@ -1,3 +1,4 @@
+import { resolveVenueName } from "@/lib/events/resolve-venue-name";
 import type { EventSubmission, SubmissionSource } from "@/types/event-submission";
 import { isJackpotOnlyDiscipline, isRodeoRoughStockDiscipline } from "@/lib/events/submission-options";
 import { isValidWebsiteUrl } from "@/lib/events/normalize-website-url";
@@ -44,7 +45,19 @@ export function validateEventSubmission(
     }
   }
 
-  if (!data.venueName.trim()) {
+  const resolvedVenueName = resolveVenueName({
+    venueName: data.venueName,
+    city: data.city,
+    state: data.state,
+    textSources: [
+      data.venueName,
+      data.eventName,
+      data.description,
+      data.classDivisionInfo,
+    ],
+  });
+
+  if (!resolvedVenueName.trim()) {
     errors.venueName = "Venue or arena name is required.";
   }
 

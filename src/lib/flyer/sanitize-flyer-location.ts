@@ -1,4 +1,5 @@
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
+import { isCityOnlyVenueLabel, resolveVenueName } from "@/lib/events/resolve-venue-name";
 
 function normalizeForCompare(value: string) {
   return value
@@ -6,19 +7,6 @@ function normalizeForCompare(value: string) {
     .replace(/[.,#]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function normalizeStateToken(state: string | null) {
-  if (!state) {
-    return "";
-  }
-
-  const trimmed = state.trim();
-  if (trimmed.length === 2) {
-    return trimmed.toLowerCase();
-  }
-
-  return normalizeForCompare(trimmed);
 }
 
 function parseZipFromAddress(address: string | null) {
@@ -35,30 +23,7 @@ function isCityOrCityStateLabel(
   city: string | null,
   state: string | null,
 ): boolean {
-  if (!value) {
-    return false;
-  }
-
-  const normalized = normalizeForCompare(value);
-  const cityNorm = city ? normalizeForCompare(city) : "";
-  const stateNorm = normalizeStateToken(state);
-
-  if (cityNorm && normalized === cityNorm) {
-    return true;
-  }
-
-  if (!cityNorm) {
-    return false;
-  }
-
-  const variants = new Set<string>([cityNorm]);
-
-  if (stateNorm) {
-    variants.add(`${cityNorm} ${stateNorm}`);
-    variants.add(`${cityNorm}, ${stateNorm}`);
-  }
-
-  return variants.has(normalized);
+  return isCityOnlyVenueLabel(value, city, state);
 }
 
 const STREET_ADDRESS_PATTERN =
@@ -116,9 +81,22 @@ export function sanitizeFlyerExtractionLocation(
     }
   }
 
+  const resolvedVenueName = resolveVenueName({
+    venueName,
+    city: extracted.city,
+    state: extracted.state,
+    textSources: [
+      extracted.venueName,
+      extracted.eventName,
+      extracted.additionalNotes,
+      extracted.classDivisionInfo,
+      extracted.address,
+    ],
+  });
+
   return {
     ...extracted,
-    venueName,
+    venueName: resolvedVenueName || null,
     address,
     zipCode,
   };
