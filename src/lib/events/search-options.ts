@@ -6,7 +6,7 @@ import type {
 } from "@/types/event-search";
 
 export const SEARCH_FORMAT_OPTIONS = [
-  { value: "either", label: "Either" },
+  { value: "either", label: "Either (Jackpot & Rodeo)" },
   { value: "jackpot", label: "Jackpot" },
   { value: "rodeo", label: "Rodeo" },
 ] as const satisfies readonly { value: SearchFormat; label: string }[];

@@ -807,8 +807,9 @@ export function EventSearchPage({
         >
           <div className="grid gap-6 lg:grid-cols-2">
             <SelectInput
-              label="Format"
+              label="Event type"
               name="format"
+              hint="Choose jackpot, rodeo, or both."
               value={formState.format}
               onChange={(event) =>
                 updateFormState({ format: event.target.value as SearchFormat })

@@ -137,24 +137,38 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(funct
   return (
     <div>
       <FieldLabel htmlFor={fieldId!} label={label} required={required} hint={hint} />
-      <select
-        ref={ref}
-        id={fieldId}
-        required={required}
-        className={`${themeInputClassName} appearance-none ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
-        {...props}
-      >
-        {placeholder && (
-          <option value="" disabled>
-            {placeholder}
-          </option>
-        )}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="relative">
+        <select
+          ref={ref}
+          id={fieldId}
+          required={required}
+          className={`${themeInputClassName} appearance-none pr-11 cursor-pointer ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
+          {...props}
+        >
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--color-text-muted)]"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </span>
+      </div>
       {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
     </div>
   );
