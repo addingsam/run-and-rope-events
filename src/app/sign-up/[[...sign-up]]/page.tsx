@@ -1,4 +1,5 @@
 import { SignUp } from "@clerk/nextjs";
+import { clerkAppearance } from "@/lib/clerk/appearance";
 
 export const metadata = {
   title: "Create account",
@@ -13,6 +14,7 @@ export default function SignUpPage() {
         signInUrl="/sign-in"
         forceRedirectUrl="/subscribe"
         fallbackRedirectUrl="/subscribe"
+        appearance={clerkAppearance}
       />
     </div>
   );
