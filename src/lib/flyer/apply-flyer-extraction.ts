@@ -17,6 +17,7 @@ import {
   extractWebsiteFromText,
   normalizeWebsiteUrl,
 } from "@/lib/events/normalize-website-url";
+import { resolveFlyerProducerName } from "@/lib/flyer/resolve-producer-name";
 import { US_STATES } from "@/lib/us-states";
 import type { FlyerExtractionEventEntry, FlyerExtractionResult } from "@/types/flyer-extraction";
 import type {
@@ -325,7 +326,9 @@ export function applyFlyerExtractionToSubmission(
         : singleMappedEvent
           ? singleMappedEvent.batchEvent.zipCode
           : sanitized.zipCode ?? zipFromAddress ?? "",
-      producerName: sanitized.contactName ?? current.producerName,
+      producerName:
+        resolveFlyerProducerName({ ...sanitized, format: format === "rodeo" ? "Rodeo" : sanitized.format }) ??
+        current.producerName,
       producerWebsite: resolveProducerWebsite(sanitized) || current.producerWebsite,
       contactEmail: sanitized.contactEmail ?? current.contactEmail,
       contactPhone: sanitized.contactPhone ?? current.contactPhone,

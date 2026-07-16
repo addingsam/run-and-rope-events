@@ -3,6 +3,7 @@ import { RodeoLevelsBadges } from "@/components/events/EventTypeBadge";
 import { formatFlyerAddress } from "@/lib/events/flyer-lightbox";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
 import { getFormatLabel } from "@/lib/events/submission-options";
+import { getProducerDisplayLabel } from "@/lib/events/producer-labels";
 import { themeMutedTextClassName, themePanelClassName } from "@/lib/theme/form-classes";
 import type { EventDetailView } from "@/types/event-detail";
 import type { SubmissionFormat } from "@/types/event-submission";
@@ -72,11 +73,13 @@ export function EventDetailGrid({ event }: EventDetailGridProps) {
           {address ? <span className="whitespace-pre-line">{address}</span> : <EmptyValue />}
         </GridField>
 
-        <GridField label="Producer name">
+        <GridField label={`${getProducerDisplayLabel(event.format as SubmissionFormat)} name`}>
           {event.producerName || <EmptyValue />}
         </GridField>
 
-        <GridField label="Producer website">
+        <GridField
+          label={`${getProducerDisplayLabel(event.format as SubmissionFormat)} website`}
+        >
           {event.websiteUrl ? (
             <a
               href={event.websiteUrl}

@@ -211,7 +211,10 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
   const classDivisionInfo = nullableString(parsed.classDivisionInfo);
   const prizePayoutInfo = nullableString(parsed.prizePayoutInfo);
   const additionalNotes = nullableString(parsed.additionalNotes);
-  const contactName = nullableString(parsed.contactName);
+  const contactName =
+    nullableString(parsed.contactName) ??
+    nullableString(parsed.stockContractor) ??
+    nullableString(parsed.stock_contractor);
   const entryFee = nullableString(parsed.entryFee);
 
   return {

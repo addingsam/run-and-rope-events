@@ -18,6 +18,12 @@ import {
   RODEO_LEVEL_OPTIONS,
 } from "@/lib/events/submission-options";
 import {
+  getProducerNameLabel,
+  getProducerSectionDescription,
+  getProducerSectionTitle,
+  getProducerWebsiteLabel,
+} from "@/lib/events/producer-labels";
+import {
   applyFlyerExtractionToSubmission,
   countPopulatedFlyerFields,
   EMPTY_FLYER_INFERRED_YEAR_FIELDS,
@@ -956,12 +962,12 @@ export function EventSubmissionForm() {
       ) : null}
 
       <FormSection
-        title="Producer & Contact"
-        description="Producer name appears on every listing so riders know who's running the event."
+        title={getProducerSectionTitle(formData.format)}
+        description={getProducerSectionDescription(formData.format)}
       >
         <TextInput
           name="producerName"
-          label="Producer Name"
+          label={getProducerNameLabel(formData.format)}
           value={formData.producerName}
           onChange={(e) => updateField("producerName", e.target.value)}
           error={errors.producerName}
@@ -969,7 +975,7 @@ export function EventSubmissionForm() {
         />
         <TextInput
           name="producerWebsite"
-          label="Producer Website"
+          label={getProducerWebsiteLabel(formData.format)}
           type="text"
           encouraged
           value={formData.producerWebsite}
@@ -1068,7 +1074,10 @@ export function EventSubmissionForm() {
         <p className={`mt-2 leading-6 ${themeMutedTextClassName}`}>
           Submitting adds your event to the directory at no cost. A flyer upload is required —
           review the details below and confirm venue name, city, and state before submitting.
-          Producer name will always be displayed on your listing. Homepage featuring below is
+          {formData.format === "rodeo"
+            ? " Producer or stock contractor name will always be displayed on your listing."
+            : " Producer name will always be displayed on your listing."}{" "}
+          Homepage featuring below is
           optional and is the only paid step.
         </p>
         {errors.submit && (

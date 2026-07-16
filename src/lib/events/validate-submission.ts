@@ -1,5 +1,6 @@
 import { resolveVenueName } from "@/lib/events/resolve-venue-name";
 import type { EventSubmission, SubmissionSource } from "@/types/event-submission";
+import { getProducerNameRequiredMessage } from "@/lib/events/producer-labels";
 import { isJackpotOnlyDiscipline, isRodeoRoughStockDiscipline } from "@/lib/events/submission-options";
 import { isValidWebsiteUrl } from "@/lib/events/normalize-website-url";
 
@@ -63,7 +64,9 @@ export function validateEventSubmission(
 
   if (!data.city.trim()) errors.city = "City is required.";
   if (!data.state) errors.state = "State is required.";
-  if (!data.producerName.trim()) errors.producerName = "Producer name is required.";
+  if (!data.producerName.trim()) {
+    errors.producerName = getProducerNameRequiredMessage(data.format);
+  }
 
   if (data.endDate && data.startDate && data.endDate < data.startDate) {
     errors.endDate = "End date must be on or after the start date.";

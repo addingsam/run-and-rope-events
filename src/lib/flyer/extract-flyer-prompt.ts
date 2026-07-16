@@ -88,11 +88,11 @@ Rules:
 - rodeoLevel must be exactly one of Youth, Amateur, Open, Pro, or null.
 - Put prize money, added money, payout percentages, or payout structure in prizePayoutInfo.
 - Put class, division, age group, or side-pot details in classDivisionInfo.
-- For contactName, contactPhone, and contactEmail, extract the EVENT PRODUCER/ORGANIZER only — the entity hosting, presenting, or producing the event. Look for phrases like "produced by," "presented by," "in conjunction with," a company name near the top of the flyer, or a logo described as the host organization.
-- producerWebsite: extract the event producer or organization's website when printed on the flyer. Include values such as www.example.com, example.com, or full https:// URLs. Do not include social media profile URLs unless that is the only website shown.
+- For contactName, contactPhone, and contactEmail, extract the EVENT PRODUCER/ORGANIZER only — the entity hosting, presenting, or producing the event. On rodeo flyers, Stock Contractor is equivalent to Producer — use either label when identifying who is running the event. Look for phrases like "produced by," "presented by," "stock contractor," "in conjunction with," a company name near the top of the flyer, or a logo described as the host organization.
+- producerWebsite: extract the event producer, stock contractor, or organization's website when printed on the flyer. Include values such as www.example.com, example.com, or full https:// URLs. Do not include social media profile URLs unless that is the only website shown.
 - Do NOT use SPONSORS or VENDORS for these contact fields. Sponsors and vendors include food trucks, construction companies, photographers, and other businesses whose logos or contact info appear in sidebar or footer sponsor blocks, often smaller and grouped with other sponsor logos.
-- Do not extract vendor or sponsor contact info (food vendors, photographers, general sponsors) as the Producer Name or Producer Contact fields, even if their contact details are the most prominent or clearly formatted contact block on the flyer. Prioritize the entity described as hosting, presenting, or producing the event.
-- If only sponsor/vendor contact info is visible and no producer/organizer is identifiable, set contactName, contactPhone, and contactEmail to null.
+- Do not extract vendor or sponsor contact info (food vendors, photographers, general sponsors) as the Producer Name, Stock Contractor, or Producer Contact fields, even if their contact details are the most prominent or clearly formatted contact block on the flyer. Prioritize the entity described as hosting, presenting, producing, or contracting stock for the event.
+- If only sponsor/vendor contact info is visible and no producer, stock contractor, or organizer is identifiable, set contactName, contactPhone, and contactEmail to null.
 - Put other relevant details that do not fit other fields into additionalNotes.`;
 
 export const FLYER_EXTRACTION_USER_PROMPT =

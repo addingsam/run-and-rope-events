@@ -5,6 +5,7 @@ import { EventCategorySummary } from "@/components/events/search/SearchBadges";
 import { formatFlyerAddress } from "@/lib/events/flyer-lightbox";
 import { formatEventDate, formatEventDateRange } from "@/lib/events/format-date";
 import { getFormatLabel } from "@/lib/events/submission-options";
+import { getProducerDisplayLabel } from "@/lib/events/producer-labels";
 import {
   themeMutedTextClassName,
   themePanelClassName,
@@ -139,7 +140,10 @@ export function FlyerLightbox({ event, onClose }: FlyerLightboxProps) {
                 <DetailRow label="Entry deadline" value={formatEventDate(event.entryDeadline)} />
               )}
               {event.producerName && (
-                <DetailRow label="Producer" value={event.producerName} />
+                <DetailRow
+                  label={getProducerDisplayLabel(event.format as SubmissionFormat)}
+                  value={event.producerName}
+                />
               )}
               {(event.contactEmail || event.contactPhone || event.websiteUrl) && (
                 <div>
