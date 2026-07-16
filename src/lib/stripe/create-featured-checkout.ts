@@ -1,4 +1,6 @@
+import { APP_NAME } from "@/lib/constants";
 import { getAppUrl, getStripeClient } from "@/lib/stripe/client";
+import { getStripeCheckoutCustomText } from "@/lib/stripe/checkout-branding";
 import {
   type FeaturedBillingType,
   getFeaturedPriceId,
@@ -34,6 +36,9 @@ export async function createFeaturedCheckoutSession({
   const session = await stripe.checkout.sessions.create({
     mode: billingType === "recurring" ? "subscription" : "payment",
     customer_email: email,
+    custom_text: getStripeCheckoutCustomText(
+      `Complete checkout to feature this event on ${APP_NAME}.`,
+    ),
     line_items: [{ price: priceId, quantity: 1 }],
     metadata,
     ...(billingType === "recurring"

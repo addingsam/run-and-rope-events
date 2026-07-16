@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getAppUrl, getStripeClient } from "@/lib/stripe/client";
+import { getStripeCheckoutCustomText } from "@/lib/stripe/checkout-branding";
 import { getStripePriceId } from "@/lib/stripe/plans";
 import type { PlanType } from "@/types/subscriber";
 
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       customer_email: email,
       client_reference_id: userId,
       allow_promotion_codes: true,
+      custom_text: getStripeCheckoutCustomText(),
       line_items: [
         {
           price: priceId,

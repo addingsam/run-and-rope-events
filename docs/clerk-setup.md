@@ -53,6 +53,8 @@ Run the Supabase migration `supabase/migrations/20260709181000_clerk_user_ids.sq
 
 ## Clerk Dashboard setup
 
+1. Open your Clerk application settings and set the **Application name** to `Jackpot & Rodeo Events` so any remaining Clerk-managed copy matches the live site branding.
+
 ### Persistent sign-in
 
 1. Open **Sessions** in the Clerk Dashboard.

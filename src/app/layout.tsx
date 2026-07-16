@@ -7,6 +7,7 @@ import { SavedEventsProvider } from "@/components/saved/SavedEventsProvider";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 import { getAuthUserProfile } from "@/lib/auth/get-user";
 import { clerkAppearance } from "@/lib/clerk/appearance";
+import { clerkLocalization } from "@/lib/clerk/localization";
 import { getIsSubscriber } from "@/lib/subscription/status";
 import "./globals.css";
 
@@ -46,6 +47,7 @@ export default async function RootLayout({
   return (
     <ClerkProvider
       appearance={clerkAppearance}
+      localization={clerkLocalization}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       signInFallbackRedirectUrl="/events"
