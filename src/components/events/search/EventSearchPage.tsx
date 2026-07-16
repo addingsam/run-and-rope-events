@@ -332,15 +332,26 @@ export function EventSearchPage({
 
   const searchCriteria = useMemo(() => searchCriteriaFromFormState(formState), [formState]);
   const hasSearchCriteria = hasActiveSearchCriteria(searchCriteria);
+  const hasMapOverlayFilter = hasActiveMapOverlay(mapOverlay);
 
   const mapResults = useMemo(() => {
     if (hasSearched) {
       return results?.results ?? [];
     }
 
+    if (!hasSearchCriteria && !hasMapOverlayFilter) {
+      return defaultMapResults;
+    }
+
     return filterResultsBySearchCriteria(defaultMapResults, searchCriteria);
-  }, [hasSearched, results, defaultMapResults, searchCriteria]);
-  const hasMapOverlayFilter = hasActiveMapOverlay(mapOverlay);
+  }, [
+    hasSearched,
+    results,
+    defaultMapResults,
+    searchCriteria,
+    hasSearchCriteria,
+    hasMapOverlayFilter,
+  ]);
 
   const matchingEvents = useMemo(() => {
     const criteriaFiltered = filterEventsBySearchCriteria(initialUpcomingEvents, searchCriteria);

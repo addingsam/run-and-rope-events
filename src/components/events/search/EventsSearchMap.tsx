@@ -6,20 +6,16 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { MapDrawingToolbar, type DrawingTool } from "@/components/events/search/MapDrawingToolbar";
 import { MapSelectionPanel } from "@/components/events/search/MapSelectionPanel";
 import {
+  createJackpotMarkerElement,
   createProRodeoMarkerElement,
+  createRodeoMarkerElement,
 } from "@/lib/mapbox/map-markers";
-import {
-  bindEventClusterInteractions,
-  buildEventsGeoJson,
-  ensureEventClusterLayers,
-  removeEventClusterLayers,
-  syncEventSelection,
-  updateEventsGeoJsonSource,
-} from "@/lib/mapbox/event-cluster-layers";
+import { parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import { getStateCentroid } from "@/lib/mapbox/state-centroids";
 import {
   createCircleGeoJson,
   getResultKey,
+  getRodeoLevelBadge,
   selectionFromKey,
   type MapSelection,
 } from "@/lib/mapbox/search-map-utils";
@@ -246,6 +242,28 @@ function appendFreehandPoint(
   return [...points, [lng, lat]];
 }
 
+function createEventMarkerElement(
+  entry: Extract<SearchResultEntry, { kind: "event" }>,
+  selected: boolean,
+) {
+  const format = entry.item.format?.trim().toLowerCase();
+
+  if (format === "rodeo") {
+    const [primaryLevel] = parseStoredRodeoLevels(entry.item.rodeoLevel);
+    return createRodeoMarkerElement(getRodeoLevelBadge(primaryLevel ?? null), selected);
+  }
+
+  return createJackpotMarkerElement(selected);
+}
+
+function attachMarkerClick(element: HTMLElement, key: string, onSelect: (key: string) => void) {
+  element.style.cursor = "pointer";
+  element.addEventListener("click", (clickEvent) => {
+    clickEvent.stopPropagation();
+    onSelect(key);
+  });
+}
+
 export function EventsSearchMap({
   mapboxToken,
   results,
@@ -272,7 +290,6 @@ export function EventsSearchMap({
   const completedShapesRef = useRef<GeoJSON.Feature[]>([]);
   const lastBoundsFitKeyRef = useRef<string | null>(null);
   const onSelectRef = useRef(onSelect);
-  const clusterCleanupRef = useRef<(() => void) | null>(null);
   const overlayHydratedRef = useRef(false);
   const pinPlacedByTouchRef = useRef(false);
 
@@ -662,9 +679,6 @@ export function EventsSearchMap({
       map.off("touchmove", handleTouchMove);
       map.off("touchend", handleTouchEnd);
       map.off("touchcancel", handleTouchEnd);
-      clusterCleanupRef.current?.();
-      clusterCleanupRef.current = null;
-      removeEventClusterLayers(map);
       clearMarkers();
       map.remove();
       mapRef.current = null;
@@ -672,51 +686,6 @@ export function EventsSearchMap({
       setMapReady(false);
     };
   }, [mapboxToken, clearMarkers]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) {
-      return;
-    }
-
-    const setupLayers = () => {
-      ensureEventClusterLayers(map);
-      if (!clusterCleanupRef.current) {
-        clusterCleanupRef.current = bindEventClusterInteractions(map, {
-          onSelect: (key) => onSelectRef.current(key),
-        });
-      }
-    };
-
-    if (map.isStyleLoaded()) {
-      setupLayers();
-      return;
-    }
-
-    map.once("load", setupLayers);
-
-    return () => {
-      clusterCleanupRef.current?.();
-      clusterCleanupRef.current = null;
-      if (map.isStyleLoaded()) {
-        removeEventClusterLayers(map);
-      }
-    };
-  }, [mapReady]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) {
-      return;
-    }
-
-    if (!map.isStyleLoaded() || !map.getSource("events")) {
-      return;
-    }
-
-    updateEventsGeoJsonSource(map, buildEventsGeoJson(results));
-    syncEventSelection(map, selectedKey, results);
-  }, [results, selectedKey, mapReady]);
 
   useEffect(() => {
     if (!mapReady || typeof navigator === "undefined" || !navigator.geolocation) {
@@ -842,6 +811,26 @@ export function EventsSearchMap({
     clearMarkers();
 
     for (const entry of results) {
+      if (entry.kind !== "event") {
+        continue;
+      }
+
+      const { latitude, longitude } = entry.item;
+      if (latitude == null || longitude == null) {
+        continue;
+      }
+
+      const key = getResultKey(entry);
+      const element = createEventMarkerElement(entry, selectedKey === key);
+      attachMarkerClick(element, key, onSelect);
+
+      const marker = new mapboxgl.Marker({ element, anchor: "center" })
+        .setLngLat([longitude, latitude])
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+
+    for (const entry of results) {
       if (entry.kind !== "pro_rodeo") {
         continue;
       }
@@ -852,13 +841,8 @@ export function EventsSearchMap({
       }
 
       const key = getResultKey(entry);
-      const selected = selectedKey === key;
-      const element = createProRodeoMarkerElement(selected);
-      element.style.cursor = "pointer";
-      element.addEventListener("click", (clickEvent) => {
-        clickEvent.stopPropagation();
-        onSelect(key);
-      });
+      const element = createProRodeoMarkerElement(selectedKey === key);
+      attachMarkerClick(element, key, onSelect);
 
       const marker = new mapboxgl.Marker({ element, anchor: "center" })
         .setLngLat([longitude, latitude])
