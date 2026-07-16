@@ -274,6 +274,7 @@ export function EventsSearchMap({
   const onSelectRef = useRef(onSelect);
   const clusterCleanupRef = useRef<(() => void) | null>(null);
   const overlayHydratedRef = useRef(false);
+  const pinPlacedByTouchRef = useRef(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [activeTool, setActiveTool] = useState<DrawingTool>("none");
@@ -311,7 +312,13 @@ export function EventsSearchMap({
     }
 
     const canvas = map.getCanvas();
-    canvas.style.cursor = activeTool !== "none" ? "crosshair" : "";
+    if (activeTool !== "none") {
+      canvas.style.cursor = "crosshair";
+      canvas.style.touchAction = "none";
+    } else {
+      canvas.style.cursor = "";
+      canvas.style.touchAction = "";
+    }
   }, [activeTool, mapReady]);
 
   const clearMarkers = useCallback(() => {
@@ -458,29 +465,16 @@ export function EventsSearchMap({
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
-    function handleMouseDown(event: mapboxgl.MapMouseEvent) {
+    function beginDrawAt(lngLat: mapboxgl.LngLat) {
       const tool = activeToolRef.current;
-      if (tool === "none") {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (tool === "pin-radius") {
-        const drawing = {
-          lng: event.lngLat.lng,
-          lat: event.lngLat.lat,
-          radiusMiles: pinRadiusMilesRef.current,
-        };
-        setPinRadiusDrawing(drawing);
-        updatePinRadiusLayerRef.current(drawing);
+      if (tool === "none" || tool === "pin-radius") {
         return;
       }
 
       if (tool === "freehand") {
         drawingRef.current = true;
         map.dragPan.disable();
-        const point: [number, number] = [event.lngLat.lng, event.lngLat.lat];
+        const point: [number, number] = [lngLat.lng, lngLat.lat];
         freehandPointsRef.current = [point];
         setFreehandPoints([point]);
         return;
@@ -489,18 +483,14 @@ export function EventsSearchMap({
       if (tool === "rectangle") {
         drawingRef.current = true;
         map.dragPan.disable();
-        rectangleStartRef.current = event.lngLat;
-        rectangleEndRef.current = event.lngLat;
-        setRectangleStart(event.lngLat);
-        setRectangleEnd(event.lngLat);
+        rectangleStartRef.current = lngLat;
+        rectangleEndRef.current = lngLat;
+        setRectangleStart(lngLat);
+        setRectangleEnd(lngLat);
       }
     }
 
-    function handleMouseMove(event: mapboxgl.MapMouseEvent) {
-      if (activeToolRef.current !== "none") {
-        map.getCanvas().style.cursor = "crosshair";
-      }
-
+    function updateDrawAt(lngLat: mapboxgl.LngLat) {
       if (!drawingRef.current) {
         return;
       }
@@ -510,8 +500,8 @@ export function EventsSearchMap({
       if (tool === "freehand") {
         const next = appendFreehandPoint(
           freehandPointsRef.current,
-          event.lngLat.lng,
-          event.lngLat.lat,
+          lngLat.lng,
+          lngLat.lat,
         );
         if (next !== freehandPointsRef.current) {
           freehandPointsRef.current = next;
@@ -521,9 +511,19 @@ export function EventsSearchMap({
       }
 
       if (tool === "rectangle") {
-        rectangleEndRef.current = event.lngLat;
-        setRectangleEnd(event.lngLat);
+        rectangleEndRef.current = lngLat;
+        setRectangleEnd(lngLat);
       }
+    }
+
+    function placePinRadius(lngLat: mapboxgl.LngLat) {
+      const drawing = {
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+        radiusMiles: pinRadiusMilesRef.current,
+      };
+      setPinRadiusDrawing(drawing);
+      updatePinRadiusLayerRef.current(drawing);
     }
 
     function finishDrawing() {
@@ -555,6 +555,32 @@ export function EventsSearchMap({
       }
     }
 
+    function handleMapClick(event: mapboxgl.MapMouseEvent) {
+      if (activeToolRef.current !== "pin-radius" || pinPlacedByTouchRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      placePinRadius(event.lngLat);
+    }
+
+    function handleMouseDown(event: mapboxgl.MapMouseEvent) {
+      if (activeToolRef.current === "none" || activeToolRef.current === "pin-radius") {
+        return;
+      }
+
+      event.preventDefault();
+      beginDrawAt(event.lngLat);
+    }
+
+    function handleMouseMove(event: mapboxgl.MapMouseEvent) {
+      if (activeToolRef.current !== "none") {
+        map.getCanvas().style.cursor = "crosshair";
+      }
+
+      updateDrawAt(event.lngLat);
+    }
+
     function handleMouseUp() {
       finishDrawing();
     }
@@ -563,10 +589,61 @@ export function EventsSearchMap({
       finishDrawing();
     }
 
+    function handleTouchStart(event: mapboxgl.MapTouchEvent) {
+      const tool = activeToolRef.current;
+      if (tool === "none") {
+        return;
+      }
+
+      if (event.originalEvent.touches.length > 1) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (tool === "pin-radius") {
+        pinPlacedByTouchRef.current = true;
+        placePinRadius(event.lngLat);
+        window.setTimeout(() => {
+          pinPlacedByTouchRef.current = false;
+        }, 400);
+        return;
+      }
+
+      beginDrawAt(event.lngLat);
+    }
+
+    function handleTouchMove(event: mapboxgl.MapTouchEvent) {
+      if (activeToolRef.current !== "none") {
+        map.getCanvas().style.cursor = "crosshair";
+      }
+
+      if (!drawingRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      updateDrawAt(event.lngLat);
+    }
+
+    function handleTouchEnd() {
+      finishDrawing();
+    }
+
+    function handleWindowTouchEnd() {
+      finishDrawing();
+    }
+
+    map.on("click", handleMapClick);
     map.on("mousedown", handleMouseDown);
     map.on("mousemove", handleMouseMove);
     map.on("mouseup", handleMouseUp);
+    map.on("touchstart", handleTouchStart);
+    map.on("touchmove", handleTouchMove);
+    map.on("touchend", handleTouchEnd);
+    map.on("touchcancel", handleTouchEnd);
     window.addEventListener("mouseup", handleWindowMouseUp);
+    window.addEventListener("touchend", handleWindowTouchEnd);
 
     map.on("load", () => {
       setMapReady(true);
@@ -576,9 +653,15 @@ export function EventsSearchMap({
 
     return () => {
       window.removeEventListener("mouseup", handleWindowMouseUp);
+      window.removeEventListener("touchend", handleWindowTouchEnd);
+      map.off("click", handleMapClick);
       map.off("mousedown", handleMouseDown);
       map.off("mousemove", handleMouseMove);
       map.off("mouseup", handleMouseUp);
+      map.off("touchstart", handleTouchStart);
+      map.off("touchmove", handleTouchMove);
+      map.off("touchend", handleTouchEnd);
+      map.off("touchcancel", handleTouchEnd);
       clusterCleanupRef.current?.();
       clusterCleanupRef.current = null;
       removeEventClusterLayers(map);
@@ -954,7 +1037,7 @@ export function EventsSearchMap({
   }, [completedShapes, pinRadiusDrawing, onMapOverlayChange]);
 
   return (
-    <div className="relative h-[480px] w-full overflow-hidden rounded-2xl border border-amber-200 shadow-sm">
+    <div className="relative h-[min(480px,60vh)] min-h-[320px] w-full overflow-hidden rounded-2xl border border-amber-200 shadow-sm sm:h-[480px]">
       <div ref={containerRef} className="h-full w-full" />
 
       <MapDrawingToolbar

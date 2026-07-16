@@ -47,7 +47,7 @@ export function MapDrawingToolbar({
             key={tool.id}
             type="button"
             onClick={() => handleToolClick(tool.id)}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+            className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors sm:py-1.5 ${
               activeTool === tool.id ? themeActiveToggleClassName : themeInactiveToggleClassName
             }`}
           >
@@ -57,7 +57,7 @@ export function MapDrawingToolbar({
         <button
           type="button"
           onClick={onClear}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${themeInactiveToggleClassName}`}
+          className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors sm:py-1.5 ${themeInactiveToggleClassName}`}
         >
           Clear
         </button>
@@ -78,7 +78,7 @@ export function MapDrawingToolbar({
             className="mt-1 w-full accent-[var(--color-accent-cta)]"
           />
           <p className={`mt-1 text-[11px] ${themeMutedTextClassName}`}>
-            Click the map to drop a pin.
+            Tap or click the map to drop a pin.
           </p>
         </div>
       )}
