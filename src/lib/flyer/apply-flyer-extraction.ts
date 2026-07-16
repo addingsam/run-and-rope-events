@@ -13,6 +13,7 @@ import {
   resolveFlyerRodeoLevelLabel,
 } from "@/lib/events/amateur-rodeo-associations";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
+import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
 import {
   extractWebsiteFromText,
   normalizeWebsiteUrl,
@@ -105,7 +106,29 @@ function buildDescription(extracted: FlyerExtractionResult, existingDescription:
   return existingDescription ? `${existingDescription}\n\n${block}` : block;
 }
 
+function flyerWebsiteSourceTexts(extracted: FlyerExtractionResult) {
+  return [
+    extracted.producerWebsite,
+    extracted.eventName,
+    extracted.entryFee,
+    extracted.prizePayoutInfo,
+    extracted.classDivisionInfo,
+    extracted.contactName,
+    extracted.contactPhone,
+    extracted.contactEmail,
+    extracted.additionalNotes,
+    extracted.time,
+    extracted.venueName,
+    extracted.address,
+    extracted.city,
+    extracted.state,
+    extracted.entryDeadline,
+  ];
+}
+
 function resolveProducerWebsite(extracted: FlyerExtractionResult) {
+  const sourceTexts = flyerWebsiteSourceTexts(extracted);
+
   if (extracted.producerWebsite) {
     const normalized = normalizeWebsiteUrl(extracted.producerWebsite);
     if (normalized) {
@@ -113,17 +136,12 @@ function resolveProducerWebsite(extracted: FlyerExtractionResult) {
     }
   }
 
-  return (
-    extractWebsiteFromText(
-      extracted.producerWebsite,
-      extracted.additionalNotes,
-      extracted.classDivisionInfo,
-      extracted.prizePayoutInfo,
-      extracted.contactName,
-      extracted.eventName,
-      extracted.entryFee,
-    ) ?? ""
-  );
+  const nextGenWebsite = extractNextGenRodeoWebsiteFromText(...sourceTexts);
+  if (nextGenWebsite) {
+    return nextGenWebsite;
+  }
+
+  return extractWebsiteFromText(...sourceTexts) ?? "";
 }
 
 function parseZipFromAddress(address: string | null) {

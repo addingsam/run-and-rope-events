@@ -5,6 +5,7 @@ import {
 } from "@/lib/events/submission-options";
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
 import { resolveSubmissionRodeoLevels } from "@/lib/events/amateur-rodeo-associations";
+import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
 import { normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
 import { normalizeEventSubmissionVenue } from "@/lib/events/resolve-venue-name";
 import { submissionSourceToRecordSource } from "@/lib/events/validate-submission";
@@ -44,6 +45,30 @@ function toNullable(value: string) {
 function normalizeAdditionalOfferings(offerings: string[]) {
   const normalized = offerings.map((item) => item.trim()).filter(Boolean);
   return normalized.length > 0 ? normalized : null;
+}
+
+function resolveSubmissionWebsite(submission: EventSubmission) {
+  const normalizedExisting = normalizeWebsiteUrl(submission.producerWebsite);
+  if (normalizedExisting) {
+    return normalizedExisting;
+  }
+
+  return (
+    extractNextGenRodeoWebsiteFromText(
+      submission.producerWebsite,
+      submission.eventName,
+      submission.description,
+      submission.classDivisionInfo,
+      submission.prizePayoutInfo,
+      submission.entryFee,
+      submission.producerName,
+      submission.contactEmail,
+      submission.contactPhone,
+      submission.venueName,
+      submission.streetAddress,
+      submission.entryDeadline,
+    ) ?? ""
+  );
 }
 
 export function mapSubmissionToEventRecord(submission: EventSubmission): EventRecordInsert {
@@ -86,7 +111,7 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
     contact_name: normalizedSubmission.producerName.trim(),
     contact_email: toNullable(normalizedSubmission.contactEmail),
     contact_phone: toNullable(normalizedSubmission.contactPhone),
-    website_link: toNullable(normalizeWebsiteUrl(normalizedSubmission.producerWebsite)),
+    website_link: toNullable(resolveSubmissionWebsite(normalizedSubmission)),
     description: buildDescription(normalizedSubmission, rodeoLevels),
     flyer_url: toNullable(normalizedSubmission.flyerUrl),
     submitter_email: toNullable(normalizedSubmission.submitterEmail),
