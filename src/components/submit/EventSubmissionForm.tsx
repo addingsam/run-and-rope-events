@@ -9,7 +9,7 @@ import {
   FeaturedPlacementField,
   type FeaturedPlacementChoice,
 } from "@/components/submit/FeaturedPlacementField";
-import { CheckboxGroup, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
+import { CheckboxGroup, OptionalDateInput, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import {
   DISCIPLINE_OPTIONS,
   filterDisciplinesForFormat,
@@ -327,6 +327,7 @@ export function EventSubmissionForm() {
     setBatchEvents([]);
     setBatchEventsYearInferred([]);
     updateField("flyerUrl", "");
+    updateField("entryDeadline", "");
     setErrors((current) => {
       const next = { ...current };
       delete next.flyer;
@@ -349,6 +350,7 @@ export function EventSubmissionForm() {
     setBatchEvents([]);
     setBatchEventsYearInferred([]);
     updateField("flyerUrl", "");
+    updateField("entryDeadline", "");
     setErrors((current) => {
       const next = { ...current };
       delete next.flyer;
@@ -407,9 +409,11 @@ export function EventSubmissionForm() {
     setBatchEventDates([]);
     setBatchEvents([]);
     setBatchEventsYearInferred([]);
+    updateField("entryDeadline", "");
     setErrors((current) => {
       const next = { ...current };
       delete next.flyerExtraction;
+      delete next.entryDeadline;
       return next;
     });
 
@@ -666,7 +670,7 @@ export function EventSubmissionForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate autoComplete="off">
       <FormSection
         title="Event Flyer"
         description="Start here — upload your flyer and we'll read it to pre-fill the form below. JPEG, PNG, or PDF up to 10MB."
@@ -781,7 +785,7 @@ export function EventSubmissionForm() {
         {formData.format === "rodeo" && (
           <CheckboxGroup
             label="Rodeo level(s)"
-            hint="Select all levels that apply to this rodeo."
+            hint="ACRA, IPRA, KPRA, URA, CRRA, UPRA, RCA, and MRCA events are Amateur rodeos. Select all levels that apply."
             options={RODEO_LEVEL_OPTIONS}
             values={formData.rodeoLevels}
             onChange={(values) => handleRodeoLevelsChange(values as RodeoLevel[])}
@@ -876,14 +880,13 @@ export function EventSubmissionForm() {
           </>
         )}
         {!isMultiEventBatch ? (
-          <TextInput
-            name="entryDeadline"
+          <OptionalDateInput
+            id="submitEntryDeadline"
             label="Entry Deadline"
-            type="date"
             value={formData.entryDeadline}
-            onChange={(e) => updateDateField("entryDeadline", e.target.value)}
+            onChange={(value) => updateDateField("entryDeadline", value)}
             error={errors.entryDeadline}
-            hint="Optional — last day entries must be called in or submitted."
+            hint="Optional — leave blank if there is no entry deadline."
           />
         ) : null}
         <TextArea

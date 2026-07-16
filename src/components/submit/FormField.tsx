@@ -33,6 +33,59 @@ export function FieldLabel({ htmlFor, label, required, hint, encouraged }: Field
   );
 }
 
+interface OptionalDateInputProps {
+  id: string;
+  label: string;
+  hint?: string;
+  error?: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function OptionalDateInput({
+  id,
+  label,
+  hint,
+  error,
+  value,
+  onChange,
+}: OptionalDateInputProps) {
+  function clearDate() {
+    onChange("");
+  }
+
+  return (
+    <div>
+      <FieldLabel htmlFor={id} label={label} hint={hint} />
+      <div className="flex items-center gap-2">
+        <input
+          key={`${id}-${value || "empty"}`}
+          id={id}
+          name={id}
+          type="date"
+          autoComplete="off"
+          data-1p-ignore="true"
+          data-lpignore="true"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={`${themeInputClassName} min-w-0 flex-1 ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""}`}
+        />
+        {value ? (
+          <button
+            type="button"
+            onClick={clearDate}
+            aria-label={`Clear ${label}`}
+            className="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface)]"
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+    </div>
+  );
+}
+
 interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   hint?: string;

@@ -3,6 +3,7 @@ import {
   normalizeFlyerDiscipline,
   normalizeFlyerDisciplines,
 } from "@/lib/flyer/flyer-disciplines";
+import { resolveFlyerRodeoLevelLabel } from "@/lib/events/amateur-rodeo-associations";
 import { normalizeFlyerDate } from "@/lib/flyer/normalize-flyer-date";
 import {
   FLYER_EXTRACTION_FORMAT_LABELS,
@@ -206,8 +207,15 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
   const eventDates = nullableStringArray(parsed.eventDates);
   const events = parseFlyerExtractionEvents(parsed.events);
 
+  const eventName = nullableString(parsed.eventName);
+  const classDivisionInfo = nullableString(parsed.classDivisionInfo);
+  const prizePayoutInfo = nullableString(parsed.prizePayoutInfo);
+  const additionalNotes = nullableString(parsed.additionalNotes);
+  const contactName = nullableString(parsed.contactName);
+  const entryFee = nullableString(parsed.entryFee);
+
   return {
-    eventName: nullableString(parsed.eventName),
+    eventName,
     date,
     eventDates: events.length >= 2 ? [] : eventDates,
     events,
@@ -222,15 +230,23 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
     discipline: disciplines[0] ?? null,
     disciplines,
     format: enumOrNull(parsed.format, FLYER_EXTRACTION_FORMAT_LABELS),
-    rodeoLevel: enumOrNull(parsed.rodeoLevel, FLYER_EXTRACTION_RODEO_LEVEL_LABELS),
-    entryFee: nullableString(parsed.entryFee),
-    prizePayoutInfo: nullableString(parsed.prizePayoutInfo),
-    classDivisionInfo: nullableString(parsed.classDivisionInfo),
-    contactName: nullableString(parsed.contactName),
+    rodeoLevel: resolveFlyerRodeoLevelLabel(
+      enumOrNull(parsed.rodeoLevel, FLYER_EXTRACTION_RODEO_LEVEL_LABELS),
+      eventName,
+      contactName,
+      classDivisionInfo,
+      prizePayoutInfo,
+      additionalNotes,
+      entryFee,
+    ),
+    entryFee,
+    prizePayoutInfo,
+    classDivisionInfo,
+    contactName,
     contactPhone: nullableString(parsed.contactPhone),
     contactEmail: nullableString(parsed.contactEmail),
     producerWebsite:
       nullableString(parsed.producerWebsite) ?? nullableString(parsed.website),
-    additionalNotes: nullableString(parsed.additionalNotes),
+    additionalNotes,
   };
 }

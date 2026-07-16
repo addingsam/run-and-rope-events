@@ -1,6 +1,6 @@
 "use client";
 
-import { SelectInput, TextInput } from "@/components/submit/FormField";
+import { OptionalDateInput, SelectInput, TextInput } from "@/components/submit/FormField";
 import { formatEventDate } from "@/lib/events/format-date";
 import { US_STATES } from "@/lib/us-states";
 import {
@@ -120,16 +120,13 @@ export function BatchEventsField({
               </div>
 
               <div className="mt-4">
-                <TextInput
-                  name={`batchEvents.${index}.entryDeadline`}
+                <OptionalDateInput
+                  id={`batchEvents-${index}-entryDeadline`}
                   label="Entry Deadline"
-                  type="date"
                   value={event.entryDeadline}
-                  onChange={(changeEvent) =>
-                    updateEvent(index, "entryDeadline", changeEvent.target.value)
-                  }
+                  onChange={(value) => updateEvent(index, "entryDeadline", value)}
                   error={errors[`batchEvents.${index}.entryDeadline`]}
-                  hint="Optional — last day entries must be called in or submitted."
+                  hint="Optional — leave blank if there is no entry deadline."
                 />
               </div>
 

@@ -8,6 +8,10 @@ import {
   normalizeFlyerDateList,
   resolveFlyerEventDates,
 } from "@/lib/flyer/normalize-flyer-date";
+import {
+  inferAmateurRodeoFromText,
+  resolveFlyerRodeoLevelLabel,
+} from "@/lib/events/amateur-rodeo-associations";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
 import {
   extractWebsiteFromText,
@@ -178,7 +182,7 @@ function mapExtractedEventToBatchEntry(
     batchEvent: {
       startDate: resolvedDates.startDate,
       endDate: resolvedDates.endDate,
-      entryDeadline: entryDeadline.date,
+      entryDeadline: entry.entryDeadline ? entryDeadline.date : "",
       venueName: sanitized.venueName ?? "",
       streetAddress: sanitized.address ?? "",
       city: sanitized.city ?? "",
@@ -216,9 +220,27 @@ export function applyFlyerExtractionToSubmission(
   const disciplines =
     extractedDisciplineValues.length > 0 ? extractedDisciplineValues : current.disciplines;
   const format = resolveFormatFromDisciplines(disciplines, extractedFormat);
-  const extractedLevel = sanitized.rodeoLevel
-    ? RODEO_LEVEL_LABEL_TO_VALUE[sanitized.rodeoLevel] ?? null
-    : null;
+  const resolvedRodeoLevelLabel = resolveFlyerRodeoLevelLabel(
+    sanitized.rodeoLevel,
+    sanitized.eventName,
+    sanitized.contactName,
+    sanitized.classDivisionInfo,
+    sanitized.prizePayoutInfo,
+    sanitized.additionalNotes,
+    sanitized.entryFee,
+  );
+  const extractedLevel = resolvedRodeoLevelLabel
+    ? RODEO_LEVEL_LABEL_TO_VALUE[resolvedRodeoLevelLabel] ?? null
+    : inferAmateurRodeoFromText(
+          sanitized.eventName,
+          sanitized.contactName,
+          sanitized.classDivisionInfo,
+          sanitized.prizePayoutInfo,
+          sanitized.additionalNotes,
+          sanitized.entryFee,
+        )
+      ? "amateur"
+      : null;
   const rodeoLevels =
     format === "rodeo"
       ? extractedLevel
@@ -276,7 +298,7 @@ export function applyFlyerExtractionToSubmission(
           : useBatchDates
             ? batchEventDates[0]
             : resolvedDates.endDate,
-      entryDeadline: entryDeadline.date || current.entryDeadline,
+      entryDeadline: sanitized.entryDeadline ? entryDeadline.date : "",
       classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
       venueName: useBatchEvents
         ? firstBatchEvent!.venueName

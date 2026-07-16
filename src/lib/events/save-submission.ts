@@ -4,6 +4,7 @@ import {
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
+import { resolveSubmissionRodeoLevels } from "@/lib/events/amateur-rodeo-associations";
 import { normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
 import { submissionSourceToRecordSource } from "@/lib/events/validate-submission";
 import { geocodeCityState } from "@/lib/geocoding/geocode-city-state";
@@ -11,7 +12,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { EventRecordInsert } from "@/types/event-record";
 import type { EventSubmission } from "@/types/event-submission";
 
-function buildDescription(submission: EventSubmission) {
+function buildDescription(submission: EventSubmission, rodeoLevels = submission.rodeoLevels) {
   const parts = [
     submission.description.trim(),
     submission.classDivisionInfo.trim() &&
@@ -21,8 +22,8 @@ function buildDescription(submission: EventSubmission) {
       `Entry deadline: ${submission.entryDeadline.trim()}`,
     `Format: ${getFormatLabel(submission.format)}`,
     submission.format === "rodeo" &&
-      submission.rodeoLevels.length > 0 &&
-      `Rodeo level${submission.rodeoLevels.length === 1 ? "" : "s"}: ${submission.rodeoLevels.map(getRodeoLevelLabel).join(", ")}`,
+      rodeoLevels.length > 0 &&
+      `Rodeo level${rodeoLevels.length === 1 ? "" : "s"}: ${rodeoLevels.map(getRodeoLevelLabel).join(", ")}`,
     submission.disciplines.length > 0 &&
       `Disciplines: ${formatDisciplineLabels(submission.disciplines)}`,
   ].filter(Boolean);
@@ -45,15 +46,25 @@ function normalizeAdditionalOfferings(offerings: string[]) {
 }
 
 export function mapSubmissionToEventRecord(submission: EventSubmission): EventRecordInsert {
+  const rodeoLevels =
+    submission.format === "rodeo"
+      ? resolveSubmissionRodeoLevels(
+          submission.rodeoLevels,
+          submission.eventName,
+          submission.producerName,
+          submission.classDivisionInfo,
+          submission.description,
+          submission.prizePayoutInfo,
+        )
+      : [];
+
   return {
     status: "pending",
     event_name: submission.eventName.trim(),
     event_type: submission.disciplines.join(","),
     event_format: submission.format,
     rodeo_level:
-      submission.format === "rodeo"
-        ? serializeRodeoLevels(submission.rodeoLevels)
-        : null,
+      submission.format === "rodeo" ? serializeRodeoLevels(rodeoLevels) : null,
     disciplines: submission.disciplines,
     additional_offerings:
       submission.format === "rodeo"
@@ -74,7 +85,7 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
     contact_email: toNullable(submission.contactEmail),
     contact_phone: toNullable(submission.contactPhone),
     website_link: toNullable(normalizeWebsiteUrl(submission.producerWebsite)),
-    description: buildDescription(submission),
+    description: buildDescription(submission, rodeoLevels),
     flyer_url: toNullable(submission.flyerUrl),
     submitter_email: toNullable(submission.submitterEmail),
     source: submissionSourceToRecordSource(submission.source ?? "flyer"),
