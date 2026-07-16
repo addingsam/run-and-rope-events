@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { SavedEventsProvider } from "@/components/saved/SavedEventsProvider";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 import { getAuthUserProfile } from "@/lib/auth/get-user";
+import { clerkAppearance } from "@/lib/clerk/appearance";
 import { getIsSubscriber } from "@/lib/subscription/status";
 import "./globals.css";
 
@@ -31,19 +32,6 @@ export const metadata: Metadata = {
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
-};
-
-const clerkAppearance = {
-  variables: {
-    colorPrimary: "#3D6D8C",
-    colorText: "#F2F1ED",
-    colorBackground: "#16181C",
-    borderRadius: "0.75rem",
-  },
-  elements: {
-    card: "shadow-sm border border-[var(--color-border)]",
-    formButtonPrimary: "bg-amber-700 hover:bg-amber-800",
-  },
 };
 
 export default async function RootLayout({

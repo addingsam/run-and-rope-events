@@ -3,6 +3,7 @@
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
+import { clerkHeaderAppearance } from "@/lib/clerk/appearance";
 
 const navLinks = [
   { href: "/events", label: "Events" },
@@ -12,18 +13,6 @@ const navLinks = [
 
 const headerTextClassName =
   "text-[var(--color-accent-primary)] transition-colors hover:text-[#2a4f66]";
-
-const clerkHeaderAppearance = {
-  variables: {
-    colorText: "#3D6D8C",
-    colorNeutral: "#3D6D8C",
-  },
-  elements: {
-    userButtonTrigger: "text-[#3D6D8C] focus:shadow-none",
-    userButtonAvatarBox:
-      "border border-[#3D6D8C] ring-0 [&_svg]:text-[#3D6D8C] [&_svg]:fill-[#3D6D8C]",
-  },
-};
 
 export function Header() {
   return (

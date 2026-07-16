@@ -9,6 +9,17 @@
   --color-text-primary: #f2f1ed;
   --color-text-muted: #9ba3ac;
 
+  /* Clerk auth modals and verification steps */
+  --clerk-color-primary: #3d6d8c;
+  --clerk-color-foreground: #f2f1ed;
+  --clerk-color-muted-foreground: #9ba3ac;
+  --clerk-color-background: #16181c;
+  --clerk-color-input: #1f2328;
+  --clerk-color-input-foreground: #f2f1ed;
+  --clerk-color-border: #2e333a;
+  --clerk-color-muted: #1f2328;
+  --clerk-color-primary-foreground: #f2f1ed;
+
   /* Legacy aliases used by existing layout utilities */
   --background: var(--color-background);
   --foreground: var(--color-text-primary);

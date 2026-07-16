@@ -2,6 +2,7 @@
 
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useState } from "react";
+import { clerkAppearance } from "@/lib/clerk/appearance";
 import type { PricingPlan } from "@/lib/stripe/plans";
 import { themePrimaryButtonClassName } from "@/lib/theme/form-classes";
 
@@ -20,6 +21,7 @@ export function PricingPlanCard({ plan }: PricingPlanCardProps) {
 
     if (!isSignedIn) {
       openSignIn({
+        appearance: clerkAppearance,
         forceRedirectUrl: "/subscribe",
         fallbackRedirectUrl: "/subscribe",
       });
