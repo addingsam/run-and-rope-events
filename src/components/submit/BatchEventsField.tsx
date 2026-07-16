@@ -57,10 +57,15 @@ export function BatchEventsField({
   return (
     <div className="space-y-4 rounded-xl border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 p-4">
       <div>
-        <p className={themeLabelClassName}>Multiple events on this flyer</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className={themeLabelClassName}>Multiple events on this flyer</p>
+          <span className="inline-flex items-center rounded-full bg-[var(--color-accent-primary)]/20 px-2.5 py-0.5 text-xs font-bold text-[var(--color-text-primary)]">
+            {events.length} listings
+          </span>
+        </div>
         <p className={`mt-1 ${themeHintClassName}`}>
-          Each event below will be submitted as a separate listing with the same shared details
-          (name, format, disciplines, contact, and flyer).
+          Your flyer lists more than one event stop. Each stop below becomes its own directory
+          listing with the same shared details (name, format, disciplines, contact, and flyer).
         </p>
       </div>
 

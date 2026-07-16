@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { BatchEventDatesField } from "@/components/submit/BatchEventDatesField";
 import { BatchEventsField } from "@/components/submit/BatchEventsField";
+import {
+  BatchSubmissionSummary,
+  getBatchSubmissionCount,
+} from "@/components/submit/BatchSubmissionSummary";
 import { FormSection } from "@/components/submit/FormSection";
 import { AdditionalOfferingsField } from "@/components/submit/AdditionalOfferingsField";
 import {
@@ -462,9 +466,9 @@ export function EventSubmissionForm() {
       );
       setFlyerExtractionMessage(
         extractedBatchEvents.length >= 2
-          ? `Filled shared details and ${extractedBatchEvents.length} distinct events from your flyer. Each will be submitted as a separate listing.`
+          ? `Multiple events detected — this flyer will create ${extractedBatchEvents.length} separate listings. Review each event stop in the Dates section before submitting.`
           : extractedBatchDates.length >= 2
-            ? `Filled shared details and ${extractedBatchDates.length} event dates from your flyer. Each date will be submitted as a separate listing.`
+            ? `Multiple dates detected — this flyer will create ${extractedBatchDates.length} separate listings (one per date). Review each date in the Dates section before submitting.`
             : populatedCount > 0
               ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
               : "No confident details were found on this flyer. Please complete the form manually.",
@@ -755,7 +759,13 @@ export function EventSubmissionForm() {
             </div>
           )}
           {flyerExtractionMessage && (
-            <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+            <p
+              className={`mt-3 rounded-xl border px-4 py-3 text-sm ${
+                isBatchMode
+                  ? "border-amber-300 bg-amber-50 font-medium text-amber-950"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-900"
+              }`}
+            >
               {flyerExtractionMessage}
             </p>
           )}
@@ -767,6 +777,14 @@ export function EventSubmissionForm() {
           {errors.flyer && <p className="mt-2 text-sm text-red-700">{errors.flyer}</p>}
         </div>
       </FormSection>
+
+      {isBatchMode ? (
+        <BatchSubmissionSummary
+          batchEventDates={batchEventDates}
+          batchEvents={batchEvents}
+          variant="banner"
+        />
+      ) : null}
 
       <FormSection
         title="Event Details"
@@ -827,12 +845,18 @@ export function EventSubmissionForm() {
       </FormSection>
 
       <FormSection
-        title="Dates"
+        title={
+          isMultiEventBatch
+            ? "Multiple Event Stops"
+            : isSameVenueBatch
+              ? "Multiple Dates"
+              : "Dates"
+        }
         description={
           isMultiEventBatch
-            ? "Review each event stop below. Shared details (name, format, disciplines) apply to every listing."
+            ? "Each event stop below becomes its own listing. Shared details (name, format, disciplines) apply to every listing."
             : isSameVenueBatch
-              ? "Each date below becomes its own event listing with the same flyer and details."
+              ? "Each date below becomes its own listing at the same venue, using the same flyer and shared event details."
               : "Set your event dates and entry deadline."
         }
       >
@@ -1068,7 +1092,14 @@ export function EventSubmissionForm() {
       )}
 
       <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
-        <p className="text-base font-semibold text-[var(--color-text-primary)]">
+        {isBatchMode ? (
+          <BatchSubmissionSummary
+            batchEventDates={batchEventDates}
+            batchEvents={batchEvents}
+            variant="submit"
+          />
+        ) : null}
+        <p className={`text-base font-semibold text-[var(--color-text-primary)] ${isBatchMode ? "mt-5" : ""}`}>
           Listing your event is free.
         </p>
         <p className={`mt-2 leading-6 ${themeMutedTextClassName}`}>
@@ -1095,7 +1126,7 @@ export function EventSubmissionForm() {
               ? "Submitting and starting checkout..."
               : "Submitting..."
             : isBatchMode
-              ? `Submit ${isMultiEventBatch ? batchEvents.length : batchEventDates.filter((date) => date.trim()).length} events — free`
+              ? `Submit ${getBatchSubmissionCount(batchEventDates, batchEvents)} separate listings — free`
               : featurePlacement !== "none"
                 ? "Submit event and continue to payment"
                 : "Submit event — free"}
