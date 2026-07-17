@@ -93,7 +93,7 @@ Add every **required** variable for **Production**. Use test/sandbox keys in **P
 | -------- | -------- | --------------- | ----- |
 | `CRON_SECRET` | No | Generate a random string | Optional on Vercel — cron routes also accept `x-vercel-cron: 1`. |
 | `ADMIN_SECRET` | No | Generate a random string | Legacy pro-rodeo password form only; `/admin` uses Clerk `role: admin`. |
-| `ADMIN_EMAIL` | **Yes** (for contact form) | Your inbox, e.g. `you@example.com` | Receives messages from `/contact`; set `replyTo` to the sender. |
+| `ADMIN_EMAIL` | **Yes** (for contact form) | `jackpotandrodeoevents@gmail.com` | Receives messages from `/contact`; set `replyTo` to the sender. |
 
 ## Post-deploy webhooks
 
