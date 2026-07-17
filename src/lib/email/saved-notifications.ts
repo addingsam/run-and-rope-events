@@ -3,9 +3,15 @@ import { APP_NAME } from "@/lib/constants";
 import { getAppUrl } from "@/lib/env/app-url";
 import {
   formatSavedSearchCriteriaLines,
+  getAlertFrequencyDescription,
   getAlertFrequencyLabel,
 } from "@/lib/saved-searches/format-saved-search-criteria";
+import {
+  buildSavedSearchPreviewItems,
+  formatSavedSearchPreviewLine,
+} from "@/lib/saved-searches/saved-search-preview";
 import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams } from "@/types/saved-search";
+import type { SearchResultEntry } from "@/types/event-search";
 
 function escapeHtml(value: string) {
   return value
@@ -30,6 +36,7 @@ export async function sendSavedSearchConfirmationEmail({
   mapOverlay,
   alertFrequency,
   searchUrl,
+  previewResults = [],
 }: {
   to: string;
   searchName: string;
@@ -37,6 +44,7 @@ export async function sendSavedSearchConfirmationEmail({
   mapOverlay?: SavedMapOverlay | null;
   alertFrequency: SavedSearchAlertFrequency;
   searchUrl: string;
+  previewResults?: SearchResultEntry[];
 }) {
   const resend = getResendClient();
   const from = getResendFromAddress();
@@ -44,31 +52,67 @@ export async function sendSavedSearchConfirmationEmail({
   const criteria = formatSavedSearchCriteriaLines(searchParams, mapOverlay);
   const criteriaHtml = criteria.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
   const criteriaText = criteria.map((line) => `- ${line}`).join("\n");
-  const digestLine =
+  const previewItems = buildSavedSearchPreviewItems(previewResults);
+  const matchCount = previewResults.length;
+  const remainingCount = Math.max(matchCount - previewItems.length, 0);
+
+  const previewHtml =
+    previewItems.length > 0
+      ? `<ul>${previewItems
+          .map(
+            (item) =>
+              `<li><strong>${escapeHtml(item.title)}</strong> — ${escapeHtml(item.dateLabel)}${item.locationLabel ? ` · ${escapeHtml(item.locationLabel)}` : ""}</li>`,
+          )
+          .join("")}</ul>${remainingCount > 0 ? `<p>…and ${remainingCount} more matching event${remainingCount === 1 ? "" : "s"}.</p>` : ""}`
+      : `<p>No approved events match these filters right now. We'll email you when new listings appear.</p>`;
+
+  const previewText =
+    previewItems.length > 0
+      ? [
+          ...previewItems.map((item) => `- ${formatSavedSearchPreviewLine(item)}`),
+          ...(remainingCount > 0
+            ? [`…and ${remainingCount} more matching event${remainingCount === 1 ? "" : "s"}.`]
+            : []),
+        ].join("\n")
+      : "No approved events match these filters right now.";
+
+  const digestLine = getAlertFrequencyDescription(alertFrequency);
+  const digestHeading =
     alertFrequency === "off"
-      ? "You did not opt in to update emails for this saved filter."
-      : `Update emails: ${getAlertFrequencyLabel(alertFrequency)} when new approved events match these criteria.`;
+      ? "Update emails: Off"
+      : `Update emails: ${getAlertFrequencyLabel(alertFrequency)}`;
 
   await resend.emails.send({
     from,
     to,
-    subject: `Saved filter confirmed: ${searchName}`,
+    subject: `Saved search confirmed: ${searchName}`,
     html: `
-      <h2>Your saved filter is ready</h2>
-      <p>We saved <strong>${escapeHtml(searchName)}</strong> to your ${escapeHtml(APP_NAME)} account with these criteria:</p>
+      <h2>Your saved search is confirmed</h2>
+      <p>We saved <strong>${escapeHtml(searchName)}</strong> to your ${escapeHtml(APP_NAME)} profile.</p>
+      <h3>Your filters</h3>
       <ul>${criteriaHtml}</ul>
-      <p>${escapeHtml(digestLine)}</p>
-      <p><a href="${searchUrl}">Run this search</a> · <a href="${dashboardUrl}">Manage saved filters</a></p>
+      <h3>${escapeHtml(digestHeading)}</h3>
+      <p>${escapeHtml(digestLine)} Update emails only cover newly approved events after today — not the preview below.</p>
+      <h3>Matching events right now (${matchCount})</h3>
+      ${previewHtml}
+      <p><a href="${searchUrl}">Run this search</a> · <a href="${dashboardUrl}">Manage saved searches</a></p>
       ${emailFooterHtml()}
     `,
     text: [
-      `Your saved filter "${searchName}" is ready.`,
+      `Your saved search "${searchName}" is confirmed.`,
       "",
-      "Criteria:",
+      "Your filters:",
       criteriaText,
       "",
+      digestHeading,
       digestLine,
+      "Update emails only cover newly approved events after today — not the preview below.",
+      "",
+      `Matching events right now (${matchCount}):`,
+      previewText,
+      "",
       `Run search: ${searchUrl}`,
+      `Manage saved searches: ${dashboardUrl}`,
       emailFooterText(),
     ].join("\n"),
   });

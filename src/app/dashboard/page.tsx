@@ -6,10 +6,12 @@ import { SavedSearchesPanel } from "@/components/dashboard/SavedSearchesPanel";
 import { getAuthUserProfile } from "@/lib/auth/get-user";
 import { listSavedEvents } from "@/lib/saved-events/repository";
 import { listSavedSearches } from "@/lib/saved-searches/repository";
+import { buildSavedSearchPreviewItems } from "@/lib/saved-searches/saved-search-preview";
+import { runSavedSearch } from "@/lib/saved-searches/run-saved-search";
 import { getIsSubscriber } from "@/lib/subscription/status";
 
 export const metadata = {
-  title: "Dashboard",
+  title: "Your profile",
 };
 
 export default async function DashboardPage() {
@@ -48,12 +50,24 @@ export default async function DashboardPage() {
     listSavedEvents(profile.id),
   ]);
 
+  const savedSearchItems = await Promise.all(
+    searches.map(async (search) => {
+      const response = await runSavedSearch(search.search_params, search.map_overlay);
+      return {
+        search,
+        preview: buildSavedSearchPreviewItems(response.results),
+        matchCount: response.results.length,
+      };
+    }),
+  );
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-amber-950">Your dashboard</h1>
-        <p className="mt-2 text-amber-900/75">
-          Signed in as {profile.email}. Manage saved searches, email alerts, and bookmarked events.
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Your profile</h1>
+        <p className="mt-2 text-[var(--color-text-muted)]">
+          Signed in as {profile.email}. Review saved searches, change update frequency, and manage
+          bookmarked events.
         </p>
         <Link
           href="/submit"
@@ -65,19 +79,19 @@ export default async function DashboardPage() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-amber-950">Saved searches</h2>
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Saved searches</h2>
           <Link
             href="/events"
-            className="text-sm font-semibold text-amber-800 hover:text-amber-950"
+            className="text-sm font-semibold text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
           >
             New search
           </Link>
         </div>
-        <SavedSearchesPanel initialSearches={searches} />
+        <SavedSearchesPanel initialItems={savedSearchItems} />
       </section>
 
       <section className="mt-12 space-y-4">
-        <h2 className="text-xl font-semibold text-amber-950">Saved events</h2>
+        <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Saved events</h2>
         <SavedEventsPanel initialEvents={events} />
       </section>
     </div>

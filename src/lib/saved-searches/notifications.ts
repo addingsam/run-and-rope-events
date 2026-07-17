@@ -9,6 +9,7 @@ import {
   updateSavedSearchLastAlertSent,
 } from "@/lib/saved-searches/repository";
 import { sendEventPassedEmail, sendSavedSearchAlertEmail } from "@/lib/email/saved-notifications";
+import type { SearchResultEntry } from "@/types/event-search";
 import type { SavedMapOverlay, SavedSearchAlertFrequency, SavedSearchParams } from "@/types/saved-search";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -49,12 +50,14 @@ export async function sendSavedSearchSavedConfirmation({
   searchParams,
   mapOverlay,
   alertFrequency,
+  previewResults = [],
 }: {
   to: string;
   searchName: string;
   searchParams: SavedSearchParams;
   mapOverlay?: SavedMapOverlay | null;
   alertFrequency: SavedSearchAlertFrequency;
+  previewResults?: SearchResultEntry[];
 }) {
   const searchUrl = `${APP_URL}/events?${savedSearchToQueryString(searchParams)}`;
   await sendSavedSearchConfirmationEmail({
@@ -64,6 +67,7 @@ export async function sendSavedSearchSavedConfirmation({
     mapOverlay,
     alertFrequency,
     searchUrl,
+    previewResults,
   });
 }
 

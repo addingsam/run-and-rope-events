@@ -74,6 +74,7 @@ export async function POST(request: Request) {
         searchParams: body.searchParams,
         mapOverlay: body.mapOverlay ?? null,
         alertFrequency,
+        previewResults: currentResults.results,
       }).catch((emailError) => {
         console.error("Failed to send saved search confirmation email:", emailError);
       });

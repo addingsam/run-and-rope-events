@@ -30,7 +30,7 @@ export function Header() {
 
           <Show when="signed-in">
             <Link href="/dashboard" className={headerTextClassName}>
-              Dashboard
+              Profile
             </Link>
             <UserButton appearance={clerkHeaderAppearance} />
           </Show>

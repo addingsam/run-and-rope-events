@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SAVED_SEARCH_ALERT_OPTIONS } from "@/lib/saved-searches/alert-frequency-options";
 import { createSavedSearch } from "@/lib/saved/client";
 import {
   themeCheckboxInputClassName,
@@ -22,23 +23,7 @@ interface SaveSearchDialogProps {
   onSaved?: () => void;
 }
 
-const ALERT_OPTIONS: { value: SavedSearchAlertFrequency; label: string; description: string }[] = [
-  {
-    value: "off",
-    label: "No update emails",
-    description: "Save only — you'll still get a confirmation email with your criteria.",
-  },
-  {
-    value: "daily",
-    label: "Daily digest",
-    description: "Email once a day when new approved events match this filter.",
-  },
-  {
-    value: "weekly",
-    label: "Weekly digest",
-    description: "Email once a week when new approved events match this filter.",
-  },
-];
+const ALERT_OPTIONS = SAVED_SEARCH_ALERT_OPTIONS;
 
 export function SaveSearchDialog({
   open,
@@ -101,8 +86,8 @@ export function SaveSearchDialog({
               Save your filters
             </h2>
             <p className={`mt-1 ${themeMutedTextClassName}`}>
-              We&apos;ll email you a confirmation with your saved criteria. Optionally choose daily
-              or weekly updates when new approved events match.
+              We&apos;ll email you a confirmation with your saved criteria, update frequency, and a
+              preview of matching events. Optionally choose daily or weekly alerts for new listings.
             </p>
           </div>
           <button
@@ -167,7 +152,8 @@ export function SaveSearchDialog({
 
           {success && (
             <p className="rounded-lg border border-emerald-400/40 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-300">
-              Search saved. Check your inbox for a confirmation email.
+              Search saved. Check your inbox for a confirmation with your filters, update
+              frequency, and current matches.
             </p>
           )}
 

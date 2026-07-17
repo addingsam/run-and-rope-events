@@ -113,6 +113,17 @@ export function getAlertFrequencyLabel(frequency: SavedSearchAlertFrequency) {
   }
 }
 
+export function getAlertFrequencyDescription(frequency: SavedSearchAlertFrequency) {
+  switch (frequency) {
+    case "daily":
+      return "You'll receive a daily email when newly approved events match this saved search.";
+    case "weekly":
+      return "You'll receive a weekly email when newly approved events match this saved search.";
+    default:
+      return "You won't receive ongoing update emails for this saved search.";
+  }
+}
+
 export function isSavedSearchAlertFrequency(value: string): value is SavedSearchAlertFrequency {
   return value === "off" || value === "daily" || value === "weekly";
 }
