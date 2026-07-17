@@ -78,13 +78,14 @@ When a submitter provides an email on `/submit`, the app sends a confirmation th
 
 1. Create an account at [Resend](https://resend.com/).
 2. Generate an API key.
-3. **Verify a sending domain** in Resend. The default `onboarding@resend.dev` sender only delivers to the Resend account owner's inbox, so other submitter addresses will not receive mail until a domain is verified.
+3. **Verify** `jackpotandrodeoevents@gmail.com` as a sender in Resend (Domains → add and verify email, or verify a custom domain later).
 4. Add these values to `.env.local`:
 
 | Variable | Description |
 | -------- | ----------- |
 | `RESEND_API_KEY` | Resend API key |
-| `RESEND_FROM_EMAIL` | Verified sender address (use `onboarding@resend.dev` for testing) |
+| `RESEND_FROM_EMAIL` | Outbound sender: `Jackpot & Rodeo Events <jackpotandrodeoevents@gmail.com>` |
+| `ADMIN_EMAIL` | Inbound contact form inbox: `jackpotandrodeoevents@gmail.com` |
 
 The confirmation email includes the submitted event name and start date.
 
@@ -151,7 +152,7 @@ Optional env vars:
 | Variable | Description |
 | -------- | ----------- |
 | `ADMIN_SECRET` | Password required on admin forms when set |
-| `ADMIN_EMAIL` | Inbox for `/contact` messages (`jackpotandrodeoevents@gmail.com`) |
+| `ADMIN_EMAIL` | Inbound `/contact` inbox (`jackpotandrodeoevents@gmail.com`) |
 | `MAPBOX_ACCESS_TOKEN` | Preferred geocoding provider |
 
 ## PostGIS (map radius search)

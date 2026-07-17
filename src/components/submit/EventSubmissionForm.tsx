@@ -649,7 +649,7 @@ export function EventSubmissionForm() {
         );
         setConfirmationNotice(
           testModeFailure
-            ? `We could not email ${failedAddresses} because Resend is still in test mode. Verify jackpotandrodeoevents.com in Resend and update RESEND_FROM_EMAIL in production.`
+            ? `We could not email ${failedAddresses}. Verify jackpotandrodeoevents@gmail.com in Resend and set RESEND_FROM_EMAIL in production.`
             : `We could not email ${failedAddresses} right now.`,
         );
       } else if (failedEmails.length > 0) {
