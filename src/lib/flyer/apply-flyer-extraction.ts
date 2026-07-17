@@ -1,3 +1,4 @@
+import { sanitizeFlyerExtractionDates } from "@/lib/flyer/sanitize-flyer-dates";
 import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
   disciplineLabelsToValues,
@@ -220,7 +221,10 @@ export function applyFlyerExtractionToSubmission(
   extracted: FlyerExtractionResult,
   referenceDate: Date = new Date(),
 ): ApplyFlyerExtractionResult {
-  const sanitized = sanitizeFlyerExtractionLocation(extracted);
+  const sanitized = sanitizeFlyerExtractionDates(
+    sanitizeFlyerExtractionLocation(extracted),
+    referenceDate,
+  );
   const extractedFormat = sanitized.format
     ? FORMAT_LABEL_TO_VALUE[sanitized.format]
     : current.format;
@@ -275,13 +279,7 @@ export function applyFlyerExtractionToSubmission(
     current.endDate,
     referenceDate,
   );
-  const extractedBatchDates =
-    sanitized.eventDates.length > 0
-      ? sanitized.eventDates
-      : sanitized.date
-        ? [sanitized.date]
-        : [];
-  const normalizedBatch = normalizeFlyerDateList(extractedBatchDates, referenceDate);
+  const normalizedBatch = normalizeFlyerDateList(sanitized.eventDates, referenceDate);
   const batchEventDates =
     normalizedBatch.dates.length >= 2 ? normalizedBatch.dates : [];
   const useBatchDates = batchEventDates.length >= 2;

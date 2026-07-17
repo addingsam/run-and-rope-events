@@ -24,15 +24,92 @@ function formatIsoDate(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function normalizeDateWithExplicitYear(value: string): string {
-  const isoMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (isoMatch) {
-    return isoMatch[1];
+function isValidCalendarDate(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return false;
   }
 
-  const parsed = Date.parse(value);
+  const probe = new Date(year, month - 1, day);
+  return (
+    probe.getFullYear() === year &&
+    probe.getMonth() === month - 1 &&
+    probe.getDate() === day
+  );
+}
+
+const MONTH_NAME_TO_NUMBER: Record<string, number> = {
+  january: 1,
+  jan: 1,
+  february: 2,
+  feb: 2,
+  march: 3,
+  mar: 3,
+  april: 4,
+  apr: 4,
+  may: 5,
+  june: 6,
+  jun: 6,
+  july: 7,
+  jul: 7,
+  august: 8,
+  aug: 8,
+  september: 9,
+  sept: 9,
+  sep: 9,
+  october: 10,
+  oct: 10,
+  november: 11,
+  nov: 11,
+  december: 12,
+  dec: 12,
+};
+
+function parseNamedMonthDate(value: string, year: number): string {
+  const match = value.trim().match(/^([A-Za-z]+)\s+(\d{1,2})(?:,?\s+((?:19|20)\d{2}))?$/);
+  if (!match) {
+    return "";
+  }
+
+  const month = MONTH_NAME_TO_NUMBER[match[1].toLowerCase()];
+  const day = Number(match[2]);
+  const explicitYear = match[3] ? Number(match[3]) : year;
+
+  if (!month || !isValidCalendarDate(explicitYear, month, day)) {
+    return "";
+  }
+
+  return formatIsoDate(explicitYear, month, day);
+}
+
+function normalizeDateWithExplicitYear(value: string): string {
+  const trimmed = value.trim();
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    return isValidCalendarDate(year, month, day)
+      ? formatIsoDate(year, month, day)
+      : "";
+  }
+
+  const usWithYear = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (usWithYear) {
+    const month = Number(usWithYear[1]);
+    const day = Number(usWithYear[2]);
+    const year = Number(usWithYear[3]);
+    return isValidCalendarDate(year, month, day) ? formatIsoDate(year, month, day) : "";
+  }
+
+  const namedWithYear = parseNamedMonthDate(trimmed, 0);
+  if (namedWithYear && flyerDateStringHasYear(trimmed)) {
+    return namedWithYear;
+  }
+
+  const parsed = Date.parse(trimmed);
   if (!Number.isNaN(parsed)) {
-    return new Date(parsed).toISOString().slice(0, 10);
+    const date = new Date(parsed);
+    return formatIsoDate(date.getFullYear(), date.getMonth() + 1, date.getDate());
   }
 
   return "";
@@ -45,9 +122,14 @@ function parseMonthDayWithoutYear(value: string, referenceYear: number): string 
   if (numericMatch) {
     const month = Number(numericMatch[1]);
     const day = Number(numericMatch[2]);
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+    if (isValidCalendarDate(referenceYear, month, day)) {
       return formatIsoDate(referenceYear, month, day);
     }
+  }
+
+  const named = parseNamedMonthDate(trimmed, referenceYear);
+  if (named) {
+    return named;
   }
 
   const parsed = Date.parse(`${trimmed}, ${referenceYear}`);

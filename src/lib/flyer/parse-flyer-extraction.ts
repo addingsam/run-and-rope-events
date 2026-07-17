@@ -5,6 +5,7 @@ import {
 } from "@/lib/flyer/flyer-disciplines";
 import { resolveFlyerRodeoLevelLabel } from "@/lib/events/amateur-rodeo-associations";
 import { normalizeFlyerDate } from "@/lib/flyer/normalize-flyer-date";
+import { sanitizeFlyerExtractionDates } from "@/lib/flyer/sanitize-flyer-dates";
 import {
   FLYER_EXTRACTION_FORMAT_LABELS,
   FLYER_EXTRACTION_RODEO_LEVEL_LABELS,
@@ -217,7 +218,7 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
     nullableString(parsed.stock_contractor);
   const entryFee = nullableString(parsed.entryFee);
 
-  return {
+  return sanitizeFlyerExtractionDates({
     eventName,
     date,
     eventDates: events.length >= 2 ? [] : eventDates,
@@ -251,5 +252,5 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
     producerWebsite:
       nullableString(parsed.producerWebsite) ?? nullableString(parsed.website),
     additionalNotes,
-  };
+  });
 }
