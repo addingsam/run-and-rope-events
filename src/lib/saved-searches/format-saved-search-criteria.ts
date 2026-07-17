@@ -1,5 +1,5 @@
 import { UPCOMING_FORMAT_FILTER_OPTIONS } from "@/lib/events/filter-upcoming-events";
-import { getDisciplineLabel } from "@/lib/events/submission-options";
+import { getDisciplineDisplayLabel } from "@/lib/events/submission-options";
 import {
   SEARCH_BUFFER_OPTIONS,
   SEARCH_FORMAT_OPTIONS,
@@ -35,7 +35,7 @@ export function formatSavedSearchCriteriaLines(
     }
     if (params.upcomingDisciplines && params.upcomingDisciplines.length > 0) {
       lines.push(
-        `Jackpot structure: ${params.upcomingDisciplines.map((d) => getDisciplineLabel(d)).join(", ")}`,
+        `Jackpot structure: ${params.upcomingDisciplines.map((d) => getDisciplineDisplayLabel(d)).join(", ")}`,
       );
     }
     if (params.upcomingRodeoLevels && params.upcomingRodeoLevels.length > 0) {
@@ -75,7 +75,7 @@ export function formatSavedSearchCriteriaLines(
     }
     if (params.disciplines.length > 0) {
       lines.push(
-        `Jackpot structure: ${params.disciplines.map((d) => getDisciplineLabel(d as SubmissionDiscipline)).join(", ")}`,
+        `Jackpot structure: ${params.disciplines.map((d) => getDisciplineDisplayLabel(d as SubmissionDiscipline)).join(", ")}`,
       );
     }
     if (params.startDate) {

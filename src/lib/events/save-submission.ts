@@ -1,5 +1,5 @@
 import {
-  formatDisciplineLabels,
+  formatDisciplineDisplayLabels,
   getFormatLabel,
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
@@ -27,7 +27,7 @@ function buildDescription(submission: EventSubmission, rodeoLevels = submission.
       rodeoLevels.length > 0 &&
       `Rodeo level${rodeoLevels.length === 1 ? "" : "s"}: ${rodeoLevels.map(getRodeoLevelLabel).join(", ")}`,
     submission.disciplines.length > 0 &&
-      `Disciplines: ${formatDisciplineLabels(submission.disciplines)}`,
+      `Disciplines: ${formatDisciplineDisplayLabels(submission.disciplines)}`,
   ].filter(Boolean);
 
   return parts.length > 0 ? parts.join("\n\n") : null;

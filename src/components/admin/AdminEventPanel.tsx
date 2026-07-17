@@ -10,7 +10,7 @@ import { AdminEventEditDialog } from "@/components/admin/AdminEventEditDialog";
 import { DuplicateComparisonPanel } from "@/components/admin/DuplicateComparisonPanel";
 import { formatEventDate } from "@/lib/events/format-date";
 import {
-  formatDisciplineLabels,
+  formatDisciplineDisplayLabels,
   getFormatLabel,
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
@@ -121,7 +121,7 @@ function EventRow({
         </td>
         <td className="px-4 py-4 text-sm text-stone-700">
           {event.disciplines?.length
-            ? formatDisciplineLabels(event.disciplines as Parameters<typeof formatDisciplineLabels>[0])
+            ? formatDisciplineDisplayLabels(event.disciplines as Parameters<typeof formatDisciplineDisplayLabels>[0])
             : "—"}
         </td>
         <td className="px-4 py-4 text-sm text-stone-700">

@@ -1,6 +1,6 @@
 import { formatEventDate } from "@/lib/events/format-date";
 import {
-  formatDisciplineLabels,
+  formatDisciplineDisplayLabels,
   getFormatLabel,
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
@@ -72,8 +72,8 @@ function EventSummaryCard({
           <dt className="font-medium text-stone-500">Disciplines</dt>
           <dd>
             {event.disciplines?.length
-              ? formatDisciplineLabels(
-                  event.disciplines as Parameters<typeof formatDisciplineLabels>[0],
+              ? formatDisciplineDisplayLabels(
+                  event.disciplines as Parameters<typeof formatDisciplineDisplayLabels>[0],
                 )
               : "—"}
           </dd>

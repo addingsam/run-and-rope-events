@@ -5,7 +5,7 @@ import {
   usesLightBadgeText,
 } from "@/lib/constants/eventColors";
 import {
-  getDisciplineLabelFromSlug,
+  getDisciplineDisplayLabelFromSlug,
   getRodeoLevelLabel,
 } from "@/lib/events/submission-options";
 import {
@@ -36,7 +36,7 @@ function getBadgeLabel({
 
   const primaryDiscipline = disciplines[0];
   if (primaryDiscipline) {
-    return getDisciplineLabelFromSlug(primaryDiscipline);
+    return getDisciplineDisplayLabelFromSlug(primaryDiscipline);
   }
 
   return "Event";
@@ -83,7 +83,7 @@ export function DisciplineColorBadge({ discipline, className = "" }: DisciplineC
         color: lightText ? "#ffffff" : "#1f2937",
       }}
     >
-      {getDisciplineLabelFromSlug(discipline)}
+      {getDisciplineDisplayLabelFromSlug(discipline)}
     </span>
   );
 }
@@ -91,7 +91,7 @@ export function DisciplineColorBadge({ discipline, className = "" }: DisciplineC
 export function ThemeDisciplineBadge({ discipline, className = "" }: DisciplineColorBadgeProps) {
   return (
     <span className={`${themeBadgeClassName} ${className}`}>
-      {getDisciplineLabelFromSlug(discipline)}
+      {getDisciplineDisplayLabelFromSlug(discipline)}
     </span>
   );
 }

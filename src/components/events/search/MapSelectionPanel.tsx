@@ -4,7 +4,7 @@ import Link from "next/link";
 import { formatEventDateRange } from "@/lib/events/format-date";
 import { formatRodeoLevelList, parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import {
-  getDisciplineLabelFromSlug,
+  getDisciplineDisplayLabelFromSlug,
   getFormatLabel,
 } from "@/lib/events/submission-options";
 import {
@@ -199,7 +199,7 @@ export function MapSelectionPanel({
           <dt className="sr-only">Disciplines</dt>
           <dd>
             {event.disciplines
-              .map((discipline) => getDisciplineLabelFromSlug(discipline))
+              .map((discipline) => getDisciplineDisplayLabelFromSlug(discipline))
               .join(", ")}
           </dd>
         </div>

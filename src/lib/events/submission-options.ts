@@ -12,20 +12,48 @@ export const RODEO_LEVEL_OPTIONS = [
 ] as const satisfies readonly { value: RodeoLevel; label: string }[];
 
 export const DISCIPLINE_OPTIONS = [
-  { value: "bareback_riding", label: "Bareback Riding (BB)" },
-  { value: "saddle_bronc", label: "Saddle Bronc (SB)" },
-  { value: "bull_riding", label: "Bull Riding (BR)" },
-  { value: "ranch_bronc_riding", label: "Ranch Bronc Riding (RB)" },
-  { value: "barrel_racing", label: "Barrel Racing (CBR/CGBR)" },
-  { value: "team_roping", label: "Team Roping" },
-  { value: "calf_roping", label: "Calf Roping / Tie Down Roping (CR/TD)" },
-  { value: "breakaway_roping", label: "Breakaway Roping (BA/CBA/BAW/CGBKR)" },
-  { value: "steer_roping", label: "Steer Roping (SR/SRADM)" },
-  { value: "steer_wrestling", label: "Steer Wrestling / Bull Dogging (SW/BD)" },
-  { value: "cowboy_mounted_shooting", label: "Cowboy Mounted Shooting" },
-  { value: "ranch_horse", label: "Ranch Horse" },
-  { value: "obstacle_trail", label: "Obstacle & Trail" },
-] as const satisfies readonly { value: SubmissionDiscipline; label: string }[];
+  { value: "bareback_riding", label: "Bareback Riding (BB)", displayLabel: "Bareback Riding" },
+  { value: "saddle_bronc", label: "Saddle Bronc (SB)", displayLabel: "Saddle Bronc" },
+  { value: "bull_riding", label: "Bull Riding (BR)", displayLabel: "Bull Riding" },
+  {
+    value: "ranch_bronc_riding",
+    label: "Ranch Bronc Riding (RB)",
+    displayLabel: "Ranch Bronc Riding",
+  },
+  {
+    value: "barrel_racing",
+    label: "Barrel Racing (CBR/CGBR)",
+    displayLabel: "Barrel Racing",
+  },
+  { value: "team_roping", label: "Team Roping", displayLabel: "Team Roping" },
+  {
+    value: "calf_roping",
+    label: "Calf Roping / Tie Down Roping (CR/TD)",
+    displayLabel: "Calf Roping / Tie Down Roping",
+  },
+  {
+    value: "breakaway_roping",
+    label: "Breakaway Roping (BA/CBA/BAW/CGBKR)",
+    displayLabel: "Breakaway Roping",
+  },
+  { value: "steer_roping", label: "Steer Roping (SR/SRADM)", displayLabel: "Steer Roping" },
+  {
+    value: "steer_wrestling",
+    label: "Steer Wrestling / Bull Dogging (SW/BD)",
+    displayLabel: "Steer Wrestling / Bull Dogging",
+  },
+  {
+    value: "cowboy_mounted_shooting",
+    label: "Cowboy Mounted Shooting",
+    displayLabel: "Cowboy Mounted Shooting",
+  },
+  { value: "ranch_horse", label: "Ranch Horse", displayLabel: "Ranch Horse" },
+  { value: "obstacle_trail", label: "Obstacle & Trail", displayLabel: "Obstacle & Trail" },
+] as const satisfies readonly {
+  value: SubmissionDiscipline;
+  label: string;
+  displayLabel: string;
+}[];
 
 export const RODEO_ROUGH_STOCK_DISCIPLINES = [
   "bareback_riding",
@@ -49,11 +77,15 @@ export function isRodeoRoughStockDiscipline(discipline: SubmissionDiscipline) {
 }
 
 export function getDisciplineOptionsForFormat(format: SubmissionFormat) {
-  if (format === "jackpot") {
-    return DISCIPLINE_OPTIONS.filter((option) => !isRodeoRoughStockDiscipline(option.value));
-  }
+  const options =
+    format === "jackpot"
+      ? DISCIPLINE_OPTIONS.filter((option) => !isRodeoRoughStockDiscipline(option.value))
+      : DISCIPLINE_OPTIONS.filter((option) => !isJackpotOnlyDiscipline(option.value));
 
-  return DISCIPLINE_OPTIONS.filter((option) => !isJackpotOnlyDiscipline(option.value));
+  return options.map(({ value, displayLabel }) => ({
+    value,
+    label: displayLabel,
+  }));
 }
 
 export function filterDisciplinesForFormat(
@@ -98,8 +130,16 @@ export function getRodeoLevelLabel(level: RodeoLevel) {
   return rodeoLevelLabelMap[level];
 }
 
+const disciplineDisplayLabelMap = Object.fromEntries(
+  DISCIPLINE_OPTIONS.map((option) => [option.value, option.displayLabel]),
+) as Record<SubmissionDiscipline, string>;
+
 export function getDisciplineLabel(discipline: SubmissionDiscipline) {
   return disciplineLabelMap[discipline];
+}
+
+export function getDisciplineDisplayLabel(discipline: SubmissionDiscipline) {
+  return disciplineDisplayLabelMap[discipline];
 }
 
 const legacyDisciplineLabelMap: Record<string, string> = {
@@ -123,6 +163,27 @@ const legacyDisciplineLabelMap: Record<string, string> = {
   "breakaway-roping": "Breakaway Roping (BA/CBA/BAW/CGBKR)",
 };
 
+const legacyDisciplineDisplayLabelMap: Record<string, string> = {
+  bareback_riding: "Bareback Riding",
+  saddle_bronc: "Saddle Bronc",
+  bull_riding: "Bull Riding",
+  ranch_bronc_riding: "Ranch Bronc Riding",
+  barrel_racing: "Barrel Racing",
+  team_roping: "Team Roping",
+  calf_roping: "Calf Roping / Tie Down Roping",
+  breakaway_roping: "Breakaway Roping",
+  steer_roping: "Steer Roping",
+  steer_wrestling: "Steer Wrestling / Bull Dogging",
+  cowboy_mounted_shooting: "Cowboy Mounted Shooting",
+  ranch_horse: "Ranch Horse",
+  obstacle_trail: "Obstacle & Trail",
+  "barrel-racing": "Barrel Racing",
+  "team-roping": "Team Roping",
+  "calf-roping": "Calf Roping / Tie Down Roping",
+  breakaway: "Breakaway Roping",
+  "breakaway-roping": "Breakaway Roping",
+};
+
 export function getDisciplineLabelFromSlug(discipline: string) {
   return (
     legacyDisciplineLabelMap[discipline] ??
@@ -131,6 +192,18 @@ export function getDisciplineLabelFromSlug(discipline: string) {
   );
 }
 
+export function getDisciplineDisplayLabelFromSlug(discipline: string) {
+  return (
+    legacyDisciplineDisplayLabelMap[discipline] ??
+    disciplineDisplayLabelMap[discipline as SubmissionDiscipline] ??
+    discipline.replaceAll("_", " ")
+  );
+}
+
 export function formatDisciplineLabels(disciplines: SubmissionDiscipline[]) {
   return disciplines.map(getDisciplineLabel).join(", ");
+}
+
+export function formatDisciplineDisplayLabels(disciplines: SubmissionDiscipline[]) {
+  return disciplines.map(getDisciplineDisplayLabel).join(", ");
 }
