@@ -4,6 +4,9 @@ import type { SubmissionDiscipline } from "@/types/event-submission";
 /** Neutral fallback when discipline or rodeo level is missing or unrecognized. */
 export const FALLBACK_EVENT_COLOR = "#9CA3AF";
 
+/** Single map pin color for all jackpot events. */
+export const JACKPOT_PIN_COLOR = "#D97706";
+
 /**
  * Supabase `events.disciplines` stores snake_case slugs (text[]), e.g. barrel_racing.
  * Colors apply to jackpot events and discipline badges.
@@ -33,6 +36,14 @@ export const RODEO_LEVEL_COLORS: Record<string, string> = {
   open: "#6366F1",
   pro: "#B91C1C",
 };
+
+export const MAP_PIN_LEGEND = [
+  { label: "Jackpot", color: JACKPOT_PIN_COLOR },
+  { label: "Youth Rodeo", color: RODEO_LEVEL_COLORS.youth },
+  { label: "Open Rodeo", color: RODEO_LEVEL_COLORS.open },
+  { label: "Amateur Rodeo", color: RODEO_LEVEL_COLORS.amateur },
+  { label: "Pro Rodeo", color: RODEO_LEVEL_COLORS.pro },
+] as const;
 
 const legacyDisciplineAliases: Record<string, SubmissionDiscipline> = {
   bareback_riding: "bareback_riding",
@@ -123,18 +134,23 @@ export function getRodeoLevelColor(level: string | null | undefined): string {
 export function getEventPinColor({
   format,
   rodeoLevel,
-  disciplines,
 }: {
   format: string | null | undefined;
-  rodeoLevel: string | null | undefined;
-  disciplines: string[] | null | undefined;
+  rodeoLevel?: string | null | undefined;
+  disciplines?: string[] | null | undefined;
 }): string {
-  if (format === "rodeo" && rodeoLevel) {
-    const [primaryLevel] = parseStoredRodeoLevels(rodeoLevel);
-    return getRodeoLevelColor(primaryLevel);
+  const normalizedFormat = format?.trim().toLowerCase();
+
+  if (normalizedFormat === "rodeo") {
+    if (rodeoLevel) {
+      const [primaryLevel] = parseStoredRodeoLevels(rodeoLevel);
+      return getRodeoLevelColor(primaryLevel);
+    }
+
+    return FALLBACK_EVENT_COLOR;
   }
 
-  return getDisciplineColor(disciplines?.[0]);
+  return JACKPOT_PIN_COLOR;
 }
 
 /** Returns true when a light/white label reads better on the swatch. */

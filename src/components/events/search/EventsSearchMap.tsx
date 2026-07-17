@@ -10,6 +10,8 @@ import {
   createProRodeoMarkerElement,
   createRodeoMarkerElement,
 } from "@/lib/mapbox/map-markers";
+import { getEventPinColor, getRodeoLevelColor } from "@/lib/constants/eventColors";
+import { MapPinLegend } from "@/components/events/search/MapPinLegend";
 import { parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import { getStateCentroid } from "@/lib/mapbox/state-centroids";
 import {
@@ -246,14 +248,19 @@ function createEventMarkerElement(
   entry: Extract<SearchResultEntry, { kind: "event" }>,
   selected: boolean,
 ) {
-  const format = entry.item.format?.trim().toLowerCase();
+  const { format, rodeoLevel, disciplines } = entry.item;
+  const pinColor = getEventPinColor({ format, rodeoLevel, disciplines });
 
-  if (format === "rodeo") {
-    const [primaryLevel] = parseStoredRodeoLevels(entry.item.rodeoLevel);
-    return createRodeoMarkerElement(getRodeoLevelBadge(primaryLevel ?? null), selected);
+  if (format?.trim().toLowerCase() === "rodeo") {
+    const [primaryLevel] = parseStoredRodeoLevels(rodeoLevel);
+    return createRodeoMarkerElement(
+      pinColor,
+      getRodeoLevelBadge(primaryLevel ?? null),
+      selected,
+    );
   }
 
-  return createJackpotMarkerElement(selected);
+  return createJackpotMarkerElement(pinColor, selected);
 }
 
 function attachMarkerClick(element: HTMLElement, key: string, onSelect: (key: string) => void) {
@@ -841,7 +848,7 @@ export function EventsSearchMap({
       }
 
       const key = getResultKey(entry);
-      const element = createProRodeoMarkerElement(selectedKey === key);
+      const element = createProRodeoMarkerElement(getRodeoLevelColor("pro"), selectedKey === key);
       attachMarkerClick(element, key, onSelect);
 
       const marker = new mapboxgl.Marker({ element, anchor: "center" })
@@ -1031,6 +1038,8 @@ export function EventsSearchMap({
         onPinRadiusChange={setPinRadiusMiles}
         onClear={clearDrawings}
       />
+
+      <MapPinLegend />
 
       {selection && (
         <MapSelectionPanel

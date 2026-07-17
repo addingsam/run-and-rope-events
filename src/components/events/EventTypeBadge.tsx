@@ -1,6 +1,5 @@
 import {
   getDisciplineColor,
-  getEventPinColor,
   getRodeoLevelColor,
   usesLightBadgeText,
 } from "@/lib/constants/eventColors";
@@ -42,13 +41,26 @@ function getBadgeLabel({
   return "Event";
 }
 
+function getBadgeColor({
+  format,
+  rodeoLevel,
+  disciplines = [],
+}: EventTypeBadgeProps): string {
+  if (format === "rodeo" && rodeoLevel) {
+    const [primaryLevel] = parseStoredRodeoLevels(rodeoLevel);
+    return getRodeoLevelColor(primaryLevel);
+  }
+
+  return getDisciplineColor(disciplines[0]);
+}
+
 export function EventTypeBadge({
   format,
   rodeoLevel,
   disciplines = [],
   className = "",
 }: EventTypeBadgeProps) {
-  const color = getEventPinColor({ format, rodeoLevel, disciplines });
+  const color = getBadgeColor({ format, rodeoLevel, disciplines });
   const label = getBadgeLabel({ format, rodeoLevel, disciplines });
   const lightText = usesLightBadgeText(color);
 

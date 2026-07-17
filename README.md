@@ -151,6 +151,7 @@ Optional env vars:
 | Variable | Description |
 | -------- | ----------- |
 | `ADMIN_SECRET` | Password required on admin forms when set |
+| `ADMIN_EMAIL` | Inbox for `/contact` messages (required for contact form email) |
 | `MAPBOX_ACCESS_TOKEN` | Preferred geocoding provider |
 
 ## PostGIS (map radius search)

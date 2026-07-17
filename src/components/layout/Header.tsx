@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/events", label: "Events" },
   { href: "/submit", label: "Submit — free" },
   { href: "/subscribe", label: "Plans" },
+  { href: "/contact", label: "Contact" },
 ];
 
 const headerTextClassName =

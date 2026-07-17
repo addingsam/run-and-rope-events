@@ -1,6 +1,6 @@
 import type { SearchResultEntry } from "@/types/event-search";
 import type mapboxgl from "mapbox-gl";
-import { getEventPinColor } from "@/lib/constants/eventColors";
+import { getEventPinColor, getRodeoLevelColor } from "@/lib/constants/eventColors";
 import { getResultKey } from "@/lib/mapbox/search-map-utils";
 
 export const EVENTS_SOURCE_ID = "events";
@@ -18,6 +18,28 @@ export function buildEventsGeoJson(results: SearchResultEntry[]): GeoJSON.Featur
   const features: GeoJSON.Feature[] = [];
 
   for (const entry of results) {
+    if (entry.kind === "pro_rodeo") {
+      const { id, latitude, longitude } = entry.item;
+      if (latitude == null || longitude == null) {
+        continue;
+      }
+
+      features.push({
+        type: "Feature",
+        id: `pro:${id}`,
+        properties: {
+          resultKey: getResultKey(entry),
+          format: "rodeo",
+          pinColor: getRodeoLevelColor("pro"),
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [longitude, latitude],
+        },
+      });
+      continue;
+    }
+
     if (entry.kind !== "event") {
       continue;
     }

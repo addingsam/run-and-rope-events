@@ -1,25 +1,50 @@
-export function createJackpotMarkerElement(selected = false) {
+const PIN_BORDER = "2px solid #ffffff";
+const PIN_SHADOW = "0 1px 3px rgba(0,0,0,0.35)";
+
+function applyPinBaseStyles(element: HTMLElement, color: string, diameterPx: number) {
+  element.style.width = `${diameterPx}px`;
+  element.style.height = `${diameterPx}px`;
+  element.style.borderRadius = "9999px";
+  element.style.border = PIN_BORDER;
+  element.style.boxShadow = PIN_SHADOW;
+  element.style.backgroundColor = color;
+  element.style.transition = "transform 150ms ease, box-shadow 150ms ease";
+}
+
+function applySelectedStyles(element: HTMLElement, color: string, selected: boolean) {
+  if (selected) {
+    element.style.transform = "scale(1.25)";
+    element.style.boxShadow = `0 0 0 4px ${color}55, ${PIN_SHADOW}`;
+    return;
+  }
+
+  element.style.transform = "";
+  element.style.boxShadow = PIN_SHADOW;
+}
+
+export function createJackpotMarkerElement(color: string, selected = false) {
   const element = document.createElement("div");
-  element.className = `h-4 w-4 rounded-full border-2 border-white shadow-md ${
-    selected ? "bg-amber-400 ring-4 ring-amber-200" : "bg-amber-500"
-  }`;
+  applyPinBaseStyles(element, color, 16);
+  applySelectedStyles(element, color, selected);
   return element;
 }
 
-export function createRodeoMarkerElement(levelBadge: string, selected = false) {
+export function createRodeoMarkerElement(color: string, levelBadge: string, selected = false) {
   const element = document.createElement("div");
   element.className = "relative";
+  element.style.width = "20px";
+  element.style.height = "20px";
 
   const pin = document.createElement("div");
-  pin.className = `h-5 w-5 rounded-full border-2 border-white shadow-md ${
-    selected ? "bg-blue-700 ring-4 ring-blue-200" : "bg-blue-900"
-  }`;
+  applyPinBaseStyles(pin, color, 20);
+  applySelectedStyles(pin, color, selected);
   element.appendChild(pin);
 
   if (levelBadge) {
     const badge = document.createElement("span");
     badge.className =
-      "absolute -right-2 -top-2 min-w-[18px] rounded-full bg-white px-1 text-center text-[10px] font-bold leading-4 text-blue-900 shadow";
+      "absolute -right-2 -top-2 min-w-[18px] rounded-full bg-white px-1 text-center text-[10px] font-bold leading-4 shadow";
+    badge.style.color = color;
     badge.textContent = levelBadge;
     element.appendChild(badge);
   }
@@ -27,16 +52,8 @@ export function createRodeoMarkerElement(levelBadge: string, selected = false) {
   return element;
 }
 
-export function createProRodeoMarkerElement(selected = false) {
-  const element = document.createElement("div");
-  element.className = `flex h-7 w-7 items-center justify-center text-lg ${
-    selected ? "scale-125" : ""
-  }`;
-  element.textContent = "★";
-  element.style.color = "#ca8a04";
-  element.style.textShadow = "0 1px 3px rgba(0,0,0,0.45)";
-  element.style.filter = selected ? "drop-shadow(0 0 6px #facc15)" : "";
-  return element;
+export function createProRodeoMarkerElement(color: string, selected = false) {
+  return createRodeoMarkerElement(color, "Pro", selected);
 }
 
 export function createStateClusterElement(
