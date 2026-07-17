@@ -73,14 +73,14 @@ export function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
         <Link
           href="/"
-          className={`min-w-0 shrink text-base font-bold leading-tight tracking-tight sm:text-lg ${headerTextClassName}`}
+          className={`min-w-0 shrink text-base font-bold leading-tight tracking-tight lg:text-lg ${headerTextClassName}`}
         >
-          <span className="md:hidden">J&amp;R Events</span>
-          <span className="hidden md:inline">{APP_NAME}</span>
+          <span className="lg:hidden">J&amp;R Events</span>
+          <span className="hidden lg:inline">{APP_NAME}</span>
         </Link>
 
         <nav
-          className={`hidden items-center gap-4 text-sm font-medium md:flex md:gap-6 ${headerTextClassName}`}
+          className={`hidden flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm font-medium lg:flex xl:gap-6 ${headerTextClassName}`}
         >
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className={headerTextClassName}>
@@ -112,7 +112,13 @@ export function Header() {
           </Show>
         </nav>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
+          <Link
+            href="/contact"
+            className={`rounded-lg px-2 py-1.5 text-sm font-semibold ${headerTextClassName}`}
+          >
+            Contact
+          </Link>
           <Show when="signed-in">
             <UserButton appearance={clerkHeaderAppearance} />
           </Show>
@@ -132,7 +138,7 @@ export function Header() {
       {mobileMenuOpen ? (
         <nav
           id="mobile-site-nav"
-          className="border-t border-[var(--color-accent-primary)]/15 px-4 py-3 md:hidden"
+          className="border-t border-[var(--color-accent-primary)]/15 px-4 py-3 lg:hidden"
         >
           <ul className="space-y-1">
             <li>
