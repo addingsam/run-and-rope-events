@@ -10,15 +10,15 @@
   --color-text-muted: #9ba3ac;
 
   /* Clerk auth modals and verification steps */
-  --clerk-color-primary: #3d6d8c;
+  --clerk-color-primary: #e0982e;
   --clerk-color-foreground: #f2f1ed;
-  --clerk-color-muted-foreground: #9ba3ac;
+  --clerk-color-muted-foreground: #d8d6d0;
   --clerk-color-background: #16181c;
   --clerk-color-input: #3a424b;
   --clerk-color-input-foreground: #f2f1ed;
   --clerk-color-border: #7a8a9a;
   --clerk-color-muted: #1f2328;
-  --clerk-color-primary-foreground: #f2f1ed;
+  --clerk-color-primary-foreground: #16181c;
 
   /* Legacy aliases used by existing layout utilities */
   --background: var(--color-background);
@@ -110,4 +110,92 @@ h6 {
 .cl-otpCodeFieldInput[data-status="hovered"],
 [data-otp-input][data-status="hovered"] {
   border-color: #9ba3ac !important;
+}
+
+/* Clerk sign-in modal and auth cards — light text on dark surfaces */
+.cl-modalContent,
+.cl-card,
+.cl-rootBox,
+.cl-signIn-root,
+.cl-signUp-root,
+.cl-userProfile-root,
+.cl-main,
+.cl-scrollBox {
+  color: #f2f1ed !important;
+}
+
+.cl-headerTitle,
+.cl-headerSubtitle,
+.cl-formHeaderTitle,
+.cl-formHeaderSubtitle,
+.cl-formFieldLabel,
+.cl-socialButtonsBlockButton,
+.cl-socialButtonsBlockButtonText,
+.cl-dividerText,
+.cl-footerActionText,
+.cl-identityPreviewText,
+.cl-alertText,
+.cl-navbarButton,
+.cl-alternativeMethodsBlockButton,
+.cl-form p,
+.cl-form span:not(.cl-formFieldErrorText) {
+  color: #f2f1ed !important;
+}
+
+.cl-headerSubtitle,
+.cl-formHeaderSubtitle,
+.cl-footerActionText,
+.cl-formFieldHintText {
+  color: #d8d6d0 !important;
+}
+
+.cl-footerActionLink,
+.cl-backLink,
+.cl-formResendCodeLink,
+.cl-formFieldAction,
+.cl-identityPreviewEditButton,
+.cl-formButtonReset {
+  color: #f0c070 !important;
+}
+
+.cl-footerActionLink:hover,
+.cl-backLink:hover,
+.cl-formResendCodeLink:hover,
+.cl-formFieldAction:hover,
+.cl-identityPreviewEditButton:hover,
+.cl-formButtonReset:hover {
+  color: #f2f1ed !important;
+}
+
+.cl-formFieldInput,
+.cl-input,
+.cl-phoneInputInput,
+.cl-selectButton {
+  color: #f2f1ed !important;
+  background-color: #3a424b !important;
+  border-color: #7a8a9a !important;
+}
+
+.cl-formFieldInput::placeholder,
+.cl-input::placeholder {
+  color: #b8c0c8 !important;
+}
+
+.cl-formFieldErrorText {
+  color: #fca5a5 !important;
+}
+
+.cl-modalCloseButton {
+  color: #f2f1ed !important;
+}
+
+.cl-userButtonPopoverCard,
+.cl-userButtonPopoverActionButton,
+.cl-userButtonPopoverActionButtonText {
+  color: #f2f1ed !important;
+  background-color: #16181c;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background-color: #1f2328 !important;
 }
