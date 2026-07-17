@@ -51,6 +51,11 @@ import { validateBatchEventDates } from "@/lib/events/validate-batch-dates";
 import { validateBatchEvents } from "@/lib/events/validate-batch-events";
 import { uniqueSortedEventDates } from "@/lib/events/expand-batch-submissions";
 import {
+  getSubmissionDuplicateStatusLabel,
+  type SubmissionDuplicateWarning,
+} from "@/lib/events/duplicate-detection";
+import { formatEventDate } from "@/lib/events/format-date";
+import {
   EMPTY_EVENT_SUBMISSION,
   type BatchEventEntry,
   type EventSubmission,
@@ -186,6 +191,39 @@ function describeInferredYearDateFields(fields: FlyerInferredYearFields) {
   return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
 }
 
+function DuplicateSubmissionNotice({ warnings }: { warnings: SubmissionDuplicateWarning[] }) {
+  if (warnings.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mx-auto mt-5 max-w-lg rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-left text-sm text-amber-950">
+      <p className="font-semibold">Possible duplicate detected</p>
+      <p className="mt-1 leading-6 text-amber-900/90">
+        Your submission was received, but it matches an existing listing with the same name, format,
+        and date. Our team will review both entries.
+      </p>
+      <ul className="mt-3 space-y-3">
+        {warnings.map((warning) => (
+          <li key={`${warning.eventName}-${warning.startDate}`}>
+            <p className="font-medium">
+              {warning.eventName} · {formatEventDate(warning.startDate)}
+            </p>
+            <ul className="mt-1 space-y-1 text-amber-900/90">
+              {warning.matches.map((match) => (
+                <li key={match.id}>
+                  Existing: {match.eventName} · {formatEventDate(match.startDate)} ·{" "}
+                  {match.location} ({getSubmissionDuplicateStatusLabel(match.status)})
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function EventSubmissionForm() {
   const [formData, setFormData] = useState<EventSubmission>(EMPTY_EVENT_SUBMISSION);
   const [featurePlacement, setFeaturePlacement] = useState<FeaturedPlacementChoice>("none");
@@ -205,6 +243,9 @@ export function EventSubmissionForm() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedEventCount, setSubmittedEventCount] = useState(1);
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [submittedDuplicateWarnings, setSubmittedDuplicateWarnings] = useState<
+    SubmissionDuplicateWarning[]
+  >([]);
   const isMultiEventBatch = batchEvents.length >= 2;
   const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;
   const isBatchMode = isMultiEventBatch || isSameVenueBatch;
@@ -553,6 +594,8 @@ export function EventSubmissionForm() {
         eventIds?: string[];
         eventCount?: number;
         error?: string;
+        duplicateDetected?: boolean;
+        duplicateWarnings?: SubmissionDuplicateWarning[];
         confirmationEmails?: {
           sent: string[];
           failed: Array<{ email: string; reason: string }>;
@@ -626,6 +669,7 @@ export function EventSubmissionForm() {
 
       setSubmitted(true);
       setSubmittedEventCount(data.eventCount ?? 1);
+      setSubmittedDuplicateWarnings(data.duplicateWarnings ?? []);
       setFormData(EMPTY_EVENT_SUBMISSION);
       setFeaturePlacement("none");
       setFlyerFile(null);
@@ -663,11 +707,13 @@ export function EventSubmissionForm() {
               ? ` ${confirmationNotice}`
               : ""}
         </p>
+        <DuplicateSubmissionNotice warnings={submittedDuplicateWarnings} />
         <button
           type="button"
           onClick={() => {
             setSubmitted(false);
             setSubmittedEmail("");
+            setSubmittedDuplicateWarnings([]);
             setConfirmationNotice(null);
             setFeaturePlacement("none");
           }}
