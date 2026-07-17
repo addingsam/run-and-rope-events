@@ -11,7 +11,6 @@ import {
   createRodeoMarkerElement,
 } from "@/lib/mapbox/map-markers";
 import { getEventPinColor, getRodeoLevelColor } from "@/lib/constants/eventColors";
-import { MapPinLegend } from "@/components/events/search/MapPinLegend";
 import { parseStoredRodeoLevels } from "@/lib/events/rodeo-levels";
 import { getStateCentroid } from "@/lib/mapbox/state-centroids";
 import {
@@ -1038,8 +1037,6 @@ export function EventsSearchMap({
         onPinRadiusChange={setPinRadiusMiles}
         onClear={clearDrawings}
       />
-
-      <MapPinLegend />
 
       {selection && (
         <MapSelectionPanel

@@ -37,14 +37,6 @@ export const RODEO_LEVEL_COLORS: Record<string, string> = {
   pro: "#B91C1C",
 };
 
-export const MAP_PIN_LEGEND = [
-  { label: "Jackpot", color: JACKPOT_PIN_COLOR },
-  { label: "Youth Rodeo", color: RODEO_LEVEL_COLORS.youth },
-  { label: "Open Rodeo", color: RODEO_LEVEL_COLORS.open },
-  { label: "Amateur Rodeo", color: RODEO_LEVEL_COLORS.amateur },
-  { label: "Pro Rodeo", color: RODEO_LEVEL_COLORS.pro },
-] as const;
-
 const legacyDisciplineAliases: Record<string, SubmissionDiscipline> = {
   bareback_riding: "bareback_riding",
   "bareback-riding": "bareback_riding",
