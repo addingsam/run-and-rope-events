@@ -89,7 +89,7 @@ export function ContactForm({
 
         <div>
           <label htmlFor="contact-email" className={themeLabelClassName}>
-            Email
+            Your email
           </label>
           <input
             id="contact-email"
@@ -101,6 +101,9 @@ export function ContactForm({
             autoComplete="email"
             className={`mt-2 ${themeInputClassName}${lockEmail ? " cursor-not-allowed opacity-80" : ""}`}
           />
+          <p className={`mt-2 ${themeMutedTextClassName}`}>
+            Your reply address — not our team inbox. We&apos;ll respond to the email you enter here.
+          </p>
         </div>
       </div>
 

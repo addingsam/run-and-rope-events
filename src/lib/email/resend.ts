@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { APP_NAME } from "@/lib/constants";
+import { APP_NAME, TEAM_CONTACT_EMAIL, TEAM_CONTACT_FROM } from "@/lib/constants";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -9,26 +9,49 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function normalizeFromAddress(configured: string) {
+  const trimmed = configured.trim();
+  const bracketMatch = trimmed.match(/^(.+?)\s*<([^>]+)>$/);
+  const email = (bracketMatch?.[2] ?? trimmed).trim().toLowerCase();
+
+  if (email === "samanthaaddington1@gmail.com" || email === "onboarding@resend.dev") {
+    return TEAM_CONTACT_FROM;
+  }
+
+  if (bracketMatch) {
+    return `${APP_NAME} <${bracketMatch[2].trim()}>`;
+  }
+
+  return `${APP_NAME} <${trimmed}>`;
+}
+
 export function getResendClient() {
   return new Resend(requireEnv("RESEND_API_KEY"));
 }
 
 /** Use the verified mailbox from env but always show the current app name to recipients. */
 export function getResendFromAddress() {
-  const configured = requireEnv("RESEND_FROM_EMAIL").trim();
-  const bracketMatch = configured.match(/^(.+?)\s*<([^>]+)>$/);
-
-  if (bracketMatch) {
-    return `${APP_NAME} <${bracketMatch[2].trim()}>`;
+  const configured = process.env.RESEND_FROM_EMAIL?.trim();
+  if (!configured) {
+    return TEAM_CONTACT_FROM;
   }
-
-  return `${APP_NAME} <${configured}>`;
+  return normalizeFromAddress(configured);
 }
 
 export function getResendFromEmailAddress() {
-  const configured = requireEnv("RESEND_FROM_EMAIL").trim();
+  const configured = process.env.RESEND_FROM_EMAIL?.trim();
+  if (!configured) {
+    return TEAM_CONTACT_EMAIL;
+  }
+
   const bracketMatch = configured.match(/^(.+?)\s*<([^>]+)>$/);
-  return (bracketMatch?.[2] ?? configured).trim().toLowerCase();
+  const email = (bracketMatch?.[2] ?? configured).trim().toLowerCase();
+
+  if (email === "samanthaaddington1@gmail.com") {
+    return TEAM_CONTACT_EMAIL;
+  }
+
+  return email;
 }
 
 export function isResendTestSender() {

@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { TEAM_CONTACT_EMAIL } from "@/lib/constants";
 import { getAuthUserProfile } from "@/lib/auth/get-user";
 import { themeMutedTextClassName } from "@/lib/theme/form-classes";
 
@@ -25,6 +26,15 @@ export default async function ContactPage() {
           <p className={`mt-4 max-w-2xl ${themeMutedTextClassName}`}>
             Questions about listings, subscriptions, saved searches, or anything else on the site?
             Send a message and we&apos;ll get back to you by email.
+          </p>
+          <p className={`mt-3 text-sm font-medium text-[var(--color-text-primary)]`}>
+            Team inbox:{" "}
+            <a
+              href={`mailto:${TEAM_CONTACT_EMAIL}`}
+              className="text-[var(--color-accent-primary)] underline-offset-2 hover:underline"
+            >
+              {TEAM_CONTACT_EMAIL}
+            </a>
           </p>
         </div>
       </div>
