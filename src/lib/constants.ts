@@ -7,10 +7,8 @@ export const APP_DESCRIPTION =
 
 export const APP_TAGLINE = "Jackpots & rodeos, all in one place.";
 
-/** Team inbox for contact form delivery and default outbound sender. */
+/** Team inbox for contact form delivery (Resend can send TO this address). */
 export const TEAM_CONTACT_EMAIL = "jackpotandrodeoevents@gmail.com";
-
-export const TEAM_CONTACT_FROM = `${APP_NAME} <${TEAM_CONTACT_EMAIL}>`;
 
 export const APP_HOME_EYEBROW = "Jackpots & rodeos";
 

@@ -7,7 +7,7 @@ Use this when deploying **Jackpot & Rodeo Events** to Vercel.
 - [ ] All Supabase migrations applied (see `supabase/migrations/`)
 - [ ] Clerk production instance configured (or promote from dev)
 - [ ] Stripe products/prices created (Monthly $9.99, Annual $79.99)
-- [ ] Resend sender verified: `jackpotandrodeoevents@gmail.com` for `RESEND_FROM_EMAIL`
+- [ ] Resend sending domain verified for `RESEND_FROM_EMAIL` (not `@gmail.com`)
 - [ ] Cloudflare R2 bucket has public read access for flyer URLs
 - [ ] Mapbox token created with URL restrictions for your production domain
 - [ ] At least one Clerk user has `publicMetadata.role = "admin"` for `/admin`
@@ -69,7 +69,7 @@ Add every **required** variable for **Production**. Use test/sandbox keys in **P
 | Variable | Required | Where to get it | Notes |
 | -------- | -------- | --------------- | ----- |
 | `RESEND_API_KEY` | **Yes** | Resend → API Keys (`re_...`) | Server only. |
-| `RESEND_FROM_EMAIL` | **Yes** | `Jackpot & Rodeo Events <jackpotandrodeoevents@gmail.com>` | Outbound sender — verify this address in Resend. |
+| `RESEND_FROM_EMAIL` | **Yes** | `Jackpot & Rodeo Events <noreply@jackpotandrodeoevents.com>` | Verified outbound sender on your domain — not Gmail. |
 
 ### Mapbox
 

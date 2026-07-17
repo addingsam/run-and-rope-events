@@ -36,6 +36,10 @@ export default async function ContactPage() {
               {TEAM_CONTACT_EMAIL}
             </a>
           </p>
+          <p className={`mt-2 max-w-2xl text-xs ${themeMutedTextClassName}`}>
+            Messages from this form are delivered to our team Gmail. Replies come from our verified
+            sending address and go to the email you enter below.
+          </p>
         </div>
       </div>
 

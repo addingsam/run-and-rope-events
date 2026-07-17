@@ -78,14 +78,14 @@ When a submitter provides an email on `/submit`, the app sends a confirmation th
 
 1. Create an account at [Resend](https://resend.com/).
 2. Generate an API key.
-3. **Verify** `jackpotandrodeoevents@gmail.com` as a sender in Resend (Domains → add and verify email, or verify a custom domain later).
+3. **Verify your website domain** in [Resend → Domains](https://resend.com/domains). Resend cannot send *from* `@gmail.com` — use a domain you control for outbound mail.
 4. Add these values to `.env.local`:
 
 | Variable | Description |
 | -------- | ----------- |
 | `RESEND_API_KEY` | Resend API key |
-| `RESEND_FROM_EMAIL` | Outbound sender: `Jackpot & Rodeo Events <jackpotandrodeoevents@gmail.com>` |
-| `ADMIN_EMAIL` | Inbound contact form inbox: `jackpotandrodeoevents@gmail.com` |
+| `RESEND_FROM_EMAIL` | Verified outbound sender, e.g. `Jackpot & Rodeo Events <noreply@yourdomain.com>` |
+| `ADMIN_EMAIL` | Team inbox that receives contact form mail: `jackpotandrodeoevents@gmail.com` |
 
 The confirmation email includes the submitted event name and start date.
 
