@@ -31,5 +31,6 @@ export function expandSubmissionToMultiEventBatch(
     city: event.city.trim(),
     state: event.state.trim(),
     zipCode: event.zipCode.trim(),
+    classDivisionInfo: event.classDivisionInfo.trim() || submission.classDivisionInfo.trim(),
   }));
 }

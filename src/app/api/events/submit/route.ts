@@ -15,7 +15,10 @@ import {
 } from "@/lib/email/send-submission-confirmation";
 import { sendDuplicateSubmissionAlertEmails } from "@/lib/email/send-duplicate-submission-alert";
 import { listEventsForDuplicateCheck } from "@/lib/events/admin-repository";
-import { findSubmissionDuplicateWarnings } from "@/lib/events/duplicate-detection";
+import {
+  findScheduleLocationDuplicateWarningsForCandidates,
+  findSubmissionDuplicateWarnings,
+} from "@/lib/events/duplicate-detection";
 import { validateBatchEventDates } from "@/lib/events/validate-batch-dates";
 import { validateBatchEvents } from "@/lib/events/validate-batch-events";
 import { validateEventSubmission } from "@/lib/events/validate-submission";
@@ -63,6 +66,10 @@ export async function POST(request: Request) {
         ? expandSubmissionToMultiEventBatch(submission, normalizedBatchEvents)
         : expandSubmissionToBatch(submission, batchEventDates);
       const duplicateWarnings = findSubmissionDuplicateWarnings(submissions, duplicateCandidates);
+      const scheduleLocationWarnings = findScheduleLocationDuplicateWarningsForCandidates(
+        submissions,
+        duplicateCandidates,
+      );
       const savedEvents = await saveEventSubmissions(submissions);
       const confirmationDates = isMultiEventBatch
         ? normalizedBatchEvents.map((event) => event.startDate)
@@ -82,13 +89,19 @@ export async function POST(request: Request) {
         eventCount: savedEvents.length,
         confirmationEmailSent: confirmationEmails.sent.length > 0,
         confirmationEmails,
-        duplicateDetected: duplicateWarnings.length > 0,
+        duplicateDetected:
+          duplicateWarnings.length > 0 || scheduleLocationWarnings.length > 0,
         duplicateWarnings,
+        scheduleLocationWarnings,
         duplicateAlertEmails,
       });
     }
 
     const duplicateWarnings = findSubmissionDuplicateWarnings([submission], duplicateCandidates);
+    const scheduleLocationWarnings = findScheduleLocationDuplicateWarningsForCandidates(
+      [submission],
+      duplicateCandidates,
+    );
     const savedEvent = await saveEventSubmission(submission);
     const confirmationEmails = await sendSubmissionConfirmationEmails(submission);
     const duplicateAlertEmails = await sendDuplicateSubmissionAlertEmails(
@@ -102,8 +115,10 @@ export async function POST(request: Request) {
       eventCount: 1,
       confirmationEmailSent: confirmationEmails.sent.length > 0,
       confirmationEmails,
-      duplicateDetected: duplicateWarnings.length > 0,
+      duplicateDetected:
+        duplicateWarnings.length > 0 || scheduleLocationWarnings.length > 0,
       duplicateWarnings,
+      scheduleLocationWarnings,
       duplicateAlertEmails,
     });
   } catch (error) {

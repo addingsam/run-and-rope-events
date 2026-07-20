@@ -79,6 +79,72 @@ export function findSubmissionDuplicateMatches(
   return candidates.filter((candidate) => getEventDuplicateKey(candidate) === key);
 }
 
+export interface ScheduleDuplicateWarning {
+  index: number;
+  startDate: string;
+  location: string;
+  matches: SubmissionDuplicateMatch[];
+}
+
+export function getScheduleLocationDuplicateKey(
+  submission: Pick<EventSubmission, "venueName" | "city" | "state" | "startDate">,
+) {
+  const venue = submission.venueName.trim().toLowerCase().replace(/\s+/g, " ");
+  const city = submission.city.trim().toLowerCase();
+  const state = submission.state.trim().toUpperCase();
+  const date = submission.startDate.trim();
+  return `${venue}|${city}|${state}|${date}`;
+}
+
+export function findScheduleLocationDuplicateMatches(
+  submission: Pick<EventSubmission, "venueName" | "city" | "state" | "startDate">,
+  candidates: EventRecord[],
+): EventRecord[] {
+  if (!submission.startDate.trim()) {
+    return [];
+  }
+
+  const key = getScheduleLocationDuplicateKey(submission);
+
+  return candidates.filter((candidate) => {
+    const candidateKey = getScheduleLocationDuplicateKey({
+      venueName: candidate.venue_name ?? "",
+      city: candidate.address_city ?? "",
+      state: candidate.address_state ?? "",
+      startDate: candidate.event_date,
+    });
+
+    return candidateKey === key;
+  });
+}
+
+export function findScheduleLocationDuplicateWarningsForCandidates(
+  submissions: EventSubmission[],
+  candidates: EventRecord[],
+): ScheduleDuplicateWarning[] {
+  const warnings: ScheduleDuplicateWarning[] = [];
+
+  submissions.forEach((submission, index) => {
+    const matches = findScheduleLocationDuplicateMatches(submission, candidates);
+    if (matches.length === 0) {
+      return;
+    }
+
+    warnings.push({
+      index,
+      startDate: submission.startDate,
+      location: formatEventLocation({
+        venue_name: submission.venueName,
+        address_city: submission.city,
+        address_state: submission.state,
+      }),
+      matches: matches.map(toSubmissionDuplicateMatch),
+    });
+  });
+
+  return warnings;
+}
+
 export function findSubmissionDuplicateWarnings(
   submissions: EventSubmission[],
   candidates: EventRecord[],

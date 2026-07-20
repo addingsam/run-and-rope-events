@@ -1,7 +1,11 @@
 "use client";
 
-import { OptionalDateInput, SelectInput, TextInput } from "@/components/submit/FormField";
+import { OptionalDateInput, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import { formatEventDate } from "@/lib/events/format-date";
+import {
+  getSubmissionDuplicateStatusLabel,
+  type ScheduleDuplicateWarning,
+} from "@/lib/events/duplicate-detection";
 import { US_STATES } from "@/lib/us-states";
 import {
   themeHintClassName,
@@ -15,6 +19,7 @@ interface BatchEventsFieldProps {
   events: BatchEventEntry[];
   errors: Record<string, string | undefined>;
   yearInferred: Array<{ startDate: boolean; endDate: boolean }>;
+  duplicateWarnings?: ScheduleDuplicateWarning[];
   onChange: (events: BatchEventEntry[]) => void;
 }
 
@@ -22,6 +27,7 @@ export function BatchEventsField({
   events,
   errors,
   yearInferred,
+  duplicateWarnings = [],
   onChange,
 }: BatchEventsFieldProps) {
   function updateEvent<K extends keyof BatchEventEntry>(
@@ -50,8 +56,13 @@ export function BatchEventsField({
         city: "",
         state: "",
         zipCode: "",
+        classDivisionInfo: "",
       },
     ]);
+  }
+
+  function warningsForIndex(index: number) {
+    return duplicateWarnings.filter((warning) => warning.index === index);
   }
 
   return (
@@ -64,8 +75,9 @@ export function BatchEventsField({
           </span>
         </div>
         <p className={`mt-1 ${themeHintClassName}`}>
-          Your flyer lists more than one event stop. Each stop below becomes its own directory
-          listing with the same shared details (name, format, disciplines, contact, and flyer).
+          Your flyer is a schedule of distinct events. Each card below becomes its own listing.
+          Review dates, locations, and classes for each stop, and remove any you do not want to
+          submit.
         </p>
       </div>
 
@@ -73,6 +85,7 @@ export function BatchEventsField({
         {events.map((event, index) => {
           const inferred = yearInferred[index];
           const showYearWarning = inferred?.startDate || inferred?.endDate;
+          const cardWarnings = warningsForIndex(index);
 
           return (
             <li
@@ -83,7 +96,7 @@ export function BatchEventsField({
                 <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Event {index + 1}
                 </p>
-                {events.length > 2 ? (
+                {events.length > 1 ? (
                   <button
                     type="button"
                     onClick={() => removeEvent(index)}
@@ -98,6 +111,22 @@ export function BatchEventsField({
                 <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
                   Verify dates — the flyer may not have included a year for this event.
                 </p>
+              ) : null}
+
+              {cardWarnings.length > 0 ? (
+                <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+                  <p className="font-semibold">Possible duplicate at this location and date</p>
+                  <ul className="mt-2 space-y-2">
+                    {cardWarnings.flatMap((warning) =>
+                      warning.matches.map((match) => (
+                        <li key={`${warning.index}-${match.id}`}>
+                          Existing: {match.eventName} · {formatEventDate(match.startDate)} ·{" "}
+                          {match.location} ({getSubmissionDuplicateStatusLabel(match.status)})
+                        </li>
+                      )),
+                    )}
+                  </ul>
+                </div>
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -132,6 +161,19 @@ export function BatchEventsField({
                   onChange={(value) => updateEvent(index, "entryDeadline", value)}
                   error={errors[`batchEvents.${index}.entryDeadline`]}
                   hint="Optional — leave blank if there is no entry deadline."
+                />
+              </div>
+
+              <div className="mt-4">
+                <TextArea
+                  name={`batchEvents.${index}.classDivisionInfo`}
+                  label="Class or Division Info"
+                  value={event.classDivisionInfo}
+                  onChange={(changeEvent) =>
+                    updateEvent(index, "classDivisionInfo", changeEvent.target.value)
+                  }
+                  hint="Optional — use when this stop has different classes or divisions."
+                  className="min-h-24"
                 />
               </div>
 

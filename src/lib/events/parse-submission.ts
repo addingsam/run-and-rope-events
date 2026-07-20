@@ -52,6 +52,7 @@ function normalizeBatchEventEntry(item: unknown): BatchEventEntry | null {
     city: trimString(event.city),
     state: trimString(event.state),
     zipCode: trimString(event.zipCode),
+    classDivisionInfo: trimString(event.classDivisionInfo),
   } satisfies BatchEventEntry;
 
   if (

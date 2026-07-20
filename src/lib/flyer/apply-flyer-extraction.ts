@@ -21,7 +21,11 @@ import {
 } from "@/lib/events/normalize-website-url";
 import { resolveFlyerProducerName } from "@/lib/flyer/resolve-producer-name";
 import { US_STATES } from "@/lib/us-states";
-import type { FlyerExtractionEventEntry, FlyerExtractionResult } from "@/types/flyer-extraction";
+import type {
+  FlyerExtractionEventEntry,
+  FlyerExtractionLayoutType,
+  FlyerExtractionResult,
+} from "@/types/flyer-extraction";
 import type {
   BatchEventEntry,
   EventSubmission,
@@ -43,6 +47,7 @@ export const EMPTY_FLYER_INFERRED_YEAR_FIELDS: FlyerInferredYearFields = {
 
 export interface ApplyFlyerExtractionResult {
   submission: EventSubmission;
+  layoutType: FlyerExtractionLayoutType;
   inferredYearFields: FlyerInferredYearFields;
   batchEventDates: string[];
   batchDatesYearInferred: boolean[];
@@ -163,6 +168,7 @@ function mapExtractedEventToBatchEntry(
 } {
   const sanitized = sanitizeFlyerExtractionLocation({
     eventName: null,
+    type: "schedule",
     date: entry.date,
     eventDates: [],
     events: [],
@@ -180,7 +186,7 @@ function mapExtractedEventToBatchEntry(
     rodeoLevel: null,
     entryFee: null,
     prizePayoutInfo: null,
-    classDivisionInfo: null,
+    classDivisionInfo: entry.classDivisionInfo,
     contactName: null,
     contactPhone: null,
     contactEmail: null,
@@ -208,6 +214,7 @@ function mapExtractedEventToBatchEntry(
       city: sanitized.city ?? "",
       state: normalizeState(sanitized.state) || "",
       zipCode: sanitized.zipCode ?? zipFromAddress ?? "",
+      classDivisionInfo: entry.classDivisionInfo ?? "",
     },
     yearInferred: {
       startDate: resolvedDates.startYearInferred,
@@ -289,7 +296,7 @@ export function applyFlyerExtractionToSubmission(
   );
   const batchEvents =
     mappedBatchEvents.length >= 2 ? mappedBatchEvents.map((item) => item.batchEvent) : [];
-  const useBatchEvents = batchEvents.length >= 2;
+  const useBatchEvents = sanitized.type === "schedule" && batchEvents.length >= 2;
   const singleMappedEvent = mappedBatchEvents.length === 1 ? mappedBatchEvents[0] : null;
   const firstBatchEvent = batchEvents[0] ?? singleMappedEvent?.batchEvent;
 
@@ -379,6 +386,7 @@ export function applyFlyerExtractionToSubmission(
     batchEventsYearInferred: useBatchEvents
       ? mappedBatchEvents.map((item) => item.yearInferred)
       : [],
+    layoutType: useBatchEvents ? "schedule" : sanitized.type,
   };
 }
 

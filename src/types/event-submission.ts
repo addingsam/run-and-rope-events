@@ -28,6 +28,7 @@ export interface BatchEventEntry {
   city: string;
   state: string;
   zipCode: string;
+  classDivisionInfo: string;
 }
 
 export const EMPTY_BATCH_EVENT_ENTRY: BatchEventEntry = {
@@ -39,6 +40,7 @@ export const EMPTY_BATCH_EVENT_ENTRY: BatchEventEntry = {
   city: "",
   state: "",
   zipCode: "",
+  classDivisionInfo: "",
 };
 
 export interface EventSubmission {

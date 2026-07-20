@@ -10,6 +10,7 @@ import {
   FLYER_EXTRACTION_FORMAT_LABELS,
   FLYER_EXTRACTION_RODEO_LEVEL_LABELS,
   type FlyerExtractionEventEntry,
+  type FlyerExtractionLayoutType,
   type FlyerExtractionResult,
 } from "@/types/flyer-extraction";
 
@@ -81,7 +82,7 @@ function parseFlyerExtractionEventEntry(value: unknown): FlyerExtractionEventEnt
     return null;
   }
 
-  const rawDate = nullableString(value.date);
+  const rawDate = nullableString(value.date) ?? nullableString(value.startDate);
   const rawEndDate = nullableString(value.endDate);
   const { date, endDate } = sanitizeExtractedEventDates(rawDate, rawEndDate);
 
@@ -94,6 +95,8 @@ function parseFlyerExtractionEventEntry(value: unknown): FlyerExtractionEventEnt
     city: nullableString(value.city),
     state: nullableString(value.state),
     zipCode: nullableString(value.zipCode),
+    classDivisionInfo:
+      nullableString(value.classDivisionInfo) ?? nullableString(value.classInfo),
   };
 
   if (!entry.date && !entry.venueName && !entry.city) {
@@ -173,6 +176,18 @@ function parseJsonObject(text: string): unknown {
   throw new Error("Claude returned a response that was not valid JSON.");
 }
 
+function resolveFlyerLayoutType(
+  parsed: Record<string, unknown>,
+  events: FlyerExtractionEventEntry[],
+): FlyerExtractionLayoutType {
+  const explicit = nullableString(parsed.type);
+  if (explicit === "schedule" || explicit === "single") {
+    return explicit;
+  }
+
+  return events.length >= 2 ? "schedule" : "single";
+}
+
 export function parseFlyerExtractionResponse(text: string): FlyerExtractionResult {
   const parsed = parseJsonObject(text);
 
@@ -207,6 +222,7 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
   const { date, endDate } = sanitizeExtractedEventDates(rawDate, rawEndDate);
   const eventDates = nullableStringArray(parsed.eventDates);
   const events = parseFlyerExtractionEvents(parsed.events);
+  const layoutType = resolveFlyerLayoutType(parsed, events);
 
   const eventName = nullableString(parsed.eventName);
   const classDivisionInfo = nullableString(parsed.classDivisionInfo);
@@ -219,6 +235,7 @@ export function parseFlyerExtractionResponse(text: string): FlyerExtractionResul
   const entryFee = nullableString(parsed.entryFee);
 
   return sanitizeFlyerExtractionDates({
+    type: layoutType,
     eventName,
     date,
     eventDates: events.length >= 2 ? [] : eventDates,

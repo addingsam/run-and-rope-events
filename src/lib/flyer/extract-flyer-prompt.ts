@@ -6,6 +6,7 @@ const FLYER_DISCIPLINE_SCHEMA = FLYER_EXTRACTION_DISCIPLINE_LABELS.map((label) =
 ).join(", ");
 
 export const FLYER_EXTRACTION_JSON_SCHEMA = `{
+  "type": "single",
   "eventName": null,
   "date": null,
   "eventDates": [],
@@ -33,16 +34,20 @@ export const FLYER_EXTRACTION_JSON_SCHEMA = `{
 
 const FLYER_EXTRACTION_EVENT_SCHEMA = `{
   "date": null,
+  "startDate": null,
   "endDate": null,
   "entryDeadline": null,
   "venueName": null,
   "address": null,
   "city": null,
   "state": null,
-  "zipCode": null
+  "zipCode": null,
+  "classDivisionInfo": null,
+  "classInfo": null
 }`;
 
 const FLYER_EXTRACTION_FIELD_RULES = `Field rules:
+- type: "single" when the flyer is one event (optionally spanning multiple consecutive dates at the same location), or "schedule" when the flyer lists multiple distinct events with different dates and/or locations. Use eventDates for same-location separate days under type "single". Use events for type "schedule".
 - eventName, date, endDate, entryDeadline, time, venueName, address, city, state, zipCode, entryFee, prizePayoutInfo, classDivisionInfo, contactName, contactPhone, contactEmail, producerWebsite, additionalNotes: string or null.
 - eventDates: JSON array of strings for separate event days at the SAME location, or [] when not applicable.
 - events: JSON array of per-event objects (${FLYER_EXTRACTION_EVENT_SCHEMA}) for series schedules where each stop has its own date(s) and location. Use [] when not applicable.
@@ -71,8 +76,8 @@ Rules:
 - For series schedules in events, put each stop's entryDeadline inside that event object when the flyer shows a call-in or entry close date for that stop.
 - date is the primary or first event day. endDate is the last day ONLY when the flyer explicitly shows one event spanning consecutive days (for example "March 15-17", "Fri-Sun"). When the flyer lists only one calendar day, set date to that day, eventDates to [], and endDate to null.
 - eventDates is for multiple SEPARATE non-consecutive event days at the SAME location on one flyer — shared venue, city, and other details apply to each date (for example "June 5, 12 & 19", a schedule table, or a list of Saturdays at one arena). Put every distinct separate event day in eventDates. When eventDates has two or more entries, set date to the first listed day, endDate to null, and events to []. Do not use eventDates for a single multi-day range; use date + endDate for that instead. Do not use eventDates when the flyer shows only one event day.
-- events is for multiple DISTINCT events on one flyer — each with its own date(s) and location (for example a rodeo series listing "May 22-23 McALESTER, OK - Round-Up Club Arena" followed by other cities and venues). Put one object per distinct event in events with that event's date, endDate (when it spans consecutive days), venueName, address, city, state, and zipCode. When events has two or more entries, set top-level date, endDate, eventDates, venueName, address, city, state, and zipCode to null and put all per-event details only inside events.
-- Use eventDates OR events, never both. Prefer events when each listed stop has a different city or venue.
+- events is for type "schedule" — multiple DISTINCT events on one flyer, each with its own date(s), location, and optional classDivisionInfo/classInfo (for example a rodeo series listing "May 22-23 McALESTER, OK - Round-Up Club Arena" followed by other cities and venues). Put one object per distinct event in events with that event's date or startDate, endDate (when it spans consecutive days), venueName, address, city, state, zipCode, and classDivisionInfo or classInfo when classes/divisions differ per stop. When type is "schedule" and events has two or more entries, set top-level date, endDate, eventDates, venueName, address, city, state, and zipCode to null and put all per-event details only inside events.
+- Use eventDates OR events, never both. type "schedule" requires events with two or more entries. type "single" uses top-level fields and optionally eventDates for same-venue separate days.
 - Rodeo series schedules (multiple cities/arenas, shared rules and producer) should use events with format "Rodeo" and the appropriate rodeoLevel.
 - These producer associations are Amateur rodeos, not Open: ${amateurRodeoAssociationPromptLines()}. When the flyer names one of these associations (full name or abbreviation), set rodeoLevel to "Amateur".
 - Open rodeos are general open-entry rodeos not produced under one of the amateur associations listed above.

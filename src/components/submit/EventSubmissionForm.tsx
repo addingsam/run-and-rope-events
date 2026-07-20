@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BatchEventDatesField } from "@/components/submit/BatchEventDatesField";
 import { BatchEventsField } from "@/components/submit/BatchEventsField";
 import {
@@ -46,13 +46,17 @@ import {
   themePrimaryButtonClassName,
   themeSecondaryButtonClassName,
 } from "@/lib/theme/form-classes";
-import type { FlyerExtractionResult } from "@/types/flyer-extraction";
+import type {
+  FlyerExtractionLayoutType,
+  FlyerExtractionResult,
+} from "@/types/flyer-extraction";
 import { validateEventSubmission } from "@/lib/events/validate-submission";
 import { validateBatchEventDates } from "@/lib/events/validate-batch-dates";
 import { validateBatchEvents } from "@/lib/events/validate-batch-events";
 import { uniqueSortedEventDates } from "@/lib/events/expand-batch-submissions";
 import {
   getSubmissionDuplicateStatusLabel,
+  type ScheduleDuplicateWarning,
   type SubmissionDuplicateWarning,
 } from "@/lib/events/duplicate-detection";
 import { formatEventDate } from "@/lib/events/format-date";
@@ -232,6 +236,11 @@ export function EventSubmissionForm() {
   const [batchEventsYearInferred, setBatchEventsYearInferred] = useState<
     Array<{ startDate: boolean; endDate: boolean }>
   >([]);
+  const [flyerLayoutType, setFlyerLayoutType] = useState<FlyerExtractionLayoutType>("single");
+  const [scheduleDuplicateWarnings, setScheduleDuplicateWarnings] = useState<
+    ScheduleDuplicateWarning[]
+  >([]);
+  const duplicateCheckRequestId = useRef(0);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submittedEventCount, setSubmittedEventCount] = useState(1);
@@ -241,7 +250,55 @@ export function EventSubmissionForm() {
   >([]);
   const isMultiEventBatch = batchEvents.length >= 2;
   const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;
+  const isScheduleFlyer = isMultiEventBatch && flyerLayoutType === "schedule";
   const isBatchMode = isMultiEventBatch || isSameVenueBatch;
+
+  useEffect(() => {
+    if (!isMultiEventBatch) {
+      setScheduleDuplicateWarnings([]);
+      return;
+    }
+
+    const hasCheckableEvent = batchEvents.some(
+      (event) => event.startDate.trim() && event.city.trim() && event.state.trim(),
+    );
+    if (!hasCheckableEvent) {
+      setScheduleDuplicateWarnings([]);
+      return;
+    }
+
+    const requestId = duplicateCheckRequestId.current + 1;
+    duplicateCheckRequestId.current = requestId;
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/events/submit/check-duplicates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            batchEvents,
+          }),
+        });
+
+        const data = (await response.json()) as {
+          locationWarnings?: ScheduleDuplicateWarning[];
+          error?: string;
+        };
+
+        if (duplicateCheckRequestId.current !== requestId || !response.ok) {
+          return;
+        }
+
+        setScheduleDuplicateWarnings(data.locationWarnings ?? []);
+      } catch {
+        if (duplicateCheckRequestId.current === requestId) {
+          setScheduleDuplicateWarnings([]);
+        }
+      }
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [batchEvents, formData, isMultiEventBatch]);
 
   function startBatchMode() {
     const initialDates = formData.startDate ? [formData.startDate, ""] : ["", ""];
@@ -370,6 +427,8 @@ export function EventSubmissionForm() {
     setBatchEventDates([]);
     setBatchEvents([]);
     setBatchEventsYearInferred([]);
+    setFlyerLayoutType("single");
+    setScheduleDuplicateWarnings([]);
     updateField("flyerUrl", "");
     updateField("entryDeadline", "");
     setErrors((current) => {
@@ -393,6 +452,8 @@ export function EventSubmissionForm() {
     setBatchEventDates([]);
     setBatchEvents([]);
     setBatchEventsYearInferred([]);
+    setFlyerLayoutType("single");
+    setScheduleDuplicateWarnings([]);
     updateField("flyerUrl", "");
     updateField("entryDeadline", "");
     setErrors((current) => {
@@ -455,6 +516,8 @@ export function EventSubmissionForm() {
     setBatchEventDates([]);
     setBatchEvents([]);
     setBatchEventsYearInferred([]);
+    setFlyerLayoutType("single");
+    setScheduleDuplicateWarnings([]);
     updateField("entryDeadline", "");
     setErrors((current) => {
       const next = { ...current };
@@ -479,35 +542,32 @@ export function EventSubmissionForm() {
         throw new Error(data.error ?? "Could not extract details from this flyer.");
       }
 
-      let inferredFields = EMPTY_FLYER_INFERRED_YEAR_FIELDS;
-      let extractedBatchDates: string[] = [];
-      let extractedBatchEvents: BatchEventEntry[] = [];
-      let extractedBatchEventsYearInferred: Array<{ startDate: boolean; endDate: boolean }> = [];
+      let extractionResult!: ReturnType<typeof applyFlyerExtractionToSubmission>;
       setFormData((current) => {
-        const result = applyFlyerExtractionToSubmission(current, data.extracted!);
-        inferredFields = result.inferredYearFields;
-        extractedBatchDates = result.batchEventDates;
-        extractedBatchEvents = result.batchEvents;
-        extractedBatchEventsYearInferred = result.batchEventsYearInferred;
-        return result.submission;
+        extractionResult = applyFlyerExtractionToSubmission(current, data.extracted!);
+        return extractionResult.submission;
       });
-      setBatchEventDates(extractedBatchDates);
-      setBatchEvents(extractedBatchEvents);
-      setBatchEventsYearInferred(extractedBatchEventsYearInferred);
-      setInferredYearFields(inferredFields);
+      setBatchEventDates(extractionResult.batchEventDates);
+      setBatchEvents(extractionResult.batchEvents);
+      setBatchEventsYearInferred(extractionResult.batchEventsYearInferred);
+      setFlyerLayoutType(extractionResult.layoutType);
+      setScheduleDuplicateWarnings([]);
+      setInferredYearFields(extractionResult.inferredYearFields);
       setErrors({});
 
       const populatedCount = countPopulatedFlyerFields(
         sanitizeFlyerExtractionLocation(data.extracted),
       );
       setFlyerExtractionMessage(
-        extractedBatchEvents.length >= 2
-          ? `Multiple events detected — this flyer will create ${extractedBatchEvents.length} separate listings. Review each event stop in the Dates section before submitting.`
-          : extractedBatchDates.length >= 2
-            ? `Multiple dates detected — this flyer will create ${extractedBatchDates.length} separate listings (one per date). Review each date in the Dates section before submitting.`
-            : populatedCount > 0
-              ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
-              : "No confident details were found on this flyer. Please complete the form manually.",
+        extractionResult.layoutType === "schedule" && extractionResult.batchEvents.length >= 2
+          ? `Schedule flyer detected — this will create ${extractionResult.batchEvents.length} separate listings. Review each event stop below and remove any you do not want to submit.`
+          : extractionResult.batchEvents.length >= 2
+            ? `Multiple events detected — this flyer will create ${extractionResult.batchEvents.length} separate listings. Review each event stop in the Dates section before submitting.`
+            : extractionResult.batchEventDates.length >= 2
+              ? `Multiple dates detected — this flyer will create ${extractionResult.batchEventDates.length} separate listings (one per date). Review each date in the Dates section before submitting.`
+              : populatedCount > 0
+                ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
+                : "No confident details were found on this flyer. Please complete the form manually.",
       );
     } catch (error) {
       setErrors((current) => ({
@@ -881,18 +941,22 @@ export function EventSubmissionForm() {
 
       <FormSection
         title={
-          isMultiEventBatch
-            ? "Multiple Event Stops"
-            : isSameVenueBatch
-              ? "Multiple Dates"
-              : "Dates"
+          isScheduleFlyer
+            ? "Schedule Events"
+            : isMultiEventBatch
+              ? "Multiple Event Stops"
+              : isSameVenueBatch
+                ? "Multiple Dates"
+                : "Dates"
         }
         description={
-          isMultiEventBatch
-            ? "Each event stop below becomes its own listing. Shared details (name, format, disciplines) apply to every listing."
-            : isSameVenueBatch
-              ? "Each date below becomes its own listing at the same venue, using the same flyer and shared event details."
-              : "Set your event dates and entry deadline."
+          isScheduleFlyer
+            ? "Each event on this schedule becomes its own listing. Review dates, locations, and classes for each stop."
+            : isMultiEventBatch
+              ? "Each event stop below becomes its own listing. Shared details (name, format, disciplines) apply to every listing."
+              : isSameVenueBatch
+                ? "Each date below becomes its own listing at the same venue, using the same flyer and shared event details."
+                : "Set your event dates and entry deadline."
         }
       >
         {Object.values(inferredYearFields).some(Boolean) && !isMultiEventBatch && (
@@ -910,6 +974,7 @@ export function EventSubmissionForm() {
             events={batchEvents}
             errors={errors}
             yearInferred={batchEventsYearInferred}
+            duplicateWarnings={scheduleDuplicateWarnings}
             onChange={handleBatchEventsChange}
           />
         ) : isSameVenueBatch ? (
@@ -954,12 +1019,14 @@ export function EventSubmissionForm() {
             hint="Optional — leave blank if there is no entry deadline."
           />
         ) : null}
-        <TextArea
-          name="classDivisionInfo"
-          label="Class or Division Info"
-          value={formData.classDivisionInfo}
-          onChange={(e) => updateField("classDivisionInfo", e.target.value)}
-        />
+        {!isMultiEventBatch ? (
+          <TextArea
+            name="classDivisionInfo"
+            label="Class or Division Info"
+            value={formData.classDivisionInfo}
+            onChange={(e) => updateField("classDivisionInfo", e.target.value)}
+          />
+        ) : null}
       </FormSection>
 
       {!isMultiEventBatch ? (
