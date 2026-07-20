@@ -176,6 +176,29 @@ function parseJsonObject(text: string): unknown {
   throw new Error("Claude returned a response that was not valid JSON.");
 }
 
+/** Ensures API JSON has arrays and layout type before applying to the submit form. */
+export function coerceFlyerExtractionResult(
+  extracted: FlyerExtractionResult,
+): FlyerExtractionResult {
+  const events = Array.isArray(extracted.events) ? extracted.events : [];
+  const eventDates = Array.isArray(extracted.eventDates) ? extracted.eventDates : [];
+  const disciplines = Array.isArray(extracted.disciplines) ? extracted.disciplines : [];
+  const type =
+    extracted.type === "schedule" || extracted.type === "single"
+      ? extracted.type
+      : events.length >= 2
+        ? "schedule"
+        : "single";
+
+  return {
+    ...extracted,
+    type,
+    events,
+    eventDates,
+    disciplines,
+  };
+}
+
 function resolveFlyerLayoutType(
   parsed: Record<string, unknown>,
   events: FlyerExtractionEventEntry[],

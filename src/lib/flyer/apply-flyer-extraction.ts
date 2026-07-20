@@ -236,8 +236,8 @@ export function applyFlyerExtractionToSubmission(
     ? FORMAT_LABEL_TO_VALUE[sanitized.format]
     : current.format;
   const extractedDisciplines =
-    sanitized.disciplines.length > 0
-      ? sanitized.disciplines
+    (sanitized.disciplines ?? []).length > 0
+      ? sanitized.disciplines ?? []
       : inferFlyerDisciplinesFromText(
           sanitized.eventName,
           sanitized.classDivisionInfo,
@@ -286,12 +286,12 @@ export function applyFlyerExtractionToSubmission(
     current.endDate,
     referenceDate,
   );
-  const normalizedBatch = normalizeFlyerDateList(sanitized.eventDates, referenceDate);
+  const normalizedBatch = normalizeFlyerDateList(sanitized.eventDates ?? [], referenceDate);
   const batchEventDates =
     normalizedBatch.dates.length >= 2 ? normalizedBatch.dates : [];
   const useBatchDates = batchEventDates.length >= 2;
 
-  const mappedBatchEvents = sanitized.events.map((entry) =>
+  const mappedBatchEvents = (sanitized.events ?? []).map((entry) =>
     mapExtractedEventToBatchEntry(entry, referenceDate),
   );
   const batchEvents =

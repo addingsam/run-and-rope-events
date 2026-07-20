@@ -143,7 +143,7 @@ function buildDistinctEventDays(
 ): string[] {
   const rawValues = [
     ...(extracted.date ? [extracted.date] : []),
-    ...extracted.eventDates,
+    ...(extracted.eventDates ?? []),
   ];
   let dates = normalizeFlyerDateList(rawValues, referenceDate).dates;
 
@@ -167,7 +167,7 @@ export function sanitizeFlyerExtractionDates(
     referenceDate,
   );
 
-  const dedupedEvents = dedupeEvents(next.events, referenceDate);
+  const dedupedEvents = dedupeEvents(next.events ?? [], referenceDate);
   if (dedupedEvents.length === 1) {
     next = mergeSingleEventIntoTopLevel(next, dedupedEvents[0]!);
   } else if (dedupedEvents.length >= 2) {

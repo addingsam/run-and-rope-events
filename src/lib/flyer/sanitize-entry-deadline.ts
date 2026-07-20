@@ -45,7 +45,7 @@ export function collectFlyerExtractionSearchText(extracted: FlyerExtractionResul
     }
   }
 
-  for (const event of extracted.events) {
+  for (const event of extracted.events ?? []) {
     for (const value of Object.values(event)) {
       if (typeof value === "string" && value.trim()) {
         parts.push(value.trim());
@@ -139,7 +139,7 @@ function collectEventDates(
   for (const value of [
     extracted.date,
     extracted.endDate,
-    ...extracted.eventDates,
+    ...(extracted.eventDates ?? []),
   ]) {
     const normalized = value ? normalizeFlyerDate(value, referenceDate).date : "";
     if (normalized) {
@@ -147,7 +147,7 @@ function collectEventDates(
     }
   }
 
-  for (const event of extracted.events) {
+  for (const event of extracted.events ?? []) {
     for (const value of [event.date, event.endDate]) {
       const normalized = value ? normalizeFlyerDate(value, referenceDate).date : "";
       if (normalized) {
@@ -176,7 +176,7 @@ export function sanitizeFlyerExtractionEntryDeadlines(
     referenceDate,
   });
 
-  const events = extracted.events.map((event) =>
+  const events = (extracted.events ?? []).map((event) =>
     sanitizeFlyerExtractionEventEntryDeadline(event, searchText, eventDates, referenceDate),
   );
 

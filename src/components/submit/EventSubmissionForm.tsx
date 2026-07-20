@@ -33,6 +33,7 @@ import {
   EMPTY_FLYER_INFERRED_YEAR_FIELDS,
   type FlyerInferredYearFields,
 } from "@/lib/flyer/apply-flyer-extraction";
+import { coerceFlyerExtractionResult } from "@/lib/flyer/parse-flyer-extraction";
 import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
   FLYER_ACCEPT_ATTRIBUTE,
@@ -544,29 +545,40 @@ export function EventSubmissionForm() {
         throw new Error(data.error ?? "Could not extract details from this flyer.");
       }
 
+      const coercedExtraction = coerceFlyerExtractionResult(data.extracted);
       const extractionResult = applyFlyerExtractionToSubmission(
         formDataRef.current,
-        data.extracted!,
+        coercedExtraction,
       );
+
+      if (!extractionResult?.submission) {
+        throw new Error("Could not apply flyer extraction to the form.");
+      }
+
+      const batchDates = extractionResult.batchEventDates ?? [];
+      const batchEventsList = extractionResult.batchEvents ?? [];
+
       setFormData(extractionResult.submission);
-      setBatchEventDates(extractionResult.batchEventDates);
-      setBatchEvents(extractionResult.batchEvents);
-      setBatchEventsYearInferred(extractionResult.batchEventsYearInferred);
-      setFlyerLayoutType(extractionResult.layoutType);
+      setBatchEventDates(batchDates);
+      setBatchEvents(batchEventsList);
+      setBatchEventsYearInferred(extractionResult.batchEventsYearInferred ?? []);
+      setFlyerLayoutType(extractionResult.layoutType ?? "single");
       setScheduleDuplicateWarnings([]);
-      setInferredYearFields(extractionResult.inferredYearFields);
+      setInferredYearFields(
+        extractionResult.inferredYearFields ?? EMPTY_FLYER_INFERRED_YEAR_FIELDS,
+      );
       setErrors({});
 
       const populatedCount = countPopulatedFlyerFields(
-        sanitizeFlyerExtractionLocation(data.extracted),
+        sanitizeFlyerExtractionLocation(coercedExtraction),
       );
       setFlyerExtractionMessage(
-        extractionResult.layoutType === "schedule" && extractionResult.batchEvents.length >= 2
-          ? `Schedule flyer detected — this will create ${extractionResult.batchEvents.length} separate listings. Review each event stop below and remove any you do not want to submit.`
-          : extractionResult.batchEvents.length >= 2
-            ? `Multiple events detected — this flyer will create ${extractionResult.batchEvents.length} separate listings. Review each event stop in the Dates section before submitting.`
-            : extractionResult.batchEventDates.length >= 2
-              ? `Multiple dates detected — this flyer will create ${extractionResult.batchEventDates.length} separate listings (one per date). Review each date in the Dates section before submitting.`
+        extractionResult.layoutType === "schedule" && batchEventsList.length >= 2
+          ? `Schedule flyer detected — this will create ${batchEventsList.length} separate listings. Review each event stop below and remove any you do not want to submit.`
+          : batchEventsList.length >= 2
+            ? `Multiple events detected — this flyer will create ${batchEventsList.length} separate listings. Review each event stop in the Dates section before submitting.`
+            : batchDates.length >= 2
+              ? `Multiple dates detected — this flyer will create ${batchDates.length} separate listings (one per date). Review each date in the Dates section before submitting.`
               : populatedCount > 0
                 ? `Filled ${populatedCount} field${populatedCount === 1 ? "" : "s"} from your flyer. Review everything before submitting.`
                 : "No confident details were found on this flyer. Please complete the form manually.",
