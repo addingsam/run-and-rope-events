@@ -241,6 +241,8 @@ export function EventSubmissionForm() {
     ScheduleDuplicateWarning[]
   >([]);
   const duplicateCheckRequestId = useRef(0);
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submittedEventCount, setSubmittedEventCount] = useState(1);
@@ -542,11 +544,11 @@ export function EventSubmissionForm() {
         throw new Error(data.error ?? "Could not extract details from this flyer.");
       }
 
-      let extractionResult!: ReturnType<typeof applyFlyerExtractionToSubmission>;
-      setFormData((current) => {
-        extractionResult = applyFlyerExtractionToSubmission(current, data.extracted!);
-        return extractionResult.submission;
-      });
+      const extractionResult = applyFlyerExtractionToSubmission(
+        formDataRef.current,
+        data.extracted!,
+      );
+      setFormData(extractionResult.submission);
       setBatchEventDates(extractionResult.batchEventDates);
       setBatchEvents(extractionResult.batchEvents);
       setBatchEventsYearInferred(extractionResult.batchEventsYearInferred);
