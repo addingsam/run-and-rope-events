@@ -1,5 +1,4 @@
 import {
-  flyerDateStringHasYear,
   normalizeFlyerDate,
 } from "@/lib/flyer/normalize-flyer-date";
 import type { FlyerExtractionEventEntry, FlyerExtractionResult } from "@/types/flyer-extraction";
@@ -97,6 +96,7 @@ export function sanitizeFlyerEntryDeadline(
   options: {
     searchText: string;
     eventStartDate?: string | null;
+    eventDates?: Set<string>;
     referenceDate?: Date;
   },
 ): string | null {
@@ -112,23 +112,51 @@ export function sanitizeFlyerEntryDeadline(
     return null;
   }
 
+  if (options.eventDates?.has(normalized)) {
+    return null;
+  }
+
   if (options.eventStartDate && normalized === options.eventStartDate) {
     return null;
   }
 
   const mentionsDeadline = flyerTextMentionsEntryDeadline(options.searchText);
-  const hasExplicitYear = flyerDateStringHasYear(trimmed);
   const appearsOnFlyer = rawDateAppearsInFlyerText(trimmed, options.searchText);
 
-  if (mentionsDeadline) {
-    return appearsOnFlyer ? trimmed : null;
+  if (!mentionsDeadline || !appearsOnFlyer) {
+    return null;
   }
 
-  if (hasExplicitYear && appearsOnFlyer) {
-    return trimmed;
+  return trimmed;
+}
+
+function collectEventDates(
+  extracted: FlyerExtractionResult,
+  referenceDate: Date,
+): Set<string> {
+  const dates = new Set<string>();
+
+  for (const value of [
+    extracted.date,
+    extracted.endDate,
+    ...extracted.eventDates,
+  ]) {
+    const normalized = value ? normalizeFlyerDate(value, referenceDate).date : "";
+    if (normalized) {
+      dates.add(normalized);
+    }
   }
 
-  return null;
+  for (const event of extracted.events) {
+    for (const value of [event.date, event.endDate]) {
+      const normalized = value ? normalizeFlyerDate(value, referenceDate).date : "";
+      if (normalized) {
+        dates.add(normalized);
+      }
+    }
+  }
+
+  return dates;
 }
 
 export function sanitizeFlyerExtractionEntryDeadlines(
@@ -136,6 +164,7 @@ export function sanitizeFlyerExtractionEntryDeadlines(
   referenceDate: Date = new Date(),
 ): FlyerExtractionResult {
   const searchText = collectFlyerExtractionSearchText(extracted);
+  const eventDates = collectEventDates(extracted, referenceDate);
   const eventStartDate = extracted.date
     ? normalizeFlyerDate(extracted.date, referenceDate).date
     : null;
@@ -143,11 +172,12 @@ export function sanitizeFlyerExtractionEntryDeadlines(
   const entryDeadline = sanitizeFlyerEntryDeadline(extracted.entryDeadline, {
     searchText,
     eventStartDate,
+    eventDates,
     referenceDate,
   });
 
   const events = extracted.events.map((event) =>
-    sanitizeFlyerExtractionEventEntryDeadline(event, searchText, referenceDate),
+    sanitizeFlyerExtractionEventEntryDeadline(event, searchText, eventDates, referenceDate),
   );
 
   return {
@@ -160,6 +190,7 @@ export function sanitizeFlyerExtractionEntryDeadlines(
 function sanitizeFlyerExtractionEventEntryDeadline(
   event: FlyerExtractionEventEntry,
   searchText: string,
+  eventDates: Set<string>,
   referenceDate: Date,
 ): FlyerExtractionEventEntry {
   const eventStartDate = event.date
@@ -171,6 +202,7 @@ function sanitizeFlyerExtractionEventEntryDeadline(
     entryDeadline: sanitizeFlyerEntryDeadline(event.entryDeadline, {
       searchText,
       eventStartDate,
+      eventDates,
       referenceDate,
     }),
   };

@@ -315,7 +315,9 @@ export function applyFlyerExtractionToSubmission(
           : useBatchDates
             ? batchEventDates[0]
             : resolvedDates.endDate,
-      entryDeadline: sanitized.entryDeadline ? entryDeadline.date : "",
+      entryDeadline: sanitized.entryDeadline
+        ? entryDeadline.date
+        : "",
       classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
       venueName: useBatchEvents
         ? firstBatchEvent!.venueName
