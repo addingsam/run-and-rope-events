@@ -38,6 +38,7 @@ import {
   FLYER_ACCEPT_ATTRIBUTE,
   validateFlyerFile,
 } from "@/lib/flyer/constants";
+import { createFlyerUploadPayload } from "@/lib/flyer/flyer-file-name";
 import { US_STATES } from "@/lib/us-states";
 import {
   themeMutedTextClassName,
@@ -401,8 +402,10 @@ export function EventSubmissionForm() {
     });
 
     try {
+      const { file: uploadFile, originalFileName } = createFlyerUploadPayload(file);
       const body = new FormData();
-      body.append("flyer", file);
+      body.append("flyer", uploadFile);
+      body.append("originalFileName", originalFileName);
 
       const response = await fetch("/api/events/upload-flyer", {
         method: "POST",

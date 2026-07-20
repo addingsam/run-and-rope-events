@@ -18,15 +18,3 @@ export function validateFlyerFile(file: File): string | null {
 
   return null;
 }
-
-export function sanitizeFlyerFileName(fileName: string) {
-  const trimmed = fileName.trim().toLowerCase();
-  const lastDot = trimmed.lastIndexOf(".");
-  const base = lastDot > 0 ? trimmed.slice(0, lastDot) : trimmed;
-  const extension = lastDot > 0 ? trimmed.slice(lastDot) : "";
-
-  const safeBase = base.replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "") || "flyer";
-  const safeExtension = extension.replace(/[^a-z0-9.]/g, "");
-
-  return `${safeBase}${safeExtension}`;
-}
