@@ -1,6 +1,6 @@
 # Clerk authentication
 
-Jackpot & Rodeo Events uses [Clerk](https://clerk.com) for authentication with persistent device sessions, subscription-gated event access, and device/session limits.
+Jackpot & Rodeo Events uses [Clerk](https://clerk.com) for authentication with persistent sessions on trusted devices and subscription-gated event access.
 
 ## Environment variables
 
@@ -55,18 +55,25 @@ Run the Supabase migration `supabase/migrations/20260709181000_clerk_user_ids.sq
 
 1. Open your Clerk application settings and set the **Application name** to `Jackpot & Rodeo Events` so any remaining Clerk-managed copy matches the live site branding.
 
-### Persistent sign-in
+### Persistent sign-in on known devices
+
+Users should stay signed in on a phone or browser they have already used, without repeating email verification every visit.
 
 1. Open **Sessions** in the Clerk Dashboard.
-2. Enable **Maximum lifetime** and set a long duration (e.g. 365 days) so users stay signed in on their device.
-3. Disable **Multi-session handling** (one active session per account is enforced in code as well).
+2. Set **Inactivity timeout** to a long duration (e.g. 30 days) or disable it.
+3. Enable **Maximum lifetime** and set a long duration (e.g. 365 days).
+4. Leave **Multi-session handling** enabled so returning users keep their existing session instead of being forced through sign-in again.
 
-### New device verification (email link, no CAPTCHA)
+### New device verification (one-time per device)
 
-1. Open **Attack protection** → enable **Client Trust**.
-2. Under Client Trust, choose **Email verification link** as the second factor (not CAPTCHA).
-3. Ensure **Email** sign-in is enabled under **User & authentication**.
-4. Enable **New device sign-in emails** under **Email & SMS** so users are notified of unrecognized devices.
+Clerk **Client Trust** requires a second factor only the **first** time someone signs in with a password on a new device. Known devices are remembered automatically.
+
+1. Open **Attack protection** → enable **Client Trust** (on by default for newer apps).
+2. Under Client Trust, choose **Email verification link** or **Email code** as the second factor.
+3. Ensure **Email** and/or **Password** sign-in is enabled under **User & authentication**.
+4. Optional: enable **New device sign-in emails** under **Email & SMS** so users are notified of unrecognized devices.
+
+Do **not** add custom app logic that revokes sessions on sign-in — that breaks persistent sessions and makes Client Trust treat every visit like a new device.
 
 ### Subscription access (Supabase `subscribers` table)
 
@@ -80,17 +87,10 @@ Subscriptions are activated via Stripe Checkout at `/subscribe`. See **Stripe su
 
 1. Open **Webhooks** → **Add endpoint**.
 2. URL: `https://your-domain.com/api/webhooks/clerk` (or use Clerk CLI tunnel locally).
-3. Subscribe to: `user.created`, `user.updated`, `session.created`.
+3. Subscribe to: `user.created`, `user.updated`.
 4. Copy the signing secret into `CLERK_WEBHOOK_SIGNING_SECRET`.
 
-## Device and session limits (app logic)
-
-On every `session.created` webhook:
-
-- **1 active session:** all other active sessions for the user are revoked.
-- **2 registered devices:** new `client_id` values are stored in Clerk `privateMetadata.registeredDevices`. A third device is rejected (session revoked).
-
-Client Trust handles email-link verification before the session is created on unrecognized devices.
+The webhook creates or updates the Supabase `profiles` row when a Clerk user is created or updated. Session persistence and known-device trust are handled entirely by Clerk (Sessions + Client Trust settings above).
 
 ## Protected routes
 

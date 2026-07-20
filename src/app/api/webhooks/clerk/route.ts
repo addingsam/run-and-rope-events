@@ -1,10 +1,7 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { WebhookEvent } from "@clerk/nextjs/webhooks";
 import { NextResponse, type NextRequest } from "next/server";
-import {
-  enforceDeviceAndSessionLimits,
-  ensureClerkProfile,
-} from "@/lib/clerk/device-session";
+import { ensureClerkProfile } from "@/lib/clerk/device-session";
 
 function getPrimaryEmail(data: WebhookEvent["data"]) {
   if (!("email_addresses" in data) || !Array.isArray(data.email_addresses)) {
@@ -30,17 +27,6 @@ export async function POST(request: NextRequest) {
       const { id } = event.data;
       const email = getPrimaryEmail(event.data);
       await ensureClerkProfile({ userId: id, email });
-    }
-
-    if (event.type === "session.created") {
-      const { id, user_id, client_id } = event.data;
-      if (user_id && client_id) {
-        await enforceDeviceAndSessionLimits({
-          userId: user_id,
-          sessionId: id,
-          clientId: client_id,
-        });
-      }
     }
 
     return NextResponse.json({ received: true });
