@@ -5,7 +5,22 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
+    let formData: FormData;
+
+    try {
+      formData = await request.formData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid upload request.";
+      return NextResponse.json(
+        {
+          error: message.includes("FormData")
+            ? "Flyer upload failed. Try choosing the file again or rename it using letters and numbers only."
+            : message,
+        },
+        { status: 400 },
+      );
+    }
+
     const file = formData.get("flyer");
 
     if (!(file instanceof File)) {

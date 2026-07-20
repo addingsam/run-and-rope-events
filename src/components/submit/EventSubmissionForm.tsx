@@ -557,30 +557,15 @@ export function EventSubmissionForm() {
     setIsSubmitting(true);
 
     try {
-      const body = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value
-            .map((item) => (typeof item === "string" ? item.trim() : item))
-            .filter(Boolean)
-            .forEach((item) => body.append(key, String(item)));
-          return;
-        }
-
-        if (value) body.append(key, value);
-      });
-
-      if (isMultiEventBatch) {
-        body.append("batchEvents", JSON.stringify(batchEvents));
-      } else if (isSameVenueBatch) {
-        batchEventDates.forEach((date) => body.append("eventDates", date));
-      }
-
-      body.append("featurePlacement", featurePlacement);
-
       const response = await fetch("/api/events/submit", {
         method: "POST",
-        body,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          eventDates: isSameVenueBatch ? batchEventDates : [],
+          batchEvents: isMultiEventBatch ? batchEvents : [],
+          featurePlacement,
+        }),
       });
 
       const data = (await response.json()) as {

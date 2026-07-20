@@ -3,11 +3,7 @@ import {
   expandSubmissionToBatch,
   expandSubmissionToMultiEventBatch,
 } from "@/lib/events/expand-batch-submissions";
-import {
-  parseBatchEventDates,
-  parseBatchEvents,
-  parseSubmissionFormData,
-} from "@/lib/events/parse-submission";
+import { parseSubmissionRequest } from "@/lib/events/parse-submission";
 import {
   normalizeBatchEventsVenue,
   normalizeEventSubmissionVenue,
@@ -28,20 +24,19 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const submission = normalizeEventSubmissionVenue(parseSubmissionFormData(formData));
-    const batchEvents = normalizeBatchEventsVenue(
-      parseBatchEvents(formData),
-      { eventName: submission.eventName },
-    );
-    const batchEventDates = parseBatchEventDates(formData);
-    const isMultiEventBatch = batchEvents.length >= 2;
+    const { submission: parsedSubmission, batchEvents, batchEventDates } =
+      await parseSubmissionRequest(request);
+    const submission = normalizeEventSubmissionVenue(parsedSubmission);
+    const normalizedBatchEvents = normalizeBatchEventsVenue(batchEvents, {
+      eventName: submission.eventName,
+    });
+    const isMultiEventBatch = normalizedBatchEvents.length >= 2;
     const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;
     const isBatchSubmission = isMultiEventBatch || isSameVenueBatch;
 
     const validationErrors = validateEventSubmission(submission, submission.source);
     const batchErrors = isMultiEventBatch
-      ? validateBatchEvents(batchEvents)
+      ? validateBatchEvents(normalizedBatchEvents)
       : isSameVenueBatch
         ? validateBatchEventDates(batchEventDates)
         : {};
@@ -65,12 +60,12 @@ export async function POST(request: Request) {
 
     if (isBatchSubmission) {
       const submissions = isMultiEventBatch
-        ? expandSubmissionToMultiEventBatch(submission, batchEvents)
+        ? expandSubmissionToMultiEventBatch(submission, normalizedBatchEvents)
         : expandSubmissionToBatch(submission, batchEventDates);
       const duplicateWarnings = findSubmissionDuplicateWarnings(submissions, duplicateCandidates);
       const savedEvents = await saveEventSubmissions(submissions);
       const confirmationDates = isMultiEventBatch
-        ? batchEvents.map((event) => event.startDate)
+        ? normalizedBatchEvents.map((event) => event.startDate)
         : batchEventDates;
       const confirmationEmails = await sendBatchSubmissionConfirmationEmails(
         submission,
