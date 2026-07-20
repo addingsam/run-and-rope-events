@@ -142,19 +142,11 @@ function validateForm(
     delete errors.state;
     delete errors.startDate;
     delete errors.endDate;
-
-    if (featurePlacement !== "none") {
-      errors.featurePlacement =
-        "Homepage featuring applies to one event at a time. Submit the events first, then feature each listing after approval.";
-    }
   } else if (batchEventDates.length >= 2) {
     Object.assign(errors, validateBatchEventDates(batchEventDates));
+  }
 
-    if (featurePlacement !== "none") {
-      errors.featurePlacement =
-        "Homepage featuring applies to one event at a time. Submit the dates first, then feature each listing after approval.";
-    }
-  } else if (featurePlacement !== "none") {
+  if (featurePlacement !== "none") {
     const email = data.submitterEmail.trim() || data.contactEmail.trim();
     if (!email) {
       errors.featurePlacement =
@@ -584,6 +576,8 @@ export function EventSubmissionForm() {
         batchEventDates.forEach((date) => body.append("eventDates", date));
       }
 
+      body.append("featurePlacement", featurePlacement);
+
       const response = await fetch("/api/events/submit", {
         method: "POST",
         body,
@@ -606,13 +600,20 @@ export function EventSubmissionForm() {
         throw new Error(data.error ?? "Submission failed");
       }
 
-      if (featurePlacement !== "none" && !isBatchMode) {
+      if (featurePlacement !== "none") {
+        const featuredEventId = data.eventId ?? data.eventIds?.[0];
+        if (!featuredEventId) {
+          throw new Error(
+            "Your events were saved, but featured checkout could not start. Try again from your confirmation email after approval.",
+          );
+        }
+
         const checkoutEmail = formData.submitterEmail.trim() || formData.contactEmail.trim();
         const checkoutResponse = await fetch("/api/stripe/feature-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            eventId: data.eventId,
+            eventId: featuredEventId,
             billingType: featurePlacement,
             email: checkoutEmail,
             fromSubmit: true,
@@ -729,7 +730,7 @@ export function EventSubmissionForm() {
     <form onSubmit={handleSubmit} className="space-y-6" noValidate autoComplete="off">
       <FormSection
         title="Event Flyer"
-        description="Start here — upload your flyer and we'll read it to pre-fill the form below. JPEG, PNG, or PDF up to 10MB."
+        description="Optional — upload your flyer and we'll read it to pre-fill the form below. JPEG, PNG, or PDF up to 10MB."
       >
         <div>
           <label
@@ -756,7 +757,7 @@ export function EventSubmissionForm() {
                   ? "Reading flyer and filling in details..."
                   : flyerFile
                     ? flyerFile.name
-                    : "Choose a flyer to upload"}
+                    : "Choose a flyer to upload (optional)"}
             </span>
             <span className="mt-1 text-xs text-[var(--color-text-muted)]">
               JPEG, PNG, or PDF · Max 10MB
@@ -1106,36 +1107,33 @@ export function EventSubmissionForm() {
         />
       </FormSection>
 
-      {!isBatchMode ? (
-        <FormSection
-          title="Homepage Featuring"
-          description="Optional paid promotion only — listing your event is free."
-          titleClassName="text-[var(--color-accent-cta)]"
-        >
-          <div id="featurePlacement">
-            <FeaturedPlacementField
-              value={featurePlacement}
-              onChange={(value) => {
-                setFeaturePlacement(value);
-                setErrors((current) => {
-                  const next = { ...current };
-                  delete next.featurePlacement;
-                  delete next.submit;
-                  return next;
-                });
-              }}
-              error={errors.featurePlacement}
-            />
-          </div>
-        </FormSection>
-      ) : (
-        <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
-          <p className={`text-sm ${themeMutedTextClassName}`}>
-            Homepage featuring is available for each listing after approval. Submit your dates now,
-            then feature individual events from your confirmation email or the dashboard.
-          </p>
+      <FormSection
+        title="Homepage Featuring"
+        description="Optional paid promotion only — listing your event is free."
+        titleClassName="text-[var(--color-accent-cta)]"
+      >
+        <div id="featurePlacement">
+          <FeaturedPlacementField
+            value={featurePlacement}
+            onChange={(value) => {
+              setFeaturePlacement(value);
+              setErrors((current) => {
+                const next = { ...current };
+                delete next.featurePlacement;
+                delete next.submit;
+                return next;
+              });
+            }}
+            error={errors.featurePlacement}
+          />
         </div>
-      )}
+        {isBatchMode && featurePlacement !== "none" ? (
+          <p className={`mt-4 text-sm leading-6 ${themeMutedTextClassName}`}>
+            Featuring applies to one listing at a time ($15). Checkout covers the first date in
+            this submission; you can feature the others after approval.
+          </p>
+        ) : null}
+      </FormSection>
 
       <div className={`px-4 py-5 sm:px-6 ${themePanelClassName}`}>
         {isBatchMode ? (
@@ -1149,8 +1147,8 @@ export function EventSubmissionForm() {
           Listing your event is free.
         </p>
         <p className={`mt-2 leading-6 ${themeMutedTextClassName}`}>
-          Submitting adds your event to the directory at no cost. A flyer upload is required —
-          review the details below and confirm venue name, city, and state before submitting.
+          Submitting adds your event to the directory at no cost. Review the details below and
+          confirm venue name, city, and state before submitting.
           {formData.format === "rodeo"
             ? " Producer or stock contractor name will always be displayed on your listing."
             : " Producer name will always be displayed on your listing."}{" "}
@@ -1168,11 +1166,13 @@ export function EventSubmissionForm() {
           className={`mt-5 w-full px-6 py-4 text-base disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${themePrimaryButtonClassName}`}
         >
           {isSubmitting
-            ? featurePlacement !== "none" && !isBatchMode
+            ? featurePlacement !== "none"
               ? "Submitting and starting checkout..."
               : "Submitting..."
             : isBatchMode
-              ? `Submit ${getBatchSubmissionCount(batchEventDates, batchEvents)} separate listings — free`
+              ? featurePlacement !== "none"
+                ? `Submit ${getBatchSubmissionCount(batchEventDates, batchEvents)} listings and continue to payment`
+                : `Submit ${getBatchSubmissionCount(batchEventDates, batchEvents)} separate listings — free`
               : featurePlacement !== "none"
                 ? "Submit event and continue to payment"
                 : "Submit event — free"}

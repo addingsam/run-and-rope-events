@@ -12,10 +12,6 @@ export function validateEventSubmission(
 ): SubmissionValidationErrors {
   const errors: SubmissionValidationErrors = {};
 
-  if (!data.flyerUrl.trim()) {
-    errors.flyer = "A flyer is required.";
-  }
-
   if (!data.eventName.trim()) errors.eventName = "Event name is required.";
   if (!data.format) errors.format = "Format is required.";
   if (data.format === "rodeo" && data.rodeoLevels.length === 0) {

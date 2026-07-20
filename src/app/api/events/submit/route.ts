@@ -39,16 +39,6 @@ export async function POST(request: Request) {
     const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;
     const isBatchSubmission = isMultiEventBatch || isSameVenueBatch;
 
-    if (isBatchSubmission && formData.get("featurePlacement") !== "none") {
-      return NextResponse.json(
-        {
-          error:
-            "Homepage featuring applies to one event at a time. Submit multiple dates first, then feature each listing after approval.",
-        },
-        { status: 400 },
-      );
-    }
-
     const validationErrors = validateEventSubmission(submission, submission.source);
     const batchErrors = isMultiEventBatch
       ? validateBatchEvents(batchEvents)
