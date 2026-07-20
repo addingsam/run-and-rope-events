@@ -1,3 +1,4 @@
+import { sanitizeFlyerExtractionEntryDeadlines } from "@/lib/flyer/sanitize-entry-deadline";
 import {
   normalizeFlyerDate,
   normalizeFlyerDateList,
@@ -161,7 +162,10 @@ export function sanitizeFlyerExtractionDates(
   extracted: FlyerExtractionResult,
   referenceDate: Date = new Date(),
 ): FlyerExtractionResult {
-  let next: FlyerExtractionResult = { ...extracted };
+  let next: FlyerExtractionResult = sanitizeFlyerExtractionEntryDeadlines(
+    extracted,
+    referenceDate,
+  );
 
   const dedupedEvents = dedupeEvents(next.events, referenceDate);
   if (dedupedEvents.length === 1) {
