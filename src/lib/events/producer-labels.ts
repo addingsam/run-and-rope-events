@@ -10,8 +10,8 @@ export function getProducerSectionTitle(format: SubmissionFormat | null | undefi
 
 export function getProducerSectionDescription(format: SubmissionFormat | null | undefined) {
   return isRodeoFormat(format)
-    ? "Producer or stock contractor name appears on every listing so riders know who's running the event."
-    : "Producer name appears on every listing so riders know who's running the event.";
+    ? "Producer or stock contractor details are optional. Name is shown on the listing when provided."
+    : "Producer details are optional. Name is shown on the listing when provided.";
 }
 
 export function getProducerNameLabel(format: SubmissionFormat | null | undefined) {
@@ -22,10 +22,10 @@ export function getProducerWebsiteLabel(format: SubmissionFormat | null | undefi
   return isRodeoFormat(format) ? "Producer / Stock Contractor Website" : "Producer Website";
 }
 
-export function getProducerNameRequiredMessage(format: SubmissionFormat | null | undefined) {
+export function getProducerNameHint(format: SubmissionFormat | null | undefined) {
   return isRodeoFormat(format)
-    ? "Producer or stock contractor name is required."
-    : "Producer name is required.";
+    ? "Optional — producer or stock contractor name shown on the listing when provided."
+    : "Optional — producer name shown on the listing when provided.";
 }
 
 export function getProducerDisplayLabel(format: SubmissionFormat | null | undefined) {

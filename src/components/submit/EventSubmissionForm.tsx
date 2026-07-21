@@ -23,6 +23,7 @@ import {
 } from "@/lib/events/submission-options";
 import {
   getProducerNameLabel,
+  getProducerNameHint,
   getProducerSectionDescription,
   getProducerSectionTitle,
   getProducerWebsiteLabel,
@@ -1111,7 +1112,7 @@ export function EventSubmissionForm() {
           value={formData.producerName}
           onChange={(e) => updateField("producerName", e.target.value)}
           error={errors.producerName}
-          hint="Always shown on the event listing."
+          hint={getProducerNameHint(formData.format)}
         />
         <TextInput
           name="producerWebsite"
@@ -1217,11 +1218,7 @@ export function EventSubmissionForm() {
         </p>
         <p className={`mt-2 leading-6 ${themeMutedTextClassName}`}>
           Submitting adds your event to the directory at no cost. Review the details below and
-          confirm venue name, city, and state before submitting.
-          {formData.format === "rodeo"
-            ? " Producer or stock contractor name will always be displayed on your listing."
-            : " Producer name will always be displayed on your listing."}{" "}
-          Homepage featuring below is
+          confirm venue name, city, and state before submitting. Homepage featuring below is
           optional and is the only paid step.
         </p>
         {errors.submit && (
