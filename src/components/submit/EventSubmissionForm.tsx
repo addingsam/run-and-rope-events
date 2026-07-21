@@ -569,9 +569,14 @@ export function EventSubmissionForm() {
       await fillFormFromFlyer(url);
     } catch (error) {
       setFlyerFile(null);
+      const message = error instanceof Error ? error.message : "Flyer upload failed.";
       setErrors((current) => ({
         ...current,
-        flyer: error instanceof Error ? error.message : "Flyer upload failed.",
+        flyer:
+          message.toLowerCase().includes("load failed") ||
+          message.toLowerCase().includes("failed to fetch")
+            ? "Flyer upload failed. Check your connection, or use a smaller file under 3.5 MB."
+            : message,
       }));
     } finally {
       setIsUploadingFlyer(false);
