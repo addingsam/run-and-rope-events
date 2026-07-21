@@ -21,6 +21,7 @@ interface BatchEventsFieldProps {
   yearInferred: Array<{ startDate: boolean; endDate: boolean }>;
   duplicateWarnings?: ScheduleDuplicateWarning[];
   onChange: (events: BatchEventEntry[]) => void;
+  onMergeToSingle?: () => void;
 }
 
 export function BatchEventsField({
@@ -29,6 +30,7 @@ export function BatchEventsField({
   yearInferred,
   duplicateWarnings = [],
   onChange,
+  onMergeToSingle,
 }: BatchEventsFieldProps) {
   function updateEvent<K extends keyof BatchEventEntry>(
     index: number,
@@ -246,6 +248,12 @@ export function BatchEventsField({
       </ul>
 
       {errors.batchEvents ? <p className="text-sm text-red-400">{errors.batchEvents}</p> : null}
+
+      {onMergeToSingle ? (
+        <button type="button" onClick={onMergeToSingle} className={themeSecondaryButtonClassName}>
+          This is one event — combine into a single listing
+        </button>
+      ) : null}
 
       <button type="button" onClick={addEvent} className={themeSecondaryButtonClassName}>
         Add another event

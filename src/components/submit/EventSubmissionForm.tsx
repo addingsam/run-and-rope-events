@@ -342,6 +342,8 @@ export function EventSubmissionForm() {
     if (events.length < 2) {
       setBatchEvents([]);
       setBatchEventsYearInferred([]);
+      setFlyerLayoutType("single");
+      setScheduleDuplicateWarnings([]);
       const first = events[0];
       if (first) {
         updateField("startDate", first.startDate);
@@ -351,6 +353,9 @@ export function EventSubmissionForm() {
         updateField("city", first.city);
         updateField("state", first.state);
         updateField("zipCode", first.zipCode);
+        if (first.entryDeadline) {
+          updateField("entryDeadline", first.entryDeadline);
+        }
       }
       return;
     }
@@ -368,6 +373,72 @@ export function EventSubmissionForm() {
       updateField("zipCode", first.zipCode);
     }
     setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
+  }
+
+  function mergeBatchToSingleEvent() {
+    if (batchEvents.length === 0) {
+      return;
+    }
+
+    const first = batchEvents[0]!;
+    const classLines = batchEvents
+      .map((event) => event.classDivisionInfo.trim())
+      .filter(Boolean);
+    const mergedClassInfo = [...new Set([formData.classDivisionInfo.trim(), ...classLines].filter(Boolean))].join(
+      "\n",
+    );
+    const entryDeadline =
+      batchEvents.map((event) => event.entryDeadline.trim()).find(Boolean) ?? formData.entryDeadline;
+
+    setBatchEvents([]);
+    setBatchEventsYearInferred([]);
+    setBatchEventDates([]);
+    setFlyerLayoutType("single");
+    setScheduleDuplicateWarnings([]);
+    setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
+    updateField("startDate", first.startDate);
+    updateField("endDate", first.endDate || first.startDate);
+    updateField("entryDeadline", entryDeadline);
+    updateField("venueName", first.venueName);
+    updateField("streetAddress", first.streetAddress);
+    updateField("city", first.city);
+    updateField("state", first.state);
+    updateField("zipCode", first.zipCode);
+    updateField("classDivisionInfo", mergedClassInfo);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.batchEvents;
+      for (const key of Object.keys(next)) {
+        if (key.startsWith("batchEvents.")) {
+          delete next[key as keyof FormErrors];
+        }
+      }
+      return next;
+    });
+  }
+
+  function mergeBatchDatesToSingleEvent() {
+    const filledDates = uniqueSortedEventDates(
+      batchEventDates.map((date) => date.trim()).filter(Boolean),
+    );
+    const primaryDate = filledDates[0] ?? formData.startDate;
+
+    setBatchEventDates([]);
+    setFlyerLayoutType("single");
+    if (primaryDate) {
+      updateField("startDate", primaryDate);
+      updateField("endDate", primaryDate);
+    }
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.eventDates;
+      for (const key of Object.keys(next)) {
+        if (key.startsWith("eventDates.")) {
+          delete next[key as keyof FormErrors];
+        }
+      }
+      return next;
+    });
   }
 
   const [confirmationNotice, setConfirmationNotice] = useState<string | null>(null);
@@ -991,12 +1062,14 @@ export function EventSubmissionForm() {
             yearInferred={batchEventsYearInferred}
             duplicateWarnings={scheduleDuplicateWarnings}
             onChange={handleBatchEventsChange}
+            onMergeToSingle={mergeBatchToSingleEvent}
           />
         ) : isSameVenueBatch ? (
           <BatchEventDatesField
             dates={batchEventDates}
             errors={errors}
             onChange={handleBatchDatesChange}
+            onMergeToSingle={mergeBatchDatesToSingleEvent}
           />
         ) : (
           <>

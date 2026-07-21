@@ -110,6 +110,7 @@ function mergeSingleEventIntoTopLevel(
 ): FlyerExtractionResult {
   return {
     ...extracted,
+    type: "single",
     date: event.date ?? extracted.date,
     endDate: event.endDate ?? extracted.endDate,
     entryDeadline: event.entryDeadline ?? extracted.entryDeadline,
@@ -120,6 +121,96 @@ function mergeSingleEventIntoTopLevel(
     zipCode: event.zipCode ?? extracted.zipCode,
     events: [],
   };
+}
+
+function mergeClassDivisionInfo(
+  ...values: Array<string | null | undefined>
+): string | null {
+  const parts = values
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+
+  if (parts.length === 0) {
+    return null;
+  }
+
+  return [...new Set(parts)].join("\n");
+}
+
+function eventsShareSameStop(
+  events: FlyerExtractionEventEntry[],
+  referenceDate: Date,
+): boolean {
+  if (events.length < 2) {
+    return false;
+  }
+
+  const dateKeys = events.map((event) => {
+    const start = normalizeOptionalDate(event.date, referenceDate) ?? "";
+    const end = normalizeOptionalDate(event.endDate, referenceDate) ?? start;
+    return `${start}|${end}`;
+  });
+
+  if (new Set(dateKeys).size !== 1 || dateKeys[0] === "|") {
+    return false;
+  }
+
+  const cities = events.map((event) => event.city?.trim().toLowerCase()).filter(Boolean);
+  if (cities.length > 0 && new Set(cities).size > 1) {
+    return false;
+  }
+
+  const states = events.map((event) => event.state?.trim().toUpperCase()).filter(Boolean);
+  if (states.length > 0 && new Set(states).size > 1) {
+    return false;
+  }
+
+  const venues = events.map((event) => event.venueName?.trim().toLowerCase()).filter(Boolean);
+  if (venues.length > 0 && new Set(venues).size > 1) {
+    return false;
+  }
+
+  return true;
+}
+
+function mergeSameStopEventsIntoSingle(
+  extracted: FlyerExtractionResult,
+  events: FlyerExtractionEventEntry[],
+): FlyerExtractionResult {
+  const merged = events.reduce<FlyerExtractionResult>(
+    (current, event) => mergeSingleEventIntoTopLevel(current, event),
+    extracted,
+  );
+
+  return {
+    ...merged,
+    type: "single",
+    events: [],
+    classDivisionInfo: mergeClassDivisionInfo(
+      extracted.classDivisionInfo,
+      ...events.map((event) => event.classDivisionInfo),
+    ),
+  };
+}
+
+/** Drop registration open/close dates that fall before the primary event day. */
+function removePreEventRegistrationDates(
+  primaryIso: string | null,
+  eventDates: string[],
+  referenceDate: Date,
+): string[] {
+  if (!primaryIso) {
+    return eventDates;
+  }
+
+  const normalizedDates = normalizeFlyerDateList(eventDates, referenceDate).dates;
+  const onOrAfterPrimary = normalizedDates.filter((date) => date >= primaryIso);
+
+  if (onOrAfterPrimary.length > 0) {
+    return onOrAfterPrimary;
+  }
+
+  return normalizedDates.includes(primaryIso) ? [primaryIso] : normalizedDates;
 }
 
 function collapseConsecutiveDatesToRange(
@@ -168,7 +259,9 @@ export function sanitizeFlyerExtractionDates(
   );
 
   const dedupedEvents = dedupeEvents(next.events ?? [], referenceDate);
-  if (dedupedEvents.length === 1) {
+  if (dedupedEvents.length >= 2 && eventsShareSameStop(dedupedEvents, referenceDate)) {
+    next = mergeSameStopEventsIntoSingle(next, dedupedEvents);
+  } else if (dedupedEvents.length === 1) {
     next = mergeSingleEventIntoTopLevel(next, dedupedEvents[0]!);
   } else if (dedupedEvents.length >= 2) {
     return {
@@ -190,6 +283,14 @@ export function sanitizeFlyerExtractionDates(
   const entryDeadlineIso = normalizeOptionalDate(next.entryDeadline, referenceDate);
   const primaryIso = normalizeOptionalDate(next.date, referenceDate);
   const endIso = normalizeOptionalDate(next.endDate, referenceDate);
+  const filteredEventDates = removePreEventRegistrationDates(
+    primaryIso,
+    next.eventDates ?? [],
+    referenceDate,
+  );
+  if (filteredEventDates !== next.eventDates) {
+    next = { ...next, eventDates: filteredEventDates };
+  }
   let distinctDays = buildDistinctEventDays(next, referenceDate, entryDeadlineIso);
 
   if (primaryIso && endIso && endIso !== primaryIso) {

@@ -18,6 +18,8 @@ const ENTRY_DEADLINE_PHRASES = [
   /\bentries due\b/i,
   /\bentry close\b/i,
   /\bclose entries\b/i,
+  /\bbooks close\b/i,
+  /\bbooks closed\b/i,
   /\blast day to enter\b/i,
   /\benter by\b/i,
 ];

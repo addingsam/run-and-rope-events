@@ -13,9 +13,15 @@ interface BatchEventDatesFieldProps {
   dates: string[];
   errors: Record<string, string | undefined>;
   onChange: (dates: string[]) => void;
+  onMergeToSingle?: () => void;
 }
 
-export function BatchEventDatesField({ dates, errors, onChange }: BatchEventDatesFieldProps) {
+export function BatchEventDatesField({
+  dates,
+  errors,
+  onChange,
+  onMergeToSingle,
+}: BatchEventDatesFieldProps) {
   const filledDateCount = uniqueSortedEventDates(
     dates.map((date) => date.trim()).filter(Boolean),
   ).length;
@@ -85,6 +91,12 @@ export function BatchEventDatesField({ dates, errors, onChange }: BatchEventDate
       </ul>
 
       {errors.eventDates ? <p className="text-sm text-red-400">{errors.eventDates}</p> : null}
+
+      {onMergeToSingle ? (
+        <button type="button" onClick={onMergeToSingle} className={themeSecondaryButtonClassName}>
+          This is one event — use a single date
+        </button>
+      ) : null}
 
       <button type="button" onClick={addDate} className={themeSecondaryButtonClassName}>
         Add another date
