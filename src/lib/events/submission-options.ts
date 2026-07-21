@@ -49,6 +49,11 @@ export const DISCIPLINE_OPTIONS = [
   },
   { value: "ranch_horse", label: "Ranch Horse", displayLabel: "Ranch Horse" },
   { value: "obstacle_trail", label: "Obstacle & Trail", displayLabel: "Obstacle & Trail" },
+  {
+    value: "pole_bending",
+    label: "Pole Bending (Poles)",
+    displayLabel: "Pole Bending",
+  },
 ] as const satisfies readonly {
   value: SubmissionDiscipline;
   label: string;
@@ -66,6 +71,7 @@ export const JACKPOT_ONLY_DISCIPLINES = [
   "cowboy_mounted_shooting",
   "ranch_horse",
   "obstacle_trail",
+  "pole_bending",
 ] as const satisfies readonly SubmissionDiscipline[];
 
 export function isJackpotOnlyDiscipline(discipline: SubmissionDiscipline) {
@@ -156,6 +162,7 @@ const legacyDisciplineLabelMap: Record<string, string> = {
   cowboy_mounted_shooting: "Cowboy Mounted Shooting",
   ranch_horse: "Ranch Horse",
   obstacle_trail: "Obstacle & Trail",
+  pole_bending: "Pole Bending (Poles)",
   "barrel-racing": "Barrel Racing (CBR/CGBR)",
   "team-roping": "Team Roping",
   "calf-roping": "Calf Roping / Tie Down Roping (CR/TD)",
@@ -177,6 +184,7 @@ const legacyDisciplineDisplayLabelMap: Record<string, string> = {
   cowboy_mounted_shooting: "Cowboy Mounted Shooting",
   ranch_horse: "Ranch Horse",
   obstacle_trail: "Obstacle & Trail",
+  pole_bending: "Pole Bending",
   "barrel-racing": "Barrel Racing",
   "team-roping": "Team Roping",
   "calf-roping": "Calf Roping / Tie Down Roping",

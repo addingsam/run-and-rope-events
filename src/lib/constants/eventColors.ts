@@ -25,6 +25,7 @@ export const DISCIPLINE_COLORS: Record<SubmissionDiscipline, string> = {
   cowboy_mounted_shooting: "#92400E",
   ranch_horse: "#84CC16",
   obstacle_trail: "#06B6D4",
+  pole_bending: "#8B5CF6",
 };
 
 /**
@@ -86,6 +87,10 @@ const legacyDisciplineAliases: Record<string, SubmissionDiscipline> = {
   obstacle_trail: "obstacle_trail",
   "obstacle-trail": "obstacle_trail",
   "obstacle-and-trail": "obstacle_trail",
+  pole_bending: "pole_bending",
+  "pole-bending": "pole_bending",
+  poles: "pole_bending",
+  pb: "pole_bending",
 };
 
 function normalizeSlug(value: string) {

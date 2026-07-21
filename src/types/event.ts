@@ -11,7 +11,8 @@ export type EventDiscipline =
   | "steer_wrestling"
   | "cowboy_mounted_shooting"
   | "ranch_horse"
-  | "obstacle_trail";
+  | "obstacle_trail"
+  | "pole_bending";
 
 export type EventFormat = "jackpot" | "rodeo";
 

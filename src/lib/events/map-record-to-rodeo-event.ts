@@ -21,6 +21,7 @@ function isEventDiscipline(value: string): value is EventDiscipline {
     "cowboy_mounted_shooting",
     "ranch_horse",
     "obstacle_trail",
+    "pole_bending",
   ].includes(value);
 }
 

@@ -17,7 +17,8 @@ export type SubmissionDiscipline =
   | "steer_wrestling"
   | "cowboy_mounted_shooting"
   | "ranch_horse"
-  | "obstacle_trail";
+  | "obstacle_trail"
+  | "pole_bending";
 
 export interface BatchEventEntry {
   startDate: string;
