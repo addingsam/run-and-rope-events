@@ -51,7 +51,6 @@ export function OptionalDateInput({
     setIsEditing(true);
     requestAnimationFrame(() => {
       inputRef.current?.focus();
-      inputRef.current?.showPicker?.();
     });
   }
 
@@ -80,7 +79,9 @@ export function OptionalDateInput({
             ref={inputRef}
             id={fieldId}
             name={fieldId}
-            type="date"
+            type="text"
+            inputMode="numeric"
+            placeholder="YYYY-MM-DD"
             autoComplete="off"
             data-1p-ignore="true"
             data-lpignore="true"

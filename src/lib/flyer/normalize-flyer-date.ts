@@ -265,16 +265,38 @@ export function normalizeFlyerDateList(
 
 const HTML_DATE_VALUE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Ensures values bound to `<input type="date">` are ISO dates or empty. */
+function parseIsoDateParts(iso: string) {
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+}
+
+function isValidHtmlDateInputValue(value: string): boolean {
+  const parts = parseIsoDateParts(value);
+  if (!parts) {
+    return false;
+  }
+
+  return isValidCalendarDate(parts.year, parts.month, parts.day);
+}
+
+/** Ensures date form values are valid ISO calendar dates or empty. */
 export function sanitizeHtmlDateInputValue(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
     return "";
   }
 
-  if (HTML_DATE_VALUE_PATTERN.test(trimmed)) {
-    return trimmed;
-  }
+  const candidate = HTML_DATE_VALUE_PATTERN.test(trimmed)
+    ? trimmed
+    : normalizeFlyerDate(trimmed).date;
 
-  return normalizeFlyerDate(trimmed).date;
+  return candidate && isValidHtmlDateInputValue(candidate) ? candidate : "";
 }

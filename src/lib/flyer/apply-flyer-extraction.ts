@@ -224,18 +224,32 @@ function mapExtractedEventToBatchEntry(
   };
 }
 
+const CONTACT_PHONE_CHAR_PATTERN = /[\d\s().+-]/g;
+
+export function sanitizeContactPhoneInputValue(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const sanitized = trimmed.match(CONTACT_PHONE_CHAR_PATTERN)?.join("") ?? "";
+  return sanitized.trim();
+}
+
 function resolveFlyerContactFields(
   extracted: FlyerExtractionResult,
   current: EventSubmission,
 ) {
   let contactEmail = extracted.contactEmail?.trim() || current.contactEmail.trim();
-  let contactPhone = extracted.contactPhone?.trim() || current.contactPhone.trim();
+  let contactPhone = sanitizeContactPhoneInputValue(
+    extracted.contactPhone?.trim() || current.contactPhone.trim(),
+  );
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phonePattern = /^[\d\s().+-]+$/;
 
   if (contactEmail && !emailPattern.test(contactEmail)) {
     if (!contactPhone && phonePattern.test(contactEmail)) {
-      contactPhone = contactEmail;
+      contactPhone = sanitizeContactPhoneInputValue(contactEmail);
     }
     contactEmail = "";
   }

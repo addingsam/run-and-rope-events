@@ -67,7 +67,10 @@ export function BatchEventDatesField({
               </label>
               <input
                 id={`eventDates-${index}`}
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="YYYY-MM-DD"
+                autoComplete="off"
                 value={sanitizeHtmlDateInputValue(date)}
                 onChange={(event) => updateDate(index, event.target.value)}
                 className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-base text-[var(--color-text-primary)] transition-colors focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20"

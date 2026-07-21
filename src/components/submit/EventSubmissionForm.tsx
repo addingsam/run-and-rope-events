@@ -32,6 +32,7 @@ import {
   applyFlyerExtractionToSubmission,
   countPopulatedFlyerFields,
   EMPTY_FLYER_INFERRED_YEAR_FIELDS,
+  sanitizeContactPhoneInputValue,
   type FlyerInferredYearFields,
 } from "@/lib/flyer/apply-flyer-extraction";
 import { coerceFlyerExtractionResult } from "@/lib/flyer/parse-flyer-extraction";
@@ -667,6 +668,35 @@ export function EventSubmissionForm() {
     }
   }
 
+  function sanitizeFormInputsForSubmit() {
+    const sanitizedFormData: EventSubmission = {
+      ...formData,
+      startDate: sanitizeHtmlDateInputValue(formData.startDate),
+      endDate: sanitizeHtmlDateInputValue(formData.endDate),
+      entryDeadline: sanitizeHtmlDateInputValue(formData.entryDeadline),
+      contactPhone: sanitizeContactPhoneInputValue(formData.contactPhone),
+    };
+    const sanitizedBatchEventDates = batchEventDates.map((date) =>
+      sanitizeHtmlDateInputValue(date),
+    );
+    const sanitizedBatchEvents = batchEvents.map((event) => ({
+      ...event,
+      startDate: sanitizeHtmlDateInputValue(event.startDate),
+      endDate: sanitizeHtmlDateInputValue(event.endDate),
+      entryDeadline: sanitizeHtmlDateInputValue(event.entryDeadline),
+    }));
+
+    setFormData(sanitizedFormData);
+    setBatchEventDates(sanitizedBatchEventDates);
+    setBatchEvents(sanitizedBatchEvents);
+
+    return {
+      formData: sanitizedFormData,
+      batchEventDates: sanitizedBatchEventDates,
+      batchEvents: sanitizedBatchEvents,
+    };
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -688,11 +718,17 @@ export function EventSubmissionForm() {
       return;
     }
 
+    const {
+      formData: sanitizedFormData,
+      batchEventDates: sanitizedBatchEventDates,
+      batchEvents: sanitizedBatchEvents,
+    } = sanitizeFormInputsForSubmit();
+
     const validationErrors = validateForm(
-      formData,
+      sanitizedFormData,
       featurePlacement,
-      batchEventDates,
-      batchEvents,
+      sanitizedBatchEventDates,
+      sanitizedBatchEvents,
     );
     if (Object.keys(validationErrors).length > 0) {
       const errorCount = Object.keys(validationErrors).length;
@@ -711,9 +747,9 @@ export function EventSubmissionForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
-          eventDates: isSameVenueBatch ? batchEventDates : [],
-          batchEvents: isMultiEventBatch ? batchEvents : [],
+          ...sanitizedFormData,
+          eventDates: isSameVenueBatch ? sanitizedBatchEventDates : [],
+          batchEvents: isMultiEventBatch ? sanitizedBatchEvents : [],
           featurePlacement,
         }),
       });
@@ -743,7 +779,8 @@ export function EventSubmissionForm() {
           );
         }
 
-        const checkoutEmail = formData.submitterEmail.trim() || formData.contactEmail.trim();
+        const checkoutEmail =
+          sanitizedFormData.submitterEmail.trim() || sanitizedFormData.contactEmail.trim();
         const checkoutResponse = await fetch("/api/stripe/feature-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1078,7 +1115,9 @@ export function EventSubmissionForm() {
               <TextInput
                 name="startDate"
                 label="Start Date"
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="YYYY-MM-DD"
                 value={sanitizeHtmlDateInputValue(formData.startDate)}
                 onChange={(e) => updateDateField("startDate", e.target.value)}
                 error={errors.startDate}
@@ -1086,7 +1125,9 @@ export function EventSubmissionForm() {
               <TextInput
                 name="endDate"
                 label="End Date"
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="YYYY-MM-DD"
                 value={sanitizeHtmlDateInputValue(formData.endDate)}
                 onChange={(e) => updateDateField("endDate", e.target.value)}
                 error={errors.endDate}
@@ -1213,9 +1254,12 @@ export function EventSubmissionForm() {
           <TextInput
             name="contactPhone"
             label="Contact Phone"
-            type="tel"
+            type="text"
+            inputMode="tel"
             value={formData.contactPhone}
-            onChange={(e) => updateField("contactPhone", e.target.value)}
+            onChange={(e) =>
+              updateField("contactPhone", sanitizeContactPhoneInputValue(e.target.value))
+            }
           />
         </div>
       </FormSection>
