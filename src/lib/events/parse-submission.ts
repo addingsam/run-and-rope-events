@@ -6,6 +6,10 @@ import type {
   SubmissionFormat,
   SubmissionSource,
 } from "@/types/event-submission";
+import {
+  slimBatchEventsForTransport,
+  slimEventSubmissionForTransport,
+} from "@/lib/events/slim-submission-payload";
 
 function trimString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -85,9 +89,11 @@ export function normalizeBatchEvents(raw: unknown): BatchEventEntry[] {
     return [];
   }
 
-  return raw
-    .map((item) => normalizeBatchEventEntry(item))
-    .filter((event): event is BatchEventEntry => event !== null);
+  return slimBatchEventsForTransport(
+    raw
+      .map((item) => normalizeBatchEventEntry(item))
+      .filter((event): event is BatchEventEntry => event !== null),
+  );
 }
 
 export function normalizeBatchEventDates(raw: unknown): string[] {
@@ -136,7 +142,7 @@ function parseSubmissionJson(
   body: Record<string, unknown>,
   options?: { source?: SubmissionSource },
 ): EventSubmission {
-  return {
+  return slimEventSubmissionForTransport({
     eventName: trimString(body.eventName),
     format: trimString(body.format) as SubmissionFormat,
     rodeoLevels: trimStringArray(body.rodeoLevels) as RodeoLevel[],
@@ -161,7 +167,7 @@ function parseSubmissionJson(
     submitterEmail: trimString(body.submitterEmail),
     flyerUrl: trimString(body.flyerUrl),
     source: options?.source ?? parseSubmissionSource(body.source),
-  };
+  });
 }
 
 export function parseBatchEventDates(formData: FormData): string[] {

@@ -1,5 +1,12 @@
 import { HttpResponseParseError, parseJsonResponse } from "@/lib/http/parse-json-response";
-import { SERVER_FLYER_UPLOAD_MAX_BYTES } from "@/lib/flyer/constants";
+
+function isLocalDevHost() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+}
 
 async function uploadFlyerViaServer(file: File, originalFileName: string) {
   const body = new FormData();
@@ -50,24 +57,25 @@ async function uploadFlyerViaPresignedUrl(file: File, originalFileName: string) 
 
   if (!putResponse.ok) {
     throw new Error(
-      "Direct flyer upload failed. If this keeps happening, compress the flyer or ask the site admin to enable R2 CORS for direct uploads.",
+      "Direct flyer upload failed. Enable R2 CORS for this site in Cloudflare, or compress the flyer and try again.",
     );
   }
 
   return presign.url;
 }
 
-/** Uploads a flyer, using direct-to-R2 upload when the file exceeds Vercel's body limit. */
+/** Uploads a flyer directly to R2 in production to avoid Vercel's body-size limit. */
 export async function uploadFlyerFromClient(file: File, originalFileName: string) {
-  if (file.size <= SERVER_FLYER_UPLOAD_MAX_BYTES) {
-    try {
-      return await uploadFlyerViaServer(file, originalFileName);
-    } catch (error) {
-      if (!(error instanceof HttpResponseParseError && error.status === 413)) {
-        throw error;
-      }
-    }
+  if (!isLocalDevHost()) {
+    return uploadFlyerViaPresignedUrl(file, originalFileName);
   }
 
-  return uploadFlyerViaPresignedUrl(file, originalFileName);
+  try {
+    return await uploadFlyerViaServer(file, originalFileName);
+  } catch (error) {
+    if (error instanceof HttpResponseParseError && error.status === 413) {
+      return uploadFlyerViaPresignedUrl(file, originalFileName);
+    }
+    throw error;
+  }
 }

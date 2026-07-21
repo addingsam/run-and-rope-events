@@ -55,6 +55,12 @@ import type {
   FlyerExtractionLayoutType,
   FlyerExtractionResult,
 } from "@/types/flyer-extraction";
+import {
+  estimateSubmissionPayloadBytes,
+  slimBatchEventsForTransport,
+  slimEventSubmissionForTransport,
+  VERCEL_REQUEST_BODY_LIMIT_BYTES,
+} from "@/lib/events/slim-submission-payload";
 import { validateEventSubmission } from "@/lib/events/validate-submission";
 import { validateBatchEventDates } from "@/lib/events/validate-batch-dates";
 import { validateBatchEvents } from "@/lib/events/validate-batch-events";
@@ -291,19 +297,21 @@ export function EventSubmissionForm() {
     duplicateCheckRequestId.current = requestId;
     const timeoutId = window.setTimeout(async () => {
       try {
+        const slimSubmission = slimEventSubmissionForTransport(formData);
+        const slimBatchEvents = slimBatchEventsForTransport(batchEvents);
         const response = await fetch("/api/events/submit/check-duplicates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...formData,
-            batchEvents,
+            ...slimSubmission,
+            batchEvents: slimBatchEvents,
           }),
         });
 
         const data = await parseJsonResponse<{
           locationWarnings?: ScheduleDuplicateWarning[];
           error?: string;
-        }>(response);
+        }>(response, "submit");
 
         if (duplicateCheckRequestId.current !== requestId || !response.ok) {
           return;
@@ -614,7 +622,7 @@ export function EventSubmissionForm() {
       const data = await parseJsonResponse<{
         extracted?: FlyerExtractionResult;
         error?: string;
-      }>(response);
+      }>(response, "extract");
 
       if (!response.ok || !data.extracted) {
         throw new Error(data.error ?? "Could not extract details from this flyer.");
@@ -633,9 +641,9 @@ export function EventSubmissionForm() {
       const batchDates = extractionResult.batchEventDates ?? [];
       const batchEventsList = extractionResult.batchEvents ?? [];
 
-      setFormData(extractionResult.submission);
+      setFormData(slimEventSubmissionForTransport(extractionResult.submission));
       setBatchEventDates(batchDates);
-      setBatchEvents(batchEventsList);
+      setBatchEvents(slimBatchEventsForTransport(batchEventsList));
       setBatchEventsYearInferred(extractionResult.batchEventsYearInferred ?? []);
       setFlyerLayoutType(extractionResult.layoutType ?? "single");
       setScheduleDuplicateWarnings([]);
@@ -670,22 +678,24 @@ export function EventSubmissionForm() {
   }
 
   function sanitizeFormInputsForSubmit() {
-    const sanitizedFormData: EventSubmission = {
+    const sanitizedFormData = slimEventSubmissionForTransport({
       ...formData,
       startDate: sanitizeHtmlDateInputValue(formData.startDate),
       endDate: sanitizeHtmlDateInputValue(formData.endDate),
       entryDeadline: sanitizeHtmlDateInputValue(formData.entryDeadline),
       contactPhone: sanitizeContactPhoneInputValue(formData.contactPhone),
-    };
+    });
     const sanitizedBatchEventDates = batchEventDates.map((date) =>
       sanitizeHtmlDateInputValue(date),
     );
-    const sanitizedBatchEvents = batchEvents.map((event) => ({
-      ...event,
-      startDate: sanitizeHtmlDateInputValue(event.startDate),
-      endDate: sanitizeHtmlDateInputValue(event.endDate),
-      entryDeadline: sanitizeHtmlDateInputValue(event.entryDeadline),
-    }));
+    const sanitizedBatchEvents = slimBatchEventsForTransport(
+      batchEvents.map((event) => ({
+        ...event,
+        startDate: sanitizeHtmlDateInputValue(event.startDate),
+        endDate: sanitizeHtmlDateInputValue(event.endDate),
+        entryDeadline: sanitizeHtmlDateInputValue(event.entryDeadline),
+      })),
+    );
 
     setFormData(sanitizedFormData);
     setBatchEventDates(sanitizedBatchEventDates);
@@ -748,9 +758,13 @@ export function EventSubmissionForm() {
         batchEvents: isMultiEventBatch ? sanitizedBatchEvents : [],
         featurePlacement,
       };
-      const submissionBody = JSON.stringify(submissionPayload);
+      const submissionBodyBytes = estimateSubmissionPayloadBytes(sanitizedFormData, {
+        batchEventDates: isSameVenueBatch ? sanitizedBatchEventDates : [],
+        batchEvents: isMultiEventBatch ? sanitizedBatchEvents : [],
+        featurePlacement,
+      });
 
-      if (submissionBody.length > 4_000_000) {
+      if (submissionBodyBytes > VERCEL_REQUEST_BODY_LIMIT_BYTES) {
         throw new Error(
           "Submission is too large. Shorten the description or entry details and try again.",
         );
@@ -759,7 +773,7 @@ export function EventSubmissionForm() {
       const response = await fetch("/api/events/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: submissionBody,
+        body: JSON.stringify(submissionPayload),
       });
 
       const data = await parseJsonResponse<{

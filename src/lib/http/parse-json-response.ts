@@ -8,15 +8,15 @@ export class HttpResponseParseError extends Error {
   }
 }
 
-function messageForFailedResponse(status: number, context: "upload" | "submit" | "default" = "default") {
+function messageForFailedResponse(status: number, context: "upload" | "submit" | "extract" | "default" = "default") {
   if (status === 413) {
     if (context === "upload") {
-      return "Flyer file is too large to upload through the app server. Use a file under 10 MB — large files upload directly to storage.";
+      return "Flyer file is too large for server upload. Retrying direct storage upload.";
     }
     if (context === "submit") {
       return "Submission is too large. Shorten the description or entry details and try again.";
     }
-    return "Request is too large. Please try again with a smaller file or shorter text fields.";
+    return "Request is too large for the server. Use a smaller flyer or shorten long text fields.";
   }
 
   return `Request failed (${status}). Please try again.`;
@@ -28,7 +28,7 @@ function messageForFailedResponse(status: number, context: "upload" | "submit" |
  */
 export async function parseJsonResponse<T>(
   response: Response,
-  context: "upload" | "submit" | "default" = "default",
+  context: "upload" | "submit" | "extract" | "default" = "default",
 ): Promise<T> {
   const text = await response.text();
   const trimmed = text.trim();
