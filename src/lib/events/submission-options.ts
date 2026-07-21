@@ -68,7 +68,7 @@ export const RODEO_ROUGH_STOCK_DISCIPLINES = [
 ] as const satisfies readonly SubmissionDiscipline[];
 
 /** Rodeo-only disciplines — hidden from jackpot format selection. */
-export const RODEO_ONLY_DISCIPLINES = ["ranch_bronc_riding"] as const satisfies readonly SubmissionDiscipline[];
+export const RODEO_ONLY_DISCIPLINES = [] as const satisfies readonly SubmissionDiscipline[];
 
 export const JACKPOT_ONLY_DISCIPLINES = [
   "cowboy_mounted_shooting",

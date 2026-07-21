@@ -19,6 +19,7 @@ import {
   filterDisciplinesForFormat,
   FORMAT_OPTIONS,
   getDisciplineOptionsForFormat,
+  resolveFormatFromDisciplines,
   RODEO_LEVEL_OPTIONS,
 } from "@/lib/events/submission-options";
 import {
@@ -487,10 +488,22 @@ export function EventSubmissionForm() {
   }
 
   function handleDisciplinesChange(disciplines: SubmissionDiscipline[]) {
-    updateField("disciplines", disciplines);
+    setFormData((current) => {
+      const format = resolveFormatFromDisciplines(disciplines, current.format);
+
+      return {
+        ...current,
+        format,
+        disciplines: filterDisciplinesForFormat(disciplines, format),
+        rodeoLevels: format === "rodeo" ? current.rodeoLevels : [],
+        additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
+      };
+    });
     setErrors((current) => {
       const next = { ...current };
       delete next.disciplines;
+      delete next.format;
+      delete next.rodeoLevels;
       return next;
     });
   }

@@ -1,6 +1,6 @@
 import { resolveVenueName } from "@/lib/events/resolve-venue-name";
 import type { EventSubmission, SubmissionSource } from "@/types/event-submission";
-import { isJackpotOnlyDiscipline, isRodeoOnlyDiscipline } from "@/lib/events/submission-options";
+import { isJackpotOnlyDiscipline } from "@/lib/events/submission-options";
 import { isValidWebsiteUrl } from "@/lib/events/normalize-website-url";
 
 export type SubmissionValidationErrors = Record<string, string>;
@@ -25,12 +25,6 @@ export function validateEventSubmission(
   ) {
     errors.format =
       "Cowboy Mounted Shooting, Ranch Horse, Obstacle & Trail, and Pole Bending events use Jackpot format.";
-  }
-  if (
-    data.format === "jackpot" &&
-    data.disciplines.some((discipline) => isRodeoOnlyDiscipline(discipline))
-  ) {
-    errors.format = "Ranch Bronc Riding is a rodeo discipline.";
   }
   if (!data.startDate) errors.startDate = "Start date is required.";
   else {
