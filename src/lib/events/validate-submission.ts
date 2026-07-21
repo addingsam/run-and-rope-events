@@ -1,7 +1,7 @@
 import { resolveVenueName } from "@/lib/events/resolve-venue-name";
 import type { EventSubmission, SubmissionSource } from "@/types/event-submission";
 import { getProducerNameRequiredMessage } from "@/lib/events/producer-labels";
-import { isJackpotOnlyDiscipline, isRodeoRoughStockDiscipline } from "@/lib/events/submission-options";
+import { isJackpotOnlyDiscipline, isRodeoOnlyDiscipline } from "@/lib/events/submission-options";
 import { isValidWebsiteUrl } from "@/lib/events/normalize-website-url";
 
 export type SubmissionValidationErrors = Record<string, string>;
@@ -25,14 +25,13 @@ export function validateEventSubmission(
     data.disciplines.some((discipline) => isJackpotOnlyDiscipline(discipline))
   ) {
     errors.format =
-      "Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail events use Jackpot format.";
+      "Cowboy Mounted Shooting, Ranch Horse, Obstacle & Trail, and Pole Bending events use Jackpot format.";
   }
   if (
     data.format === "jackpot" &&
-    data.disciplines.some((discipline) => isRodeoRoughStockDiscipline(discipline))
+    data.disciplines.some((discipline) => isRodeoOnlyDiscipline(discipline))
   ) {
-    errors.format =
-      "Bareback Riding, Saddle Bronc, Bull Riding, and Ranch Bronc Riding are rodeo disciplines.";
+    errors.format = "Ranch Bronc Riding is a rodeo discipline.";
   }
   if (!data.startDate) errors.startDate = "Start date is required.";
   else {

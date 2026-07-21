@@ -67,6 +67,9 @@ export const RODEO_ROUGH_STOCK_DISCIPLINES = [
   "ranch_bronc_riding",
 ] as const satisfies readonly SubmissionDiscipline[];
 
+/** Rodeo-only disciplines — hidden from jackpot format selection. */
+export const RODEO_ONLY_DISCIPLINES = ["ranch_bronc_riding"] as const satisfies readonly SubmissionDiscipline[];
+
 export const JACKPOT_ONLY_DISCIPLINES = [
   "cowboy_mounted_shooting",
   "ranch_horse",
@@ -82,10 +85,14 @@ export function isRodeoRoughStockDiscipline(discipline: SubmissionDiscipline) {
   return (RODEO_ROUGH_STOCK_DISCIPLINES as readonly SubmissionDiscipline[]).includes(discipline);
 }
 
+export function isRodeoOnlyDiscipline(discipline: SubmissionDiscipline) {
+  return (RODEO_ONLY_DISCIPLINES as readonly SubmissionDiscipline[]).includes(discipline);
+}
+
 export function getDisciplineOptionsForFormat(format: SubmissionFormat) {
   const options =
     format === "jackpot"
-      ? DISCIPLINE_OPTIONS.filter((option) => !isRodeoRoughStockDiscipline(option.value))
+      ? DISCIPLINE_OPTIONS.filter((option) => !isRodeoOnlyDiscipline(option.value))
       : DISCIPLINE_OPTIONS.filter((option) => !isJackpotOnlyDiscipline(option.value));
 
   return options.map(({ value, displayLabel }) => ({
@@ -99,7 +106,7 @@ export function filterDisciplinesForFormat(
   format: SubmissionFormat,
 ): SubmissionDiscipline[] {
   if (format === "jackpot") {
-    return disciplines.filter((discipline) => !isRodeoRoughStockDiscipline(discipline));
+    return disciplines.filter((discipline) => !isRodeoOnlyDiscipline(discipline));
   }
 
   return disciplines.filter((discipline) => !isJackpotOnlyDiscipline(discipline));
