@@ -4,8 +4,11 @@ export const ACCEPTED_FLYER_EXTENSIONS = [".jpg", ".jpeg", ".png", ".pdf"] as co
 
 export const MAX_FLYER_SIZE_BYTES = 10 * 1024 * 1024;
 
-/** Keep multipart server uploads under Vercel's ~4.5 MB request limit. */
+/** Keep single-request server uploads under Vercel's ~4.5 MB request limit. */
 export const SERVER_FLYER_UPLOAD_MAX_BYTES = 3.5 * 1024 * 1024;
+
+/** Chunk size for multipart uploads through the app server. */
+export const FLYER_UPLOAD_CHUNK_BYTES = 2 * 1024 * 1024;
 
 export const FLYER_ACCEPT_ATTRIBUTE =
   ".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf";

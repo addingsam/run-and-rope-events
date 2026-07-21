@@ -1,30 +1,11 @@
-import { SERVER_FLYER_UPLOAD_MAX_BYTES } from "@/lib/flyer/constants";
+import {
+  FLYER_UPLOAD_CHUNK_BYTES,
+  SERVER_FLYER_UPLOAD_MAX_BYTES,
+} from "@/lib/flyer/constants";
 import { HttpResponseParseError, parseJsonResponse } from "@/lib/http/parse-json-response";
 
 function canUploadViaServer(file: File) {
   return file.size <= SERVER_FLYER_UPLOAD_MAX_BYTES;
-}
-
-function isDirectUploadNetworkError(error: unknown) {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("load failed") ||
-    message.includes("failed to fetch") ||
-    message.includes("networkerror") ||
-    message.includes("network request failed")
-  );
-}
-
-function directUploadHelpMessage(file: File) {
-  if (canUploadViaServer(file)) {
-    return "Flyer upload failed. Check your connection and try again.";
-  }
-
-  return "This flyer is too large for server upload. Compress it under 3.5 MB, or enable R2 CORS so files up to 10 MB can upload directly to storage.";
 }
 
 async function uploadFlyerViaServer(file: File, originalFileName: string) {
@@ -46,8 +27,8 @@ async function uploadFlyerViaServer(file: File, originalFileName: string) {
   return data.url;
 }
 
-async function uploadFlyerViaPresignedUrl(file: File, originalFileName: string) {
-  const presignResponse = await fetch("/api/events/upload-flyer/presign", {
+async function uploadFlyerViaMultipart(file: File, originalFileName: string) {
+  const initResponse = await fetch("/api/events/upload-flyer/multipart/init", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -58,38 +39,74 @@ async function uploadFlyerViaPresignedUrl(file: File, originalFileName: string) 
     }),
   });
 
-  const presign = await parseJsonResponse<{
-    uploadUrl?: string;
+  const initData = await parseJsonResponse<{
+    key?: string;
+    uploadId?: string;
     url?: string;
     error?: string;
-  }>(presignResponse, "upload");
+  }>(initResponse, "upload");
 
-  if (!presignResponse.ok || !presign.uploadUrl || !presign.url) {
-    throw new Error(presign.error ?? "Could not prepare flyer upload.");
+  if (!initResponse.ok || !initData.key || !initData.uploadId || !initData.url) {
+    throw new Error(initData.error ?? "Could not start flyer upload.");
   }
 
-  let putResponse: Response;
-  try {
-    putResponse = await fetch(presign.uploadUrl, {
-      method: "PUT",
-      body: file,
-      headers: { "Content-Type": file.type || "application/octet-stream" },
+  const parts: Array<{ partNumber: number; etag: string }> = [];
+  const totalParts = Math.ceil(file.size / FLYER_UPLOAD_CHUNK_BYTES);
+
+  for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
+    const start = (partNumber - 1) * FLYER_UPLOAD_CHUNK_BYTES;
+    const end = Math.min(start + FLYER_UPLOAD_CHUNK_BYTES, file.size);
+    const chunk = file.slice(start, end);
+    const formData = new FormData();
+    formData.append("chunk", chunk, `${file.name}.part${partNumber}`);
+    formData.append("key", initData.key);
+    formData.append("uploadId", initData.uploadId);
+    formData.append("partNumber", String(partNumber));
+
+    const partResponse = await fetch("/api/events/upload-flyer/multipart/part", {
+      method: "POST",
+      body: formData,
     });
-  } catch (error) {
-    if (isDirectUploadNetworkError(error)) {
-      throw new Error(directUploadHelpMessage(file));
+
+    const partData = await parseJsonResponse<{
+      partNumber?: number;
+      etag?: string;
+      error?: string;
+    }>(partResponse, "upload");
+
+    if (!partResponse.ok || !partData.partNumber || !partData.etag) {
+      throw new Error(partData.error ?? "Flyer upload failed while sending a file chunk.");
     }
-    throw error;
+
+    parts.push({
+      partNumber: partData.partNumber,
+      etag: partData.etag,
+    });
   }
 
-  if (!putResponse.ok) {
-    throw new Error(directUploadHelpMessage(file));
+  const completeResponse = await fetch("/api/events/upload-flyer/multipart/complete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      key: initData.key,
+      uploadId: initData.uploadId,
+      parts,
+    }),
+  });
+
+  const completeData = await parseJsonResponse<{ url?: string; error?: string }>(
+    completeResponse,
+    "upload",
+  );
+
+  if (!completeResponse.ok || !completeData.url) {
+    throw new Error(completeData.error ?? "Flyer upload failed while finishing.");
   }
 
-  return presign.url;
+  return completeData.url;
 }
 
-/** Upload smaller flyers through the app server; larger ones go direct to R2. */
+/** Upload smaller flyers in one request; larger ones use chunked multipart through the app server. */
 export async function uploadFlyerFromClient(file: File, originalFileName: string) {
   if (canUploadViaServer(file)) {
     try {
@@ -101,5 +118,5 @@ export async function uploadFlyerFromClient(file: File, originalFileName: string
     }
   }
 
-  return uploadFlyerViaPresignedUrl(file, originalFileName);
+  return uploadFlyerViaMultipart(file, originalFileName);
 }
