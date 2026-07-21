@@ -8,11 +8,28 @@ export class HttpResponseParseError extends Error {
   }
 }
 
+function messageForFailedResponse(status: number, context: "upload" | "submit" | "default" = "default") {
+  if (status === 413) {
+    if (context === "upload") {
+      return "Flyer file is too large to upload through the app server. Use a file under 10 MB — large files upload directly to storage.";
+    }
+    if (context === "submit") {
+      return "Submission is too large. Shorten the description or entry details and try again.";
+    }
+    return "Request is too large. Please try again with a smaller file or shorter text fields.";
+  }
+
+  return `Request failed (${status}). Please try again.`;
+}
+
 /**
  * Safari throws "The string did not match the expected pattern." when
  * `response.json()` is called on HTML or plain-text error bodies.
  */
-export async function parseJsonResponse<T>(response: Response): Promise<T> {
+export async function parseJsonResponse<T>(
+  response: Response,
+  context: "upload" | "submit" | "default" = "default",
+): Promise<T> {
   const text = await response.text();
   const trimmed = text.trim();
 
@@ -20,7 +37,7 @@ export async function parseJsonResponse<T>(response: Response): Promise<T> {
     throw new HttpResponseParseError(
       response.ok
         ? "The server returned an empty response. Please try again."
-        : `Request failed (${response.status}). Please try again.`,
+        : messageForFailedResponse(response.status, context),
       response.status,
     );
   }
@@ -35,7 +52,7 @@ export async function parseJsonResponse<T>(response: Response): Promise<T> {
     throw new HttpResponseParseError(
       response.ok
         ? "Unexpected server response. Please try again."
-        : `Request failed (${response.status}). Please try again.`,
+        : messageForFailedResponse(response.status, context),
       response.status,
     );
   }
@@ -46,7 +63,7 @@ export async function parseJsonResponse<T>(response: Response): Promise<T> {
     throw new HttpResponseParseError(
       response.ok
         ? "Unexpected server response. Please try again."
-        : `Request failed (${response.status}). Please try again.`,
+        : messageForFailedResponse(response.status, context),
       response.status,
     );
   }

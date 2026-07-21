@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1082.0",
+    "@aws-sdk/s3-request-presigner": "^3.1092.0",
     "@clerk/nextjs": "^7.5.16",
     "@mapbox/mapbox-gl-draw": "^1.5.1",
     "@supabase/ssr": "^0.12.0",

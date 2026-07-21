@@ -42,6 +42,7 @@ import {
   validateFlyerFile,
 } from "@/lib/flyer/constants";
 import { createFlyerUploadPayload } from "@/lib/flyer/flyer-file-name";
+import { uploadFlyerFromClient } from "@/lib/flyer/upload-flyer-from-client";
 import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import { US_STATES } from "@/lib/us-states";
 import {
@@ -554,23 +555,10 @@ export function EventSubmissionForm() {
 
     try {
       const { file: uploadFile, originalFileName } = createFlyerUploadPayload(file);
-      const body = new FormData();
-      body.append("flyer", uploadFile);
-      body.append("originalFileName", originalFileName);
+      const url = await uploadFlyerFromClient(uploadFile, originalFileName);
 
-      const response = await fetch("/api/events/upload-flyer", {
-        method: "POST",
-        body,
-      });
-
-      const data = await parseJsonResponse<{ url?: string; error?: string }>(response);
-
-      if (!response.ok || !data.url) {
-        throw new Error(data.error ?? "Flyer upload failed.");
-      }
-
-      updateField("flyerUrl", data.url);
-      await fillFormFromFlyer(data.url);
+      updateField("flyerUrl", url);
+      await fillFormFromFlyer(url);
     } catch (error) {
       setFlyerFile(null);
       setErrors((current) => ({
@@ -754,15 +742,24 @@ export function EventSubmissionForm() {
     setIsSubmitting(true);
 
     try {
+      const submissionPayload = {
+        ...sanitizedFormData,
+        eventDates: isSameVenueBatch ? sanitizedBatchEventDates : [],
+        batchEvents: isMultiEventBatch ? sanitizedBatchEvents : [],
+        featurePlacement,
+      };
+      const submissionBody = JSON.stringify(submissionPayload);
+
+      if (submissionBody.length > 4_000_000) {
+        throw new Error(
+          "Submission is too large. Shorten the description or entry details and try again.",
+        );
+      }
+
       const response = await fetch("/api/events/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...sanitizedFormData,
-          eventDates: isSameVenueBatch ? sanitizedBatchEventDates : [],
-          batchEvents: isMultiEventBatch ? sanitizedBatchEvents : [],
-          featurePlacement,
-        }),
+        body: submissionBody,
       });
 
       const data = await parseJsonResponse<{
@@ -776,7 +773,7 @@ export function EventSubmissionForm() {
           sent: string[];
           failed: Array<{ email: string; reason: string }>;
         };
-      }>(response);
+      }>(response, "submit");
 
       if (!response.ok || (!data.eventId && !(data.eventIds && data.eventIds.length > 0))) {
         throw new Error(data.error ?? "Submission failed");
