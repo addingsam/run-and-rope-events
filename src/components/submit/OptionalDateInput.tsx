@@ -80,7 +80,6 @@ export function OptionalDateInput({
             id={fieldId}
             name={fieldId}
             type="text"
-            inputMode="numeric"
             placeholder="YYYY-MM-DD"
             autoComplete="off"
             data-1p-ignore="true"

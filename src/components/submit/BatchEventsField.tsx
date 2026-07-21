@@ -141,7 +141,6 @@ export function BatchEventsField({
                   name={`batchEvents.${index}.startDate`}
                   label="Start Date"
                   type="text"
-                  inputMode="numeric"
                   placeholder="YYYY-MM-DD"
                   value={sanitizeHtmlDateInputValue(event.startDate)}
                   onChange={(changeEvent) =>
@@ -153,7 +152,6 @@ export function BatchEventsField({
                   name={`batchEvents.${index}.endDate`}
                   label="End Date"
                   type="text"
-                  inputMode="numeric"
                   placeholder="YYYY-MM-DD"
                   value={sanitizeHtmlDateInputValue(event.endDate)}
                   onChange={(changeEvent) =>
@@ -239,7 +237,6 @@ export function BatchEventsField({
                   <TextInput
                     name={`batchEvents.${index}.zipCode`}
                     label="Zip Code"
-                    inputMode="numeric"
                     value={event.zipCode}
                     onChange={(changeEvent) =>
                       updateEvent(index, "zipCode", changeEvent.target.value)

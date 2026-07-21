@@ -68,7 +68,6 @@ export function BatchEventDatesField({
               <input
                 id={`eventDates-${index}`}
                 type="text"
-                inputMode="numeric"
                 placeholder="YYYY-MM-DD"
                 autoComplete="off"
                 value={sanitizeHtmlDateInputValue(date)}

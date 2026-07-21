@@ -64,6 +64,7 @@ import {
   type SubmissionDuplicateWarning,
 } from "@/lib/events/duplicate-detection";
 import { formatEventDate } from "@/lib/events/format-date";
+import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import {
   EMPTY_EVENT_SUBMISSION,
   type BatchEventEntry,
@@ -111,27 +112,39 @@ const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
   "featurePlacement",
 ];
 
+function findFormErrorElement(firstKey: keyof FormErrors): HTMLElement | null {
+  if (firstKey === "disciplines" || firstKey === "featurePlacement") {
+    return document.getElementById(firstKey);
+  }
+
+  if (firstKey.startsWith("eventDates.")) {
+    const index = firstKey.split(".")[1];
+    return index ? document.getElementById(`eventDates-${index}`) : null;
+  }
+
+  const named = document.getElementsByName(String(firstKey));
+  if (named[0] instanceof HTMLElement) {
+    return named[0];
+  }
+
+  return document.getElementById(String(firstKey));
+}
+
 function scrollToFirstFormError(errors: FormErrors) {
   const firstKey = ERROR_FIELD_ORDER.find((key) => errors[key]);
   if (!firstKey) {
     return;
   }
 
-  const fieldId =
-    firstKey === "disciplines"
-      ? "disciplines"
-      : firstKey === "featurePlacement"
-        ? "featurePlacement"
-        : firstKey;
+  try {
+    const element = findFormErrorElement(firstKey);
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  const element =
-    document.getElementById(fieldId) ??
-    document.querySelector<HTMLElement>(`[name="${fieldId}"]`);
-
-  element?.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
-    element.focus({ preventScroll: true });
+    if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
+      element.focus({ preventScroll: true });
+    }
+  } catch {
+    // Avoid Safari selector parse errors blocking submit feedback.
   }
 }
 
@@ -286,10 +299,10 @@ export function EventSubmissionForm() {
           }),
         });
 
-        const data = (await response.json()) as {
+        const data = await parseJsonResponse<{
           locationWarnings?: ScheduleDuplicateWarning[];
           error?: string;
-        };
+        }>(response);
 
         if (duplicateCheckRequestId.current !== requestId || !response.ok) {
           return;
@@ -550,7 +563,7 @@ export function EventSubmissionForm() {
         body,
       });
 
-      const data = (await response.json()) as { url?: string; error?: string };
+      const data = await parseJsonResponse<{ url?: string; error?: string }>(response);
 
       if (!response.ok || !data.url) {
         throw new Error(data.error ?? "Flyer upload failed.");
@@ -610,10 +623,10 @@ export function EventSubmissionForm() {
         body: JSON.stringify({ flyerUrl }),
       });
 
-      const data = (await response.json()) as {
+      const data = await parseJsonResponse<{
         extracted?: FlyerExtractionResult;
         error?: string;
-      };
+      }>(response);
 
       if (!response.ok || !data.extracted) {
         throw new Error(data.error ?? "Could not extract details from this flyer.");
@@ -752,7 +765,7 @@ export function EventSubmissionForm() {
         }),
       });
 
-      const data = (await response.json()) as {
+      const data = await parseJsonResponse<{
         eventId?: string;
         eventIds?: string[];
         eventCount?: number;
@@ -763,7 +776,7 @@ export function EventSubmissionForm() {
           sent: string[];
           failed: Array<{ email: string; reason: string }>;
         };
-      };
+      }>(response);
 
       if (!response.ok || (!data.eventId && !(data.eventIds && data.eventIds.length > 0))) {
         throw new Error(data.error ?? "Submission failed");
@@ -790,10 +803,10 @@ export function EventSubmissionForm() {
           }),
         });
 
-        const checkoutData = (await checkoutResponse.json()) as {
+        const checkoutData = await parseJsonResponse<{
           url?: string;
           error?: string;
-        };
+        }>(checkoutResponse);
 
         if (!checkoutResponse.ok || !checkoutData.url) {
           throw new Error(
@@ -865,7 +878,7 @@ export function EventSubmissionForm() {
           : "Something went wrong. Please try again.";
       setErrors({
         submit: message.includes("did not match the expected pattern")
-          ? "A field has an invalid format for Safari. Check dates (YYYY-MM-DD), email, phone, and website, then try again."
+          ? "The server returned an unexpected response. Please try again in a moment."
           : message,
       });
     } finally {
@@ -1127,7 +1140,6 @@ export function EventSubmissionForm() {
                 name="startDate"
                 label="Start Date"
                 type="text"
-                inputMode="numeric"
                 placeholder="YYYY-MM-DD"
                 value={sanitizeHtmlDateInputValue(formData.startDate)}
                 onChange={(e) => updateDateField("startDate", e.target.value)}
@@ -1137,7 +1149,6 @@ export function EventSubmissionForm() {
                 name="endDate"
                 label="End Date"
                 type="text"
-                inputMode="numeric"
                 placeholder="YYYY-MM-DD"
                 value={sanitizeHtmlDateInputValue(formData.endDate)}
                 onChange={(e) => updateDateField("endDate", e.target.value)}
@@ -1214,7 +1225,6 @@ export function EventSubmissionForm() {
               <TextInput
                 name="zipCode"
                 label="Zip Code"
-                inputMode="numeric"
                 value={formData.zipCode}
                 onChange={(e) => updateField("zipCode", e.target.value)}
                 error={errors.zipCode}

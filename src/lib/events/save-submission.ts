@@ -122,12 +122,16 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
 export async function saveEventSubmission(submission: EventSubmission) {
   const record = mapSubmissionToEventRecord(submission);
 
-  const { latitude, longitude } = await geocodeCityState(
-    submission.city,
-    submission.state,
-  );
-  record.latitude = latitude;
-  record.longitude = longitude;
+  try {
+    const { latitude, longitude } = await geocodeCityState(
+      submission.city,
+      submission.state,
+    );
+    record.latitude = latitude;
+    record.longitude = longitude;
+  } catch (error) {
+    console.error("[save-submission] Geocoding failed; saving without coordinates:", error);
+  }
 
   const supabase = getSupabaseAdminClient();
 
