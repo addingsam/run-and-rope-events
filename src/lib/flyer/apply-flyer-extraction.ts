@@ -8,6 +8,7 @@ import {
   normalizeFlyerDate,
   normalizeFlyerDateList,
   resolveFlyerEventDates,
+  sanitizeHtmlDateInputValue,
 } from "@/lib/flyer/normalize-flyer-date";
 import {
   inferAmateurRodeoFromText,
@@ -223,6 +224,25 @@ function mapExtractedEventToBatchEntry(
   };
 }
 
+function resolveFlyerContactFields(
+  extracted: FlyerExtractionResult,
+  current: EventSubmission,
+) {
+  let contactEmail = extracted.contactEmail?.trim() || current.contactEmail.trim();
+  let contactPhone = extracted.contactPhone?.trim() || current.contactPhone.trim();
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phonePattern = /^[\d\s().+-]+$/;
+
+  if (contactEmail && !emailPattern.test(contactEmail)) {
+    if (!contactPhone && phonePattern.test(contactEmail)) {
+      contactPhone = contactEmail;
+    }
+    contactEmail = "";
+  }
+
+  return { contactEmail, contactPhone };
+}
+
 export function applyFlyerExtractionToSubmission(
   current: EventSubmission,
   extracted: FlyerExtractionResult,
@@ -299,6 +319,7 @@ export function applyFlyerExtractionToSubmission(
   const useBatchEvents = sanitized.type === "schedule" && batchEvents.length >= 2;
   const singleMappedEvent = mappedBatchEvents.length === 1 ? mappedBatchEvents[0] : null;
   const firstBatchEvent = batchEvents[0] ?? singleMappedEvent?.batchEvent;
+  const contactFields = resolveFlyerContactFields(sanitized, current);
 
   return {
     submission: {
@@ -308,22 +329,26 @@ export function applyFlyerExtractionToSubmission(
       rodeoLevels,
       disciplines,
       additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
-      startDate: useBatchEvents
-        ? firstBatchEvent!.startDate
-        : singleMappedEvent
-          ? singleMappedEvent.batchEvent.startDate
-          : useBatchDates
-            ? batchEventDates[0]
-            : resolvedDates.startDate,
-      endDate: useBatchEvents
-        ? firstBatchEvent!.endDate
-        : singleMappedEvent
-          ? singleMappedEvent.batchEvent.endDate
-          : useBatchDates
-            ? batchEventDates[0]
-            : resolvedDates.endDate,
+      startDate: sanitizeHtmlDateInputValue(
+        useBatchEvents
+          ? firstBatchEvent!.startDate
+          : singleMappedEvent
+            ? singleMappedEvent.batchEvent.startDate
+            : useBatchDates
+              ? batchEventDates[0] ?? ""
+              : resolvedDates.startDate,
+      ),
+      endDate: sanitizeHtmlDateInputValue(
+        useBatchEvents
+          ? firstBatchEvent!.endDate
+          : singleMappedEvent
+            ? singleMappedEvent.batchEvent.endDate
+            : useBatchDates
+              ? batchEventDates[0] ?? ""
+              : resolvedDates.endDate,
+      ),
       entryDeadline: sanitized.entryDeadline
-        ? entryDeadline.date
+        ? sanitizeHtmlDateInputValue(entryDeadline.date)
         : "",
       classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
       venueName: useBatchEvents
@@ -355,8 +380,8 @@ export function applyFlyerExtractionToSubmission(
         resolveFlyerProducerName({ ...sanitized, format: format === "rodeo" ? "Rodeo" : sanitized.format }) ??
         current.producerName,
       producerWebsite: resolveProducerWebsite(sanitized) || current.producerWebsite,
-      contactEmail: sanitized.contactEmail ?? current.contactEmail,
-      contactPhone: sanitized.contactPhone ?? current.contactPhone,
+      contactEmail: contactFields.contactEmail,
+      contactPhone: contactFields.contactPhone,
       entryFee: sanitized.entryFee ?? current.entryFee,
       prizePayoutInfo: sanitized.prizePayoutInfo ?? current.prizePayoutInfo,
       description: buildDescription(sanitized, current.description),
@@ -380,9 +405,18 @@ export function applyFlyerExtractionToSubmission(
         sanitized.entryDeadline && entryDeadline.yearInferred && entryDeadline.date,
       ),
     },
-    batchEventDates: useBatchEvents ? [] : batchEventDates,
+    batchEventDates: useBatchEvents
+      ? []
+      : batchEventDates.map((date) => sanitizeHtmlDateInputValue(date)),
     batchDatesYearInferred: useBatchDates ? normalizedBatch.yearInferred : [],
-    batchEvents,
+    batchEvents: useBatchEvents
+      ? batchEvents.map((event) => ({
+          ...event,
+          startDate: sanitizeHtmlDateInputValue(event.startDate),
+          endDate: sanitizeHtmlDateInputValue(event.endDate),
+          entryDeadline: sanitizeHtmlDateInputValue(event.entryDeadline),
+        }))
+      : [],
     batchEventsYearInferred: useBatchEvents
       ? mappedBatchEvents.map((item) => item.yearInferred)
       : [],

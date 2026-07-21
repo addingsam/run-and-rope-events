@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import {
   themeHintClassName,
   themeInputClassName,
@@ -55,6 +56,7 @@ export function OptionalDateInput({
   }
 
   const addButtonLabel = addLabel ?? `Add ${label.toLowerCase()}`;
+  const safeValue = sanitizeHtmlDateInputValue(value);
 
   return (
     <div>
@@ -65,7 +67,7 @@ export function OptionalDateInput({
         {hint ? <p className={themeHintClassName}>{hint}</p> : null}
       </div>
 
-      {!isEditing && !value ? (
+      {!isEditing && !safeValue ? (
         <div className="flex flex-wrap items-center gap-3">
           <p className={`text-sm ${themeHintClassName}`}>No date selected.</p>
           <button type="button" onClick={openDatePicker} className={themeSecondaryButtonClassName}>
@@ -82,8 +84,8 @@ export function OptionalDateInput({
             autoComplete="off"
             data-1p-ignore="true"
             data-lpignore="true"
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
+            value={safeValue}
+            onChange={(event) => onChange(sanitizeHtmlDateInputValue(event.target.value))}
             onBlur={(event) => {
               if (!event.target.value) {
                 setIsEditing(false);
@@ -94,10 +96,10 @@ export function OptionalDateInput({
           <button
             type="button"
             onClick={clearDate}
-            aria-label={value ? `Clear ${label}` : `Cancel ${label}`}
+            aria-label={safeValue ? `Clear ${label}` : `Cancel ${label}`}
             className="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface)]"
           >
-            {value ? "Clear" : "Cancel"}
+            {safeValue ? "Clear" : "Cancel"}
           </button>
         </div>
       )}

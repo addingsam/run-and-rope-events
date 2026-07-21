@@ -2,6 +2,7 @@
 
 import { formatEventDate } from "@/lib/events/format-date";
 import { uniqueSortedEventDates } from "@/lib/events/expand-batch-submissions";
+import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import {
   themeHintClassName,
   themeLabelClassName,
@@ -28,7 +29,7 @@ export function BatchEventDatesField({
 
   function updateDate(index: number, value: string) {
     const next = [...dates];
-    next[index] = value;
+    next[index] = sanitizeHtmlDateInputValue(value);
     onChange(next);
   }
 
@@ -67,7 +68,7 @@ export function BatchEventDatesField({
               <input
                 id={`eventDates-${index}`}
                 type="date"
-                value={date}
+                value={sanitizeHtmlDateInputValue(date)}
                 onChange={(event) => updateDate(index, event.target.value)}
                 className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-base text-[var(--color-text-primary)] transition-colors focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20"
               />

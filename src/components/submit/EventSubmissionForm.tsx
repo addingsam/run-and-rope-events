@@ -41,6 +41,7 @@ import {
   validateFlyerFile,
 } from "@/lib/flyer/constants";
 import { createFlyerUploadPayload } from "@/lib/flyer/flyer-file-name";
+import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import { US_STATES } from "@/lib/us-states";
 import {
   themeMutedTextClassName,
@@ -491,7 +492,7 @@ export function EventSubmissionForm() {
   }
 
   function updateDateField(field: "startDate" | "endDate" | "entryDeadline", value: string) {
-    updateField(field, value);
+    updateField(field, sanitizeHtmlDateInputValue(value));
     setInferredYearFields((current) => ({ ...current, [field]: false }));
   }
 
@@ -1078,7 +1079,7 @@ export function EventSubmissionForm() {
                 name="startDate"
                 label="Start Date"
                 type="date"
-                value={formData.startDate}
+                value={sanitizeHtmlDateInputValue(formData.startDate)}
                 onChange={(e) => updateDateField("startDate", e.target.value)}
                 error={errors.startDate}
               />
@@ -1086,7 +1087,7 @@ export function EventSubmissionForm() {
                 name="endDate"
                 label="End Date"
                 type="date"
-                value={formData.endDate}
+                value={sanitizeHtmlDateInputValue(formData.endDate)}
                 onChange={(e) => updateDateField("endDate", e.target.value)}
                 error={errors.endDate}
                 hint="Optional — for multi-day events."
@@ -1202,7 +1203,9 @@ export function EventSubmissionForm() {
           <TextInput
             name="contactEmail"
             label="Contact Email"
-            type="email"
+            type="text"
+            inputMode="email"
+            autoComplete="email"
             value={formData.contactEmail}
             onChange={(e) => updateField("contactEmail", e.target.value)}
             error={errors.contactEmail}
@@ -1243,7 +1246,9 @@ export function EventSubmissionForm() {
         <TextInput
           name="submitterEmail"
           label="Submitter Email"
-          type="email"
+          type="text"
+          inputMode="email"
+          autoComplete="email"
           value={formData.submitterEmail}
           onChange={(e) => updateField("submitterEmail", e.target.value)}
           error={errors.submitterEmail}

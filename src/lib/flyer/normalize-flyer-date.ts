@@ -262,3 +262,19 @@ export function normalizeFlyerDateList(
     yearInferred: paired.map((item) => item.yearInferred),
   };
 }
+
+const HTML_DATE_VALUE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Ensures values bound to `<input type="date">` are ISO dates or empty. */
+export function sanitizeHtmlDateInputValue(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (HTML_DATE_VALUE_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+
+  return normalizeFlyerDate(trimmed).date;
+}

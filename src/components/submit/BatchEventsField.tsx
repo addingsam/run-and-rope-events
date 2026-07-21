@@ -2,6 +2,7 @@
 
 import { OptionalDateInput, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import { formatEventDate } from "@/lib/events/format-date";
+import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import {
   getSubmissionDuplicateStatusLabel,
   type ScheduleDuplicateWarning,
@@ -38,7 +39,11 @@ export function BatchEventsField({
     value: BatchEventEntry[K],
   ) {
     const next = [...events];
-    next[index] = { ...next[index], [field]: value };
+    const sanitizedValue =
+      field === "startDate" || field === "endDate" || field === "entryDeadline"
+        ? sanitizeHtmlDateInputValue(String(value))
+        : value;
+    next[index] = { ...next[index], [field]: sanitizedValue as BatchEventEntry[K] };
     onChange(next);
   }
 
@@ -136,7 +141,7 @@ export function BatchEventsField({
                   name={`batchEvents.${index}.startDate`}
                   label="Start Date"
                   type="date"
-                  value={event.startDate}
+                  value={sanitizeHtmlDateInputValue(event.startDate)}
                   onChange={(changeEvent) =>
                     updateEvent(index, "startDate", changeEvent.target.value)
                   }
@@ -146,7 +151,7 @@ export function BatchEventsField({
                   name={`batchEvents.${index}.endDate`}
                   label="End Date"
                   type="date"
-                  value={event.endDate}
+                  value={sanitizeHtmlDateInputValue(event.endDate)}
                   onChange={(changeEvent) =>
                     updateEvent(index, "endDate", changeEvent.target.value)
                   }
