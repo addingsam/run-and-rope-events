@@ -201,7 +201,6 @@ export function BatchEventsField({
                 <TextInput
                   name={`batchEvents.${index}.venueName`}
                   label="Venue Name"
-                  required
                   value={event.venueName}
                   onChange={(changeEvent) =>
                     updateEvent(index, "venueName", changeEvent.target.value)
@@ -220,7 +219,6 @@ export function BatchEventsField({
                   <TextInput
                     name={`batchEvents.${index}.city`}
                     label="City"
-                    required
                     value={event.city}
                     onChange={(changeEvent) =>
                       updateEvent(index, "city", changeEvent.target.value)
@@ -230,7 +228,6 @@ export function BatchEventsField({
                   <SelectInput
                     name={`batchEvents.${index}.state`}
                     label="State"
-                    required
                     value={event.state}
                     onChange={(changeEvent) =>
                       updateEvent(index, "state", changeEvent.target.value)

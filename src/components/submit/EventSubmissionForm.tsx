@@ -697,9 +697,7 @@ export function EventSubmissionForm() {
     };
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleSubmit() {
     if (isUploadingFlyer || isExtractingFlyer) {
       setErrors((current) => ({
         ...current,
@@ -804,7 +802,17 @@ export function EventSubmissionForm() {
           );
         }
 
-        window.location.href = checkoutData.url;
+        try {
+          const checkoutUrl = new URL(checkoutData.url);
+          if (checkoutUrl.protocol !== "http:" && checkoutUrl.protocol !== "https:") {
+            throw new Error("Invalid checkout URL.");
+          }
+          window.location.assign(checkoutUrl.href);
+        } catch {
+          throw new Error(
+            "Your event was saved, but featured checkout could not start. Try again from your confirmation email after approval.",
+          );
+        }
         return;
       }
 
@@ -851,11 +859,14 @@ export function EventSubmissionForm() {
       setBatchEventsYearInferred([]);
       setErrors({});
     } catch (submitError) {
+      const message =
+        submitError instanceof Error
+          ? submitError.message
+          : "Something went wrong. Please try again.";
       setErrors({
-        submit:
-          submitError instanceof Error
-            ? submitError.message
-            : "Something went wrong. Please try again.",
+        submit: message.includes("did not match the expected pattern")
+          ? "A field has an invalid format for Safari. Check dates (YYYY-MM-DD), email, phone, and website, then try again."
+          : message,
       });
     } finally {
       setIsSubmitting(false);
@@ -899,7 +910,7 @@ export function EventSubmissionForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate autoComplete="off">
+    <div className="space-y-6">
       <FormSection
         title="Event Flyer"
         description="Optional — upload your flyer and we'll read it to pre-fill the form below. JPEG, PNG, or PDF up to 10MB."
@@ -1167,7 +1178,6 @@ export function EventSubmissionForm() {
           <TextInput
             name="venueName"
             label="Venue Name"
-            required
             value={formData.venueName}
             onChange={(e) => updateField("venueName", e.target.value)}
             error={errors.venueName}
@@ -1184,7 +1194,6 @@ export function EventSubmissionForm() {
               <TextInput
                 name="city"
                 label="City"
-                required
                 value={formData.city}
                 onChange={(e) => updateField("city", e.target.value)}
                 error={errors.city}
@@ -1194,7 +1203,6 @@ export function EventSubmissionForm() {
               <SelectInput
                 name="state"
                 label="State"
-                required
                 value={formData.state}
                 onChange={(e) => updateField("state", e.target.value)}
                 error={errors.state}
@@ -1245,8 +1253,7 @@ export function EventSubmissionForm() {
             name="contactEmail"
             label="Contact Email"
             type="text"
-            inputMode="email"
-            autoComplete="email"
+            autoComplete="off"
             value={formData.contactEmail}
             onChange={(e) => updateField("contactEmail", e.target.value)}
             error={errors.contactEmail}
@@ -1255,7 +1262,7 @@ export function EventSubmissionForm() {
             name="contactPhone"
             label="Contact Phone"
             type="text"
-            inputMode="tel"
+            autoComplete="off"
             value={formData.contactPhone}
             onChange={(e) =>
               updateField("contactPhone", sanitizeContactPhoneInputValue(e.target.value))
@@ -1291,8 +1298,7 @@ export function EventSubmissionForm() {
           name="submitterEmail"
           label="Submitter Email"
           type="text"
-          inputMode="email"
-          autoComplete="email"
+          autoComplete="off"
           value={formData.submitterEmail}
           onChange={(e) => updateField("submitterEmail", e.target.value)}
           error={errors.submitterEmail}
@@ -1349,7 +1355,8 @@ export function EventSubmissionForm() {
           </p>
         )}
         <button
-          type="submit"
+          type="button"
+          onClick={() => void handleSubmit()}
           disabled={isSubmitting || isUploadingFlyer || isExtractingFlyer}
           className={`mt-5 w-full px-6 py-4 text-base disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${themePrimaryButtonClassName}`}
         >
@@ -1366,6 +1373,6 @@ export function EventSubmissionForm() {
                 : "Submit event — free"}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
