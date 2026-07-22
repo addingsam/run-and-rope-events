@@ -283,7 +283,21 @@ export function applyFlyerExtractionToSubmission(
   const extractedDisciplineValues = disciplineLabelsToValues(extractedDisciplines);
   const disciplines =
     extractedDisciplineValues.length > 0 ? extractedDisciplineValues : current.disciplines;
-  const format = resolveFormatFromDisciplines(disciplines, extractedFormat);
+  const nextGenWebsite = extractNextGenRodeoWebsiteFromText(
+    sanitized.producerWebsite,
+    sanitized.eventName,
+    sanitized.classDivisionInfo,
+    sanitized.prizePayoutInfo,
+    sanitized.additionalNotes,
+    sanitized.contactName,
+  );
+  const isSingleDayNextGenEvent =
+    Boolean(nextGenWebsite) &&
+    sanitized.type === "single" &&
+    (sanitized.events?.length ?? 0) < 2;
+  const formatFallback =
+    isSingleDayNextGenEvent && extractedFormat === "rodeo" ? "jackpot" : extractedFormat;
+  const format = resolveFormatFromDisciplines(disciplines, formatFallback);
   const resolvedRodeoLevelLabel = resolveFlyerRodeoLevelLabel(
     sanitized.rodeoLevel,
     sanitized.eventName,

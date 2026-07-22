@@ -546,6 +546,10 @@ export function EventSubmissionForm() {
     setErrors((current) => {
       const next = { ...current };
       delete next.flyer;
+      delete next.flyerExtraction;
+      delete next.format;
+      delete next.submit;
+      delete next.disciplines;
       return next;
     });
   }
@@ -571,6 +575,10 @@ export function EventSubmissionForm() {
     setErrors((current) => {
       const next = { ...current };
       delete next.flyer;
+      delete next.flyerExtraction;
+      delete next.format;
+      delete next.submit;
+      delete next.disciplines;
       return next;
     });
 

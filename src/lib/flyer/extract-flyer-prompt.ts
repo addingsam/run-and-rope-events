@@ -93,6 +93,8 @@ Rules:
 - Map discipline abbreviations and organization names to the allowed labels when confident. Examples: CMSA or Cowboy Mounted Shooting Association -> "Cowboy Mounted Shooting"; BB or Bareback -> "Bareback Riding (BB)"; SB or Saddle Bronc -> "Saddle Bronc (SB)"; BR or Bull Riding -> "Bull Riding (BR)"; RB or Ranch Bronc -> "Ranch Bronc Riding (RB)"; CBR or CGBR -> "Barrel Racing (CBR/CGBR)"; SW, BD, or Bull Dogging -> "Steer Wrestling / Bull Dogging (SW/BD)"; BA, CBA, BAW, or CGBKR -> "Breakaway Roping (BA/CBA/BAW/CGBKR)"; SR or SRADM -> "Steer Roping (SR/SRADM)"; CR, TD, Tie Down, or Tie Down Roping -> "Calf Roping / Tie Down Roping (CR/TD)".
 - format must be exactly "Jackpot" or "Rodeo" or null.
 - Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail are jackpot events, not rodeos. When any of those disciplines apply, set format to "Jackpot".
+- Ranch Bronc Riding (RB), Bareback (BB), Saddle Bronc (SB), and Bull Riding (BR) may appear on either Jackpot or Rodeo events. Do not treat Ranch Bronc Riding as rodeo-only.
+- NextGen Rodeo single-day performances with multiple disciplines at one location (for example BB, BR, SB, RB, and CBR on the same date) are Jackpot events — set format to "Jackpot" even when the flyer mentions IPRA, NCPRA, or other rodeo associations.
 - rodeoLevel must be exactly one of Youth, Amateur, Open, Pro, or null.
 - Put prize money, added money, payout percentages, or payout structure in prizePayoutInfo.
 - Put class, division, age group, or side-pot details in classDivisionInfo.
