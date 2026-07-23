@@ -1187,6 +1187,8 @@ export function EventSubmissionForm() {
                 onChange={(value) => updateDateField("endDate", value)}
                 error={errors.endDate}
                 hint="Optional — for multi-day events."
+                clearable
+                alwaysShowClear
               />
             </div>
             <button type="button" onClick={startBatchMode} className={themeSecondaryButtonClassName}>

@@ -146,6 +146,8 @@ export function BatchEventsField({
                   onChange={(value) => updateEvent(index, "endDate", value)}
                   error={errors[`batchEvents.${index}.endDate`]}
                   hint="Optional — for multi-day stops."
+                  clearable
+                  alwaysShowClear
                 />
               </div>
 
