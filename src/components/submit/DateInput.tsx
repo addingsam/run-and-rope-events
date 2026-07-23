@@ -2,7 +2,7 @@
 
 import { forwardRef } from "react";
 import { FieldLabel } from "@/components/submit/FormField";
-import { commitDateInputValue, toHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
+import { toHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import { themeInputClassName } from "@/lib/theme/form-classes";
 
 interface DateInputProps
@@ -34,10 +34,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function D
         data-lpignore="true"
         value={toHtmlDateInputValue(value)}
         onChange={(event) => onChange(event.target.value)}
-        onBlur={(event) => {
-          onChange(commitDateInputValue(event.target.value));
-          onBlur?.(event);
-        }}
+        onBlur={onBlur}
         className={`${themeInputClassName} cursor-pointer ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""} ${className ?? ""}`}
         {...props}
       />
