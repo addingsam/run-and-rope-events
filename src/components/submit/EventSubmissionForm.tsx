@@ -13,7 +13,7 @@ import {
   FeaturedPlacementField,
   type FeaturedPlacementChoice,
 } from "@/components/submit/FeaturedPlacementField";
-import { CheckboxGroup, OptionalDateInput, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
+import { CheckboxGroup, DateInput, OptionalDateInput, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import {
   DISCIPLINE_OPTIONS,
   filterDisciplinesForFormat,
@@ -44,7 +44,7 @@ import {
 } from "@/lib/flyer/constants";
 import { createFlyerUploadPayload } from "@/lib/flyer/flyer-file-name";
 import { uploadFlyerFromClient } from "@/lib/flyer/upload-flyer-from-client";
-import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
+import { commitDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import { US_STATES } from "@/lib/us-states";
 import {
   themeMutedTextClassName,
@@ -528,7 +528,7 @@ export function EventSubmissionForm() {
   }
 
   function updateDateField(field: "startDate" | "endDate" | "entryDeadline", value: string) {
-    updateField(field, sanitizeHtmlDateInputValue(value));
+    updateField(field, value);
     setInferredYearFields((current) => ({ ...current, [field]: false }));
   }
 
@@ -706,20 +706,18 @@ export function EventSubmissionForm() {
   function sanitizeFormInputsForSubmit() {
     const sanitizedFormData = slimEventSubmissionForTransport({
       ...formData,
-      startDate: sanitizeHtmlDateInputValue(formData.startDate),
-      endDate: sanitizeHtmlDateInputValue(formData.endDate),
-      entryDeadline: sanitizeHtmlDateInputValue(formData.entryDeadline),
+      startDate: commitDateInputValue(formData.startDate),
+      endDate: commitDateInputValue(formData.endDate),
+      entryDeadline: commitDateInputValue(formData.entryDeadline),
       contactPhone: sanitizeContactPhoneInputValue(formData.contactPhone),
     });
-    const sanitizedBatchEventDates = batchEventDates.map((date) =>
-      sanitizeHtmlDateInputValue(date),
-    );
+    const sanitizedBatchEventDates = batchEventDates.map((date) => commitDateInputValue(date));
     const sanitizedBatchEvents = slimBatchEventsForTransport(
       batchEvents.map((event) => ({
         ...event,
-        startDate: sanitizeHtmlDateInputValue(event.startDate),
-        endDate: sanitizeHtmlDateInputValue(event.endDate),
-        entryDeadline: sanitizeHtmlDateInputValue(event.entryDeadline),
+        startDate: commitDateInputValue(event.startDate),
+        endDate: commitDateInputValue(event.endDate),
+        entryDeadline: commitDateInputValue(event.entryDeadline),
       })),
     );
 
@@ -1073,6 +1071,7 @@ export function EventSubmissionForm() {
         <TextInput
           name="eventName"
           label="Event Name"
+          autoComplete="off"
           value={formData.eventName}
           onChange={(e) => updateField("eventName", e.target.value)}
           error={errors.eventName}
@@ -1173,22 +1172,19 @@ export function EventSubmissionForm() {
         ) : (
           <>
             <div className="grid gap-5 sm:grid-cols-2">
-              <TextInput
+              <DateInput
                 name="startDate"
                 label="Start Date"
-                type="text"
-                placeholder="YYYY-MM-DD"
-                value={sanitizeHtmlDateInputValue(formData.startDate)}
-                onChange={(e) => updateDateField("startDate", e.target.value)}
+                required
+                value={formData.startDate}
+                onChange={(value) => updateDateField("startDate", value)}
                 error={errors.startDate}
               />
-              <TextInput
+              <DateInput
                 name="endDate"
                 label="End Date"
-                type="text"
-                placeholder="YYYY-MM-DD"
-                value={sanitizeHtmlDateInputValue(formData.endDate)}
-                onChange={(e) => updateDateField("endDate", e.target.value)}
+                value={formData.endDate}
+                onChange={(value) => updateDateField("endDate", value)}
                 error={errors.endDate}
                 hint="Optional — for multi-day events."
               />

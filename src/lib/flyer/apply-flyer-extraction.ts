@@ -8,7 +8,7 @@ import {
   normalizeFlyerDate,
   normalizeFlyerDateList,
   resolveFlyerEventDates,
-  sanitizeHtmlDateInputValue,
+  toHtmlDateInputValue,
 } from "@/lib/flyer/normalize-flyer-date";
 import {
   inferAmateurRodeoFromText,
@@ -357,7 +357,7 @@ export function applyFlyerExtractionToSubmission(
       rodeoLevels,
       disciplines,
       additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
-      startDate: sanitizeHtmlDateInputValue(
+      startDate: toHtmlDateInputValue(
         useBatchEvents
           ? firstBatchEvent!.startDate
           : singleMappedEvent
@@ -366,7 +366,7 @@ export function applyFlyerExtractionToSubmission(
               ? batchEventDates[0] ?? ""
               : resolvedDates.startDate,
       ),
-      endDate: sanitizeHtmlDateInputValue(
+      endDate: toHtmlDateInputValue(
         useBatchEvents
           ? firstBatchEvent!.endDate
           : singleMappedEvent
@@ -376,7 +376,7 @@ export function applyFlyerExtractionToSubmission(
               : resolvedDates.endDate,
       ),
       entryDeadline: sanitized.entryDeadline
-        ? sanitizeHtmlDateInputValue(entryDeadline.date)
+        ? toHtmlDateInputValue(entryDeadline.date)
         : "",
       classDivisionInfo: sanitized.classDivisionInfo ?? current.classDivisionInfo,
       venueName: useBatchEvents
@@ -435,14 +435,14 @@ export function applyFlyerExtractionToSubmission(
     },
     batchEventDates: useBatchEvents
       ? []
-      : batchEventDates.map((date) => sanitizeHtmlDateInputValue(date)),
+      : batchEventDates.map((date) => toHtmlDateInputValue(date)),
     batchDatesYearInferred: useBatchDates ? normalizedBatch.yearInferred : [],
     batchEvents: useBatchEvents
       ? batchEvents.map((event) => ({
           ...event,
-          startDate: sanitizeHtmlDateInputValue(event.startDate),
-          endDate: sanitizeHtmlDateInputValue(event.endDate),
-          entryDeadline: sanitizeHtmlDateInputValue(event.entryDeadline),
+          startDate: toHtmlDateInputValue(event.startDate),
+          endDate: toHtmlDateInputValue(event.endDate),
+          entryDeadline: toHtmlDateInputValue(event.entryDeadline),
         }))
       : [],
     batchEventsYearInferred: useBatchEvents

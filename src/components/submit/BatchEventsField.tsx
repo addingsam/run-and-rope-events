@@ -1,8 +1,7 @@
 "use client";
 
-import { OptionalDateInput, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import { formatEventDate } from "@/lib/events/format-date";
-import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
+import { DateInput, OptionalDateInput, SelectInput, TextArea, TextInput } from "@/components/submit/FormField";
 import {
   getSubmissionDuplicateStatusLabel,
   type ScheduleDuplicateWarning,
@@ -39,11 +38,7 @@ export function BatchEventsField({
     value: BatchEventEntry[K],
   ) {
     const next = [...events];
-    const sanitizedValue =
-      field === "startDate" || field === "endDate" || field === "entryDeadline"
-        ? sanitizeHtmlDateInputValue(String(value))
-        : value;
-    next[index] = { ...next[index], [field]: sanitizedValue as BatchEventEntry[K] };
+    next[index] = { ...next[index], [field]: value };
     onChange(next);
   }
 
@@ -137,26 +132,18 @@ export function BatchEventsField({
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextInput
+                <DateInput
                   name={`batchEvents.${index}.startDate`}
                   label="Start Date"
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={sanitizeHtmlDateInputValue(event.startDate)}
-                  onChange={(changeEvent) =>
-                    updateEvent(index, "startDate", changeEvent.target.value)
-                  }
+                  value={event.startDate}
+                  onChange={(value) => updateEvent(index, "startDate", value)}
                   error={errors[`batchEvents.${index}.startDate`]}
                 />
-                <TextInput
+                <DateInput
                   name={`batchEvents.${index}.endDate`}
                   label="End Date"
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={sanitizeHtmlDateInputValue(event.endDate)}
-                  onChange={(changeEvent) =>
-                    updateEvent(index, "endDate", changeEvent.target.value)
-                  }
+                  value={event.endDate}
+                  onChange={(value) => updateEvent(index, "endDate", value)}
                   error={errors[`batchEvents.${index}.endDate`]}
                   hint="Optional — for multi-day stops."
                 />

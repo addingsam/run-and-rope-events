@@ -208,3 +208,4 @@ export function CheckboxGroup({
 }
 
 export { OptionalDateInput } from "@/components/submit/OptionalDateInput";
+export { DateInput } from "@/components/submit/DateInput";

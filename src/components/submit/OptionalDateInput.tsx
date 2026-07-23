@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
+import { commitDateInputValue, toHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
 import {
   themeHintClassName,
   themeInputClassName,
@@ -31,15 +31,11 @@ export function OptionalDateInput({
   const fallbackId = useId();
   const fieldId = id || fallbackId;
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isEditing, setIsEditing] = useState(Boolean(value));
+  const displayValue = toHtmlDateInputValue(value);
+  const [isEditing, setIsEditing] = useState(Boolean(displayValue));
 
   useEffect(() => {
-    if (value) {
-      setIsEditing(true);
-      return;
-    }
-
-    setIsEditing(false);
+    setIsEditing(Boolean(toHtmlDateInputValue(value)));
   }, [value]);
 
   function clearDate() {
@@ -51,11 +47,11 @@ export function OptionalDateInput({
     setIsEditing(true);
     requestAnimationFrame(() => {
       inputRef.current?.focus();
+      inputRef.current?.showPicker?.();
     });
   }
 
   const addButtonLabel = addLabel ?? `Add ${label.toLowerCase()}`;
-  const safeValue = sanitizeHtmlDateInputValue(value);
 
   return (
     <div>
@@ -66,7 +62,7 @@ export function OptionalDateInput({
         {hint ? <p className={themeHintClassName}>{hint}</p> : null}
       </div>
 
-      {!isEditing && !safeValue ? (
+      {!isEditing && !displayValue ? (
         <div className="flex flex-wrap items-center gap-3">
           <p className={`text-sm ${themeHintClassName}`}>No date selected.</p>
           <button type="button" onClick={openDatePicker} className={themeSecondaryButtonClassName}>
@@ -79,27 +75,27 @@ export function OptionalDateInput({
             ref={inputRef}
             id={fieldId}
             name={fieldId}
-            type="text"
-            placeholder="YYYY-MM-DD"
+            type="date"
             autoComplete="off"
             data-1p-ignore="true"
             data-lpignore="true"
-            value={safeValue}
-            onChange={(event) => onChange(sanitizeHtmlDateInputValue(event.target.value))}
+            value={displayValue}
+            onChange={(event) => onChange(event.target.value)}
             onBlur={(event) => {
-              if (!event.target.value) {
+              onChange(commitDateInputValue(event.target.value));
+              if (!toHtmlDateInputValue(event.target.value)) {
                 setIsEditing(false);
               }
             }}
-            className={`${themeInputClassName} min-w-0 flex-1 ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""}`}
+            className={`${themeInputClassName} min-w-0 flex-1 cursor-pointer ${error ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""}`}
           />
           <button
             type="button"
             onClick={clearDate}
-            aria-label={safeValue ? `Clear ${label}` : `Cancel ${label}`}
+            aria-label={displayValue ? `Clear ${label}` : `Cancel ${label}`}
             className="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface)]"
           >
-            {safeValue ? "Clear" : "Cancel"}
+            {displayValue ? "Clear" : "Cancel"}
           </button>
         </div>
       )}

@@ -300,3 +300,23 @@ export function sanitizeHtmlDateInputValue(value: string): string {
 
   return candidate && isValidHtmlDateInputValue(candidate) ? candidate : "";
 }
+
+/** Normalizes flyer or user-entered dates for `<input type="date">` display. */
+export function toHtmlDateInputValue(value: string, referenceDate: Date = new Date()): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (HTML_DATE_VALUE_PATTERN.test(trimmed) && isValidHtmlDateInputValue(trimmed)) {
+    return trimmed;
+  }
+
+  const normalized = normalizeFlyerDate(trimmed, referenceDate).date;
+  return normalized && isValidHtmlDateInputValue(normalized) ? normalized : "";
+}
+
+/** Commits a date field value after editing (blur or submit). */
+export function commitDateInputValue(value: string, referenceDate: Date = new Date()): string {
+  return toHtmlDateInputValue(value, referenceDate);
+}

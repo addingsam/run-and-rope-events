@@ -2,7 +2,7 @@
 
 import { formatEventDate } from "@/lib/events/format-date";
 import { uniqueSortedEventDates } from "@/lib/events/expand-batch-submissions";
-import { sanitizeHtmlDateInputValue } from "@/lib/flyer/normalize-flyer-date";
+import { DateInput } from "@/components/submit/FormField";
 import {
   themeHintClassName,
   themeLabelClassName,
@@ -29,7 +29,7 @@ export function BatchEventDatesField({
 
   function updateDate(index: number, value: string) {
     const next = [...dates];
-    next[index] = sanitizeHtmlDateInputValue(value);
+    next[index] = value;
     onChange(next);
   }
 
@@ -62,21 +62,15 @@ export function BatchEventDatesField({
         {dates.map((date, index) => (
           <li key={`batch-date-${index}`} className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <label htmlFor={`eventDates-${index}`} className="mb-2 block text-sm font-semibold text-[var(--color-text-primary)]">
-                Event date {index + 1}
-              </label>
-              <input
+              <DateInput
                 id={`eventDates-${index}`}
-                type="text"
-                placeholder="YYYY-MM-DD"
-                autoComplete="off"
-                value={sanitizeHtmlDateInputValue(date)}
-                onChange={(event) => updateDate(index, event.target.value)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-base text-[var(--color-text-primary)] transition-colors focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/20"
+                name={`eventDates-${index}`}
+                label={`Event date ${index + 1}`}
+                value={date}
+                onChange={(value) => updateDate(index, value)}
+                error={errors[`eventDates.${index}`]}
               />
-              {errors[`eventDates.${index}`] ? (
-                <p className="mt-2 text-sm text-red-400">{errors[`eventDates.${index}`]}</p>
-              ) : date ? (
+              {!errors[`eventDates.${index}`] && date ? (
                 <p className={`mt-2 text-sm ${themeMutedTextClassName}`}>{formatEventDate(date)}</p>
               ) : null}
             </div>
