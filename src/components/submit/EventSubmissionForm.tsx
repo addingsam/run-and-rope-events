@@ -128,9 +128,6 @@ const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
   "featurePlacement",
 ];
 
-const blockedProducerNoticeClassName =
-  "rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm leading-6 text-[var(--color-text-primary)]";
-
 function isBlockedProducerRejection(errors: FormErrors) {
   return Boolean(
     errors.blockedProducer ||
@@ -1096,7 +1093,7 @@ export function EventSubmissionForm() {
           )}
           {errors.flyerExtraction &&
             (isBlockedProducerRejection(errors) ? (
-              <BlockedProducerNotice className={`mt-3 ${blockedProducerNoticeClassName}`} />
+              <BlockedProducerNotice className="mt-3" />
             ) : (
               <p className="mt-3 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
                 {errors.flyerExtraction}
@@ -1449,14 +1446,14 @@ export function EventSubmissionForm() {
         </p>
         {errors.submit &&
           (isBlockedProducerRejection(errors) ? (
-            <BlockedProducerNotice className={blockedProducerNoticeClassName} />
+            <BlockedProducerNotice className="mt-4" />
           ) : (
             <p className="mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
               {errors.submit}
             </p>
           ))}
         {errors.blockedProducer && !errors.submit && (
-          <BlockedProducerNotice className={blockedProducerNoticeClassName} />
+          <BlockedProducerNotice className="mt-4" />
         )}
         <button
           type="button"
