@@ -9,6 +9,7 @@ export interface SavedEventRecord {
 export interface SavedEventWithDetails extends SavedEventRecord {
   event_name: string;
   event_date: string;
+  event_end_date: string | null;
   address_city: string;
   address_state: string;
   event_format: string | null;

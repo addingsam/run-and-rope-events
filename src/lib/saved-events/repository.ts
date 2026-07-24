@@ -6,7 +6,7 @@ export async function listSavedEvents(userId: string) {
   const { data, error } = await supabase
     .from("saved_events")
     .select(
-      "id, user_id, event_id, saved_at, archive_notified_at, events(event_name, event_date, address_city, address_state, event_format, status)",
+      "id, user_id, event_id, saved_at, archive_notified_at, events(event_name, event_date, event_end_date, address_city, address_state, event_format, status)",
     )
     .eq("user_id", userId)
     .order("saved_at", { ascending: false });
@@ -25,6 +25,7 @@ export async function listSavedEvents(userId: string) {
       archive_notified_at: row.archive_notified_at,
       event_name: event?.event_name ?? "Event",
       event_date: event?.event_date ?? "",
+      event_end_date: event?.event_end_date ?? null,
       address_city: event?.address_city ?? "",
       address_state: event?.address_state ?? "",
       event_format: event?.event_format ?? null,

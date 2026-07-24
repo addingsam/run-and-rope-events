@@ -75,6 +75,12 @@ export default async function DashboardPage() {
         >
           Submit your event - Free
         </Link>
+        <Link
+          href="/dashboard/calendar"
+          className="mt-3 inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-background)]"
+        >
+          Open your calendar
+        </Link>
       </div>
 
       <section className="space-y-4">
@@ -91,7 +97,15 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-12 space-y-4">
-        <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Saved events</h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Saved events</h2>
+          <Link
+            href="/dashboard/calendar"
+            className="text-sm font-semibold text-[var(--color-accent-primary)] hover:text-[var(--color-text-primary)]"
+          >
+            View calendar
+          </Link>
+        </div>
         <SavedEventsPanel initialEvents={events} />
       </section>
     </div>

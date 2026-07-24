@@ -89,6 +89,9 @@ export function Header() {
           ))}
 
           <Show when="signed-in">
+            <Link href="/dashboard/calendar" className={headerTextClassName}>
+              Calendar
+            </Link>
             <Link href="/dashboard" className={headerTextClassName}>
               Profile
             </Link>
@@ -153,6 +156,17 @@ export function Header() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Show when="signed-in">
+                <Link
+                  href="/dashboard/calendar"
+                  className={mobileNavLinkClassName}
+                  onClick={closeMobileMenu}
+                >
+                  Calendar
+                </Link>
+              </Show>
+            </li>
             <li>
               <Show when="signed-in">
                 <Link
