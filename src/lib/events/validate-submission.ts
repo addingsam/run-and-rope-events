@@ -16,9 +16,6 @@ export function validateEventSubmission(
   if (data.format === "rodeo" && data.rodeoLevels.length === 0) {
     errors.rodeoLevels = "Select at least one rodeo level.";
   }
-  if (data.disciplines.length === 0) {
-    errors.disciplines = "Select at least one discipline.";
-  }
   if (
     data.format === "rodeo" &&
     data.disciplines.some((discipline) => isJackpotOnlyDiscipline(discipline))

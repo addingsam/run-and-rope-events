@@ -1089,6 +1089,7 @@ export function EventSubmissionForm() {
           <CheckboxGroup
             label="Rodeo level(s)"
             hint="ACRA, IPRA, KPRA, URA, CRRA, UPRA, RCA, and MRCA events are Amateur rodeos. Select all levels that apply."
+            required
             options={RODEO_LEVEL_OPTIONS}
             values={formData.rodeoLevels}
             onChange={(values) => handleRodeoLevelsChange(values as RodeoLevel[])}
@@ -1100,8 +1101,8 @@ export function EventSubmissionForm() {
           label={formData.format === "jackpot" ? "Jackpot structure" : "Discipline(s)"}
           hint={
             formData.format === "jackpot"
-              ? "Select all jackpot structures that apply to this event."
-              : "Select all disciplines that apply to this event."
+              ? "Optional — select all jackpot structures that apply to this event."
+              : "Optional — select all disciplines that apply to this event."
           }
           options={getDisciplineOptionsForFormat(formData.format)}
           values={formData.disciplines}
