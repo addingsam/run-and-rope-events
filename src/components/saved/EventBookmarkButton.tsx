@@ -11,18 +11,24 @@ interface EventBookmarkButtonProps {
   size?: "sm" | "md";
 }
 
-function BookmarkIcon({ filled }: { filled: boolean }) {
+function BookmarkIcon({ filled, size = "md" }: { filled: boolean; size?: "sm" | "md" }) {
   return (
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className={`h-5 w-5 ${filled ? "fill-[var(--color-accent-cta)] text-[var(--color-accent-cta)]" : "fill-none text-[var(--color-accent-primary)]"}`}
+      className={`${size === "sm" ? "h-4 w-4" : "h-5 w-5"} ${filled ? "fill-[var(--color-accent-cta)] text-[var(--color-accent-cta)]" : "fill-none text-[var(--color-accent-primary)]"}`}
       stroke="currentColor"
       strokeWidth="1.75"
     >
       <path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V20l-6-3.5L6 20V4.5z" />
     </svg>
   );
+}
+
+function buttonClassName(size: "sm" | "md", className: string) {
+  return `inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 font-semibold text-[var(--color-accent-primary)] shadow-sm backdrop-blur transition-colors hover:bg-[var(--color-background)] ${
+    size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-3.5 py-2 text-sm"
+  } ${className}`;
 }
 
 export function EventBookmarkButton({
@@ -39,13 +45,12 @@ export function EventBookmarkButton({
     return (
       <Link
         href={`/sign-in?redirect_url=${encodeURIComponent("/events")}`}
-        className={`inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 text-[var(--color-accent-primary)] shadow-sm backdrop-blur transition-colors hover:bg-[var(--color-background)] ${
-          size === "sm" ? "h-8 w-8" : "h-10 w-10"
-        } ${className}`}
+        className={buttonClassName(size, className)}
         aria-label="Sign in to save events"
         title="Sign in to save events"
       >
-        <BookmarkIcon filled={false} />
+        <BookmarkIcon filled={false} size={size} />
+        <span>Save</span>
       </Link>
     );
   }
@@ -76,13 +81,12 @@ export function EventBookmarkButton({
         type="button"
         onClick={(clickEvent) => void handleClick(clickEvent)}
         disabled={loading || pending}
-        className={`inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 text-[var(--color-accent-primary)] shadow-sm backdrop-blur transition-colors hover:bg-[var(--color-background)] disabled:opacity-60 ${
-          size === "sm" ? "h-8 w-8" : "h-10 w-10"
-        } ${className}`}
+        className={`${buttonClassName(size, className)} disabled:opacity-60`}
         aria-label={label}
         title={label}
       >
-        <BookmarkIcon filled={saved} />
+        <BookmarkIcon filled={saved} size={size} />
+        <span>{saved ? "Saved" : "Save"}</span>
       </button>
       {error && (
         <p className="absolute right-0 top-full z-10 mt-1 w-40 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-800">
