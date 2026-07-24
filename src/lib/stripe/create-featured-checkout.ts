@@ -36,6 +36,7 @@ export async function createFeaturedCheckoutSession({
   const session = await stripe.checkout.sessions.create({
     mode: billingType === "recurring" ? "subscription" : "payment",
     customer_email: email,
+    allow_promotion_codes: true,
     custom_text: getStripeCheckoutCustomText(
       `Complete checkout to feature this event on ${APP_NAME}.`,
     ),
