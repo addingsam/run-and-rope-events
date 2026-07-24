@@ -23,7 +23,12 @@ export function SubscriberEventCard({ event }: SubscriberEventCardProps) {
       className={`relative overflow-hidden shadow-sm transition-shadow hover:shadow-md ${themePanelClassName}`}
     >
       <div className="absolute right-3 top-3 z-10">
-        <EventBookmarkButton eventId={event.id} eventTitle={event.title} size="sm" />
+        <EventBookmarkButton
+          eventId={event.id}
+          eventTitle={event.title}
+          size="sm"
+          overlay
+        />
       </div>
 
       <EventFlyerTrigger

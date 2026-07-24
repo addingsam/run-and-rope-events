@@ -54,7 +54,12 @@ export function RouteEventListItem({ event, isSubscriber }: RouteEventListItemPr
       className={`relative p-4 shadow-sm transition-shadow hover:shadow-md ${themePanelClassName}`}
     >
       <div className="absolute right-3 top-3 z-10">
-        <EventBookmarkButton eventId={event.id} eventTitle={event.title} size="sm" />
+        <EventBookmarkButton
+          eventId={event.id}
+          eventTitle={event.title}
+          size="sm"
+          overlay
+        />
       </div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
