@@ -2,8 +2,10 @@ import type { BatchEventEntry, EventSubmission } from "@/types/event-submission"
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 import type { EventRecord } from "@/types/event-record";
 
+export const BLOCKED_PRODUCER_CONTACT_EMAIL = "jackpotandrodeoevents@gmail.com";
+
 export const BLOCKED_PRODUCER_ERROR_MESSAGE =
-  "Thank you for your submission. This particular event cannot be accepted. Please reach out to us at jackpotandrodeoevents@gmail.com if you have further questions.";
+  `Thank you for your submission. This particular event cannot be accepted. Please reach out to us at ${BLOCKED_PRODUCER_CONTACT_EMAIL} if you have further questions.`;
 
 const BLOCKED_PRODUCER_NAMES = [
   "Go Fast Productions",

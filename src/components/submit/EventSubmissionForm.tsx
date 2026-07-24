@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BatchEventDatesField } from "@/components/submit/BatchEventDatesField";
 import { BatchEventsField } from "@/components/submit/BatchEventsField";
+import { BlockedProducerNotice } from "@/components/submit/BlockedProducerNotice";
 import {
   BatchSubmissionSummary,
   getBatchSubmissionCount,
@@ -1093,17 +1094,14 @@ export function EventSubmissionForm() {
               {flyerExtractionMessage}
             </p>
           )}
-          {errors.flyerExtraction && (
-            <p
-              className={`mt-3 ${
-                isBlockedProducerRejection(errors)
-                  ? blockedProducerNoticeClassName
-                  : "rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300"
-              }`}
-            >
-              {errors.flyerExtraction}
-            </p>
-          )}
+          {errors.flyerExtraction &&
+            (isBlockedProducerRejection(errors) ? (
+              <BlockedProducerNotice className={`mt-3 ${blockedProducerNoticeClassName}`} />
+            ) : (
+              <p className="mt-3 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+                {errors.flyerExtraction}
+              </p>
+            ))}
           {errors.flyer && <p className="mt-2 text-sm text-red-700">{errors.flyer}</p>}
         </div>
       </FormSection>
@@ -1449,19 +1447,16 @@ export function EventSubmissionForm() {
           confirm venue name, city, and state before submitting. Homepage featuring below is
           optional and is the only paid step.
         </p>
-        {errors.submit && (
-          <p
-            className={
-              isBlockedProducerRejection(errors)
-                ? blockedProducerNoticeClassName
-                : "mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300"
-            }
-          >
-            {errors.submit}
-          </p>
-        )}
+        {errors.submit &&
+          (isBlockedProducerRejection(errors) ? (
+            <BlockedProducerNotice className={blockedProducerNoticeClassName} />
+          ) : (
+            <p className="mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+              {errors.submit}
+            </p>
+          ))}
         {errors.blockedProducer && !errors.submit && (
-          <p className={blockedProducerNoticeClassName}>{errors.blockedProducer}</p>
+          <BlockedProducerNotice className={blockedProducerNoticeClassName} />
         )}
         <button
           type="button"
