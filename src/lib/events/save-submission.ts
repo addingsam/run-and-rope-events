@@ -8,6 +8,10 @@ import { resolveSubmissionRodeoLevels } from "@/lib/events/amateur-rodeo-associa
 import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
 import { normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
 import { normalizeEventSubmissionVenue } from "@/lib/events/resolve-venue-name";
+import {
+  BLOCKED_PRODUCER_ERROR_MESSAGE,
+  submissionContainsBlockedProducer,
+} from "@/lib/events/blocked-producers";
 import { submissionSourceToRecordSource } from "@/lib/events/validate-submission";
 import { geocodeCityState } from "@/lib/geocoding/geocode-city-state";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -120,6 +124,10 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
 }
 
 export async function saveEventSubmission(submission: EventSubmission) {
+  if (submissionContainsBlockedProducer(submission)) {
+    throw new Error(BLOCKED_PRODUCER_ERROR_MESSAGE);
+  }
+
   const record = mapSubmissionToEventRecord(submission);
 
   try {

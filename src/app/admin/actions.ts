@@ -6,12 +6,21 @@ import {
   updateEventFromSubmission,
   updateEventStatus,
 } from "@/lib/events/admin-repository";
+import {
+  BLOCKED_PRODUCER_ERROR_MESSAGE,
+  eventRecordContainsBlockedProducer,
+  submissionContainsBlockedProducer,
+} from "@/lib/events/blocked-producers";
 import { mapEventRecordToSubmission } from "@/lib/events/map-record-to-submission";
 import { requireAdminUser } from "@/lib/auth/require-admin";
 import type { EventSubmission } from "@/types/event-submission";
 
 export async function approveEventAction(eventId: string) {
   await requireAdminUser();
+  const record = await getEventByIdForAdmin(eventId);
+  if (eventRecordContainsBlockedProducer(record)) {
+    throw new Error(BLOCKED_PRODUCER_ERROR_MESSAGE);
+  }
   await updateEventStatus(eventId, "approved");
   revalidatePath("/admin");
   revalidatePath("/events");
@@ -25,6 +34,9 @@ export async function rejectEventAction(eventId: string) {
 
 export async function updateEventAction(eventId: string, submission: EventSubmission) {
   await requireAdminUser();
+  if (submissionContainsBlockedProducer(submission)) {
+    throw new Error(BLOCKED_PRODUCER_ERROR_MESSAGE);
+  }
   await updateEventFromSubmission(eventId, submission);
   revalidatePath("/admin");
   revalidatePath("/events");
@@ -35,6 +47,9 @@ export async function updateAndApproveEventAction(
   submission: EventSubmission,
 ) {
   await requireAdminUser();
+  if (submissionContainsBlockedProducer(submission)) {
+    throw new Error(BLOCKED_PRODUCER_ERROR_MESSAGE);
+  }
   await updateEventFromSubmission(eventId, submission);
   await updateEventStatus(eventId, "approved");
   revalidatePath("/admin");

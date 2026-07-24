@@ -36,6 +36,11 @@ import {
   sanitizeContactPhoneInputValue,
   type FlyerInferredYearFields,
 } from "@/lib/flyer/apply-flyer-extraction";
+import {
+  BLOCKED_PRODUCER_ERROR_MESSAGE,
+  flyerExtractionContainsBlockedProducer,
+  submissionContainsBlockedProducer,
+} from "@/lib/events/blocked-producers";
 import { coerceFlyerExtractionResult } from "@/lib/flyer/parse-flyer-extraction";
 import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
@@ -89,6 +94,7 @@ type FormErrors = Partial<
     | "disciplines"
     | "featurePlacement"
     | "flyerExtraction"
+    | "blockedProducer"
     | "submit"
     | "eventDates"
     | "batchEvents",
@@ -99,6 +105,7 @@ type FormErrors = Partial<
 const ERROR_FIELD_ORDER: Array<keyof FormErrors> = [
   "flyer",
   "flyerExtraction",
+  "blockedProducer",
   "eventName",
   "format",
   "rodeoLevels",
@@ -162,8 +169,10 @@ function validateForm(
   batchEventDates: string[],
   batchEvents: BatchEventEntry[],
 ): FormErrors {
-  const errors: FormErrors = validateEventSubmission(data, "flyer");
   const isMultiEventBatch = batchEvents.length >= 2;
+  const errors: FormErrors = validateEventSubmission(data, "flyer", {
+    batchEvents: isMultiEventBatch ? batchEvents : [],
+  });
 
   if (isMultiEventBatch) {
     Object.assign(errors, validateBatchEvents(batchEvents));
@@ -655,6 +664,8 @@ export function EventSubmissionForm() {
       }
 
       const coercedExtraction = coerceFlyerExtractionResult(data.extracted);
+      const blockedProducerDetected =
+        flyerExtractionContainsBlockedProducer(coercedExtraction);
       const extractionResult = applyFlyerExtractionToSubmission(
         formDataRef.current,
         coercedExtraction,
@@ -662,6 +673,29 @@ export function EventSubmissionForm() {
 
       if (!extractionResult?.submission) {
         throw new Error("Could not apply flyer extraction to the form.");
+      }
+
+      const blockedInAppliedSubmission = submissionContainsBlockedProducer(
+        extractionResult.submission,
+        { batchEvents: extractionResult.batchEvents ?? [] },
+      );
+
+      if (blockedProducerDetected || blockedInAppliedSubmission) {
+        setFormData(slimEventSubmissionForTransport(extractionResult.submission));
+        setBatchEventDates(extractionResult.batchEventDates ?? []);
+        setBatchEvents(slimBatchEventsForTransport(extractionResult.batchEvents ?? []));
+        setBatchEventsYearInferred(extractionResult.batchEventsYearInferred ?? []);
+        setFlyerLayoutType(extractionResult.layoutType ?? "single");
+        setScheduleDuplicateWarnings([]);
+        setInferredYearFields(
+          extractionResult.inferredYearFields ?? EMPTY_FLYER_INFERRED_YEAR_FIELDS,
+        );
+        setFlyerExtractionMessage(null);
+        setErrors({
+          blockedProducer: BLOCKED_PRODUCER_ERROR_MESSAGE,
+          flyerExtraction: BLOCKED_PRODUCER_ERROR_MESSAGE,
+        });
+        return;
       }
 
       const batchDates = extractionResult.batchEventDates ?? [];
@@ -767,7 +801,9 @@ export function EventSubmissionForm() {
       const errorCount = Object.keys(validationErrors).length;
       setErrors({
         ...validationErrors,
-        submit: `Please fix ${errorCount} required field${errorCount === 1 ? "" : "s"} highlighted above.`,
+        submit: validationErrors.blockedProducer
+          ? BLOCKED_PRODUCER_ERROR_MESSAGE
+          : `Please fix ${errorCount} required field${errorCount === 1 ? "" : "s"} highlighted above.`,
       });
       requestAnimationFrame(() => scrollToFirstFormError(validationErrors));
       return;
@@ -1399,6 +1435,11 @@ export function EventSubmissionForm() {
         {errors.submit && (
           <p className="mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
             {errors.submit}
+          </p>
+        )}
+        {errors.blockedProducer && !errors.submit && (
+          <p className="mt-4 rounded-xl border border-red-400/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+            {errors.blockedProducer}
           </p>
         )}
         <button

@@ -1,5 +1,6 @@
+import { appendBlockedProducerValidationErrors } from "@/lib/events/blocked-producers";
 import { resolveVenueName } from "@/lib/events/resolve-venue-name";
-import type { EventSubmission, SubmissionSource } from "@/types/event-submission";
+import type { BatchEventEntry, EventSubmission, SubmissionSource } from "@/types/event-submission";
 import { isJackpotOnlyDiscipline } from "@/lib/events/submission-options";
 import { isValidWebsiteUrl } from "@/lib/events/normalize-website-url";
 
@@ -8,6 +9,7 @@ export type SubmissionValidationErrors = Record<string, string>;
 export function validateEventSubmission(
   data: EventSubmission,
   source: SubmissionSource = data.source ?? "flyer",
+  options?: { batchEvents?: BatchEventEntry[] },
 ): SubmissionValidationErrors {
   const errors: SubmissionValidationErrors = {};
 
@@ -69,6 +71,8 @@ export function validateEventSubmission(
   if (data.producerWebsite.trim() && !isValidWebsiteUrl(data.producerWebsite)) {
     errors.producerWebsite = "Enter a valid website such as www.example.com or example.com.";
   }
+
+  appendBlockedProducerValidationErrors(data, errors, options);
 
   return errors;
 }

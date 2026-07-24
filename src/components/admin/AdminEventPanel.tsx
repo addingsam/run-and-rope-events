@@ -8,6 +8,10 @@ import {
 } from "@/app/admin/actions";
 import { AdminEventEditDialog } from "@/components/admin/AdminEventEditDialog";
 import { DuplicateComparisonPanel } from "@/components/admin/DuplicateComparisonPanel";
+import {
+  BLOCKED_PRODUCER_ERROR_MESSAGE,
+  eventRecordContainsBlockedProducer,
+} from "@/lib/events/blocked-producers";
 import { formatEventDate } from "@/lib/events/format-date";
 import {
   formatDisciplineDisplayLabels,
@@ -50,8 +54,14 @@ function EventRow({
   const [isPending, startTransition] = useTransition();
   const format = (event.event_format as SubmissionFormat) ?? "jackpot";
   const hasDuplicates = duplicates.length > 0;
+  const isBlockedProducer = eventRecordContainsBlockedProducer(event);
 
   function handleApprove() {
+    if (isBlockedProducer) {
+      window.alert(BLOCKED_PRODUCER_ERROR_MESSAGE);
+      return;
+    }
+
     if (
       hasDuplicates &&
       !window.confirm(
@@ -62,8 +72,14 @@ function EventRow({
     }
 
     startTransition(async () => {
-      await approveEventAction(event.id);
-      onActionComplete();
+      try {
+        await approveEventAction(event.id);
+        onActionComplete();
+      } catch (error) {
+        window.alert(
+          error instanceof Error ? error.message : BLOCKED_PRODUCER_ERROR_MESSAGE,
+        );
+      }
     });
   }
 
@@ -80,7 +96,7 @@ function EventRow({
 
   return (
     <>
-      <tr className={`border-b align-top ${hasDuplicates ? "border-amber-200 bg-amber-50/40" : "border-stone-200"}`}>
+      <tr className={`border-b align-top ${isBlockedProducer ? "border-red-200 bg-red-50/40" : hasDuplicates ? "border-amber-200 bg-amber-50/40" : "border-stone-200"}`}>
         <td className="px-4 py-4">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -93,6 +109,11 @@ function EventRow({
               {hasDuplicates && (
                 <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-950">
                   Possible duplicate
+                </span>
+              )}
+              {isBlockedProducer && (
+                <span className="rounded-full border border-red-300 bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-950">
+                  Blocked producer
                 </span>
               )}
             </div>
@@ -139,9 +160,9 @@ function EventRow({
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                disabled={isPending}
+                disabled={isPending || isBlockedProducer}
                 onClick={handleApprove}
-                className="rounded-full bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                className="rounded-full bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Approve
               </button>

@@ -37,7 +37,9 @@ export async function POST(request: Request) {
     const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;
     const isBatchSubmission = isMultiEventBatch || isSameVenueBatch;
 
-    const validationErrors = validateEventSubmission(submission, submission.source);
+    const validationErrors = validateEventSubmission(submission, submission.source, {
+      batchEvents: isMultiEventBatch ? normalizedBatchEvents : [],
+    });
     const batchErrors = isMultiEventBatch
       ? validateBatchEvents(normalizedBatchEvents)
       : isSameVenueBatch
