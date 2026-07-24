@@ -40,7 +40,7 @@ export default async function FeatureEventPage({ params, searchParams }: Feature
 
   const isFeatured = isEventCurrentlyFeatured(event);
   const canPurchase = canPurchaseFeaturedPlacement(event);
-  const receiptEmail = event.submitter_email ?? event.contact_email ?? "";
+  const receiptEmail = event.submitter_email ?? "";
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">

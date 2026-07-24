@@ -174,9 +174,6 @@ export function canPurchaseFeaturedPlacement(record: EventRecord) {
   return !isEventCurrentlyFeatured(record);
 }
 
-export function getSubmissionContactEmail(submission: {
-  submitterEmail: string;
-  contactEmail: string;
-}) {
-  return submission.submitterEmail.trim() || submission.contactEmail.trim();
+export function getSubmissionContactEmail(submission: { submitterEmail: string }) {
+  return submission.submitterEmail.trim();
 }

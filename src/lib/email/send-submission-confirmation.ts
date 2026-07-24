@@ -173,7 +173,7 @@ async function sendBatchSubmissionConfirmation({
 }
 
 export async function sendSubmissionConfirmationEmails(
-  submission: Pick<EventSubmission, "submitterEmail" | "contactEmail" | "eventName" | "startDate">,
+  submission: Pick<EventSubmission, "submitterEmail" | "eventName" | "startDate">,
 ): Promise<SubmissionConfirmationSendResult> {
   const recipients = getSubmissionConfirmationRecipients(submission);
   const sent: string[] = [];
@@ -202,7 +202,7 @@ export async function sendSubmissionConfirmationEmails(
 }
 
 export async function sendBatchSubmissionConfirmationEmails(
-  submission: Pick<EventSubmission, "submitterEmail" | "contactEmail" | "eventName">,
+  submission: Pick<EventSubmission, "submitterEmail" | "eventName">,
   eventDates: string[],
 ): Promise<SubmissionConfirmationSendResult> {
   const recipients = getSubmissionConfirmationRecipients(submission);

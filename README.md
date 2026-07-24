@@ -74,7 +74,7 @@ Upload flow:
 
 ## Resend (confirmation emails)
 
-When a submitter provides an email on `/submit`, the app sends a confirmation that their event was received and is under review. Confirmations go to every unique address entered in **Submitter Email** and **Contact Email**.
+When a submitter provides an email in **Submitter Email** on `/submit`, the app sends a confirmation that their event was received and is under review. Producer or stock contractor contact emails are never used as recipients.
 
 1. Create an account at [Resend](https://resend.com/).
 2. Generate an API key.

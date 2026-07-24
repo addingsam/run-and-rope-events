@@ -82,7 +82,7 @@ function logResendDeliveryIssue(email: string, reason: string) {
 }
 
 export async function sendDuplicateSubmissionAlertEmails(
-  submission: Pick<EventSubmission, "submitterEmail" | "contactEmail">,
+  submission: Pick<EventSubmission, "submitterEmail">,
   warnings: SubmissionDuplicateWarning[],
 ): Promise<SubmissionConfirmationSendResult> {
   const recipients = getSubmissionConfirmationRecipients(submission);

@@ -177,12 +177,12 @@ function validateForm(
   }
 
   if (featurePlacement !== "none") {
-    const email = data.submitterEmail.trim() || data.contactEmail.trim();
+    const email = data.submitterEmail.trim();
     if (!email) {
       errors.featurePlacement =
-        "Enter a submitter or contact email to receive your Stripe receipt for featuring.";
+        "Enter a submitter email to receive your Stripe receipt for featuring.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.featurePlacement = "Enter a valid email for featured placement checkout.";
+      errors.featurePlacement = "Enter a valid submitter email for featured placement checkout.";
     }
   }
 
@@ -825,8 +825,7 @@ export function EventSubmissionForm() {
           );
         }
 
-        const checkoutEmail =
-          sanitizedFormData.submitterEmail.trim() || sanitizedFormData.contactEmail.trim();
+        const checkoutEmail = sanitizedFormData.submitterEmail.trim();
         const checkoutResponse = await fetch("/api/stripe/feature-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1303,6 +1302,7 @@ export function EventSubmissionForm() {
             value={formData.contactEmail}
             onChange={(e) => updateField("contactEmail", e.target.value)}
             error={errors.contactEmail}
+            hint="Optional — producer or organizer email shown on the public listing. Submission confirmations are not sent here."
           />
           <TextInput
             name="contactPhone"
@@ -1338,7 +1338,7 @@ export function EventSubmissionForm() {
 
       <FormSection
         title="Confirmation"
-        description="Optional — we'll email you when your listing is live."
+        description="Optional — add your email if you want a confirmation that we received your submission."
       >
         <TextInput
           name="submitterEmail"
@@ -1348,6 +1348,7 @@ export function EventSubmissionForm() {
           value={formData.submitterEmail}
           onChange={(e) => updateField("submitterEmail", e.target.value)}
           error={errors.submitterEmail}
+          hint="Only this address receives submission confirmations. It is never filled from your flyer."
         />
       </FormSection>
 
