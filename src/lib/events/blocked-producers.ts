@@ -3,7 +3,7 @@ import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 import type { EventRecord } from "@/types/event-record";
 
 export const BLOCKED_PRODUCER_ERROR_MESSAGE =
-  "This producer cannot be submitted through this platform.";
+  "Thank you for your submission. This particular event cannot be accepted. Please reach out to us at jackpotandrodeoevents@gmail.com if you have further questions.";
 
 const BLOCKED_PRODUCER_NAMES = [
   "Go Fast Productions",
