@@ -6,7 +6,11 @@ import {
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
 import { resolveSubmissionRodeoLevels } from "@/lib/events/amateur-rodeo-associations";
 import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
-import { normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
+import {
+  extractSgpEventsWebsiteFromText,
+  rewriteSgpEventsWebsite,
+} from "@/lib/events/sgp-events-website";
+import { extractWebsiteFromText, normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
 import { normalizeEventSubmissionVenue } from "@/lib/events/resolve-venue-name";
 import {
   BLOCKED_PRODUCER_ERROR_MESSAGE,
@@ -52,27 +56,47 @@ function normalizeAdditionalOfferings(offerings: string[]) {
 }
 
 function resolveSubmissionWebsite(submission: EventSubmission) {
-  const normalizedExisting = normalizeWebsiteUrl(submission.producerWebsite);
-  if (normalizedExisting) {
-    return normalizedExisting;
+  const sourceTexts = [
+    submission.producerWebsite,
+    submission.eventName,
+    submission.description,
+    submission.classDivisionInfo,
+    submission.prizePayoutInfo,
+    submission.entryFee,
+    submission.producerName,
+    submission.contactEmail,
+    submission.contactPhone,
+    submission.venueName,
+    submission.streetAddress,
+    submission.entryDeadline,
+  ];
+
+  const sgpFromField = rewriteSgpEventsWebsite(submission.producerWebsite);
+  if (sgpFromField) {
+    return sgpFromField;
   }
 
-  return (
-    extractNextGenRodeoWebsiteFromText(
-      submission.producerWebsite,
-      submission.eventName,
-      submission.description,
-      submission.classDivisionInfo,
-      submission.prizePayoutInfo,
-      submission.entryFee,
-      submission.producerName,
-      submission.contactEmail,
-      submission.contactPhone,
-      submission.venueName,
-      submission.streetAddress,
-      submission.entryDeadline,
-    ) ?? ""
-  );
+  const normalizedExisting = normalizeWebsiteUrl(submission.producerWebsite);
+  if (normalizedExisting) {
+    return rewriteSgpEventsWebsite(normalizedExisting) ?? normalizedExisting;
+  }
+
+  const sgpWebsite = extractSgpEventsWebsiteFromText(...sourceTexts);
+  if (sgpWebsite) {
+    return sgpWebsite;
+  }
+
+  const nextGenWebsite = extractNextGenRodeoWebsiteFromText(...sourceTexts);
+  if (nextGenWebsite) {
+    return nextGenWebsite;
+  }
+
+  const websiteFromText = extractWebsiteFromText(...sourceTexts);
+  if (websiteFromText) {
+    return rewriteSgpEventsWebsite(websiteFromText) ?? websiteFromText;
+  }
+
+  return "";
 }
 
 export function mapSubmissionToEventRecord(submission: EventSubmission): EventRecordInsert {

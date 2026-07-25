@@ -17,6 +17,10 @@ import {
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
 import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
 import {
+  extractSgpEventsWebsiteFromText,
+  rewriteSgpEventsWebsite,
+} from "@/lib/events/sgp-events-website";
+import {
   extractWebsiteFromText,
   normalizeWebsiteUrl,
 } from "@/lib/events/normalize-website-url";
@@ -137,10 +141,20 @@ function resolveProducerWebsite(extracted: FlyerExtractionResult) {
   const sourceTexts = flyerWebsiteSourceTexts(extracted);
 
   if (extracted.producerWebsite) {
+    const sgpWebsite = rewriteSgpEventsWebsite(extracted.producerWebsite);
+    if (sgpWebsite) {
+      return sgpWebsite;
+    }
+
     const normalized = normalizeWebsiteUrl(extracted.producerWebsite);
     if (normalized) {
-      return normalized;
+      return rewriteSgpEventsWebsite(normalized) ?? normalized;
     }
+  }
+
+  const sgpWebsite = extractSgpEventsWebsiteFromText(...sourceTexts);
+  if (sgpWebsite) {
+    return sgpWebsite;
   }
 
   const nextGenWebsite = extractNextGenRodeoWebsiteFromText(...sourceTexts);
@@ -148,7 +162,12 @@ function resolveProducerWebsite(extracted: FlyerExtractionResult) {
     return nextGenWebsite;
   }
 
-  return extractWebsiteFromText(...sourceTexts) ?? "";
+  const websiteFromText = extractWebsiteFromText(...sourceTexts);
+  if (websiteFromText) {
+    return rewriteSgpEventsWebsite(websiteFromText) ?? websiteFromText;
+  }
+
+  return "";
 }
 
 function parseZipFromAddress(address: string | null) {
