@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BatchEventDatesField } from "@/components/submit/BatchEventDatesField";
 import { BatchEventsField } from "@/components/submit/BatchEventsField";
 import { BlockedProducerNotice } from "@/components/submit/BlockedProducerNotice";
+import { DuplicateSubmissionPrompt } from "@/components/submit/DuplicateSubmissionPrompt";
 import {
   BatchSubmissionSummary,
   getBatchSubmissionCount,
@@ -73,11 +75,9 @@ import { validateBatchEventDates } from "@/lib/events/validate-batch-dates";
 import { validateBatchEvents } from "@/lib/events/validate-batch-events";
 import { uniqueSortedEventDates } from "@/lib/events/expand-batch-submissions";
 import {
-  getSubmissionDuplicateStatusLabel,
   type ScheduleDuplicateWarning,
   type SubmissionDuplicateWarning,
 } from "@/lib/events/duplicate-detection";
-import { formatEventDate } from "@/lib/events/format-date";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import {
   EMPTY_EVENT_SUBMISSION,
@@ -237,34 +237,23 @@ function DuplicateSubmissionNotice({ warnings }: { warnings: SubmissionDuplicate
   }
 
   return (
-    <div className="mx-auto mt-5 max-w-lg rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-left text-sm text-amber-950">
-      <p className="font-semibold">Possible duplicate detected</p>
-      <p className="mt-1 leading-6 text-amber-900/90">
-        Your submission was received, but it matches an existing listing with the same name, format,
-        and date. Our team will review both entries.
-      </p>
-      <ul className="mt-3 space-y-3">
-        {warnings.map((warning) => (
-          <li key={`${warning.eventName}-${warning.startDate}`}>
-            <p className="font-medium">
-              {warning.eventName} · {formatEventDate(warning.startDate)}
-            </p>
-            <ul className="mt-1 space-y-1 text-amber-900/90">
-              {warning.matches.map((match) => (
-                <li key={match.id}>
-                  Existing: {match.eventName} · {formatEventDate(match.startDate)} ·{" "}
-                  {match.location} ({getSubmissionDuplicateStatusLabel(match.status)})
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <p className={`mx-auto mt-4 max-w-lg text-sm ${themeMutedTextClassName}`}>
+      We&apos;ll review this submission alongside the similar listing already in our directory.
+    </p>
   );
 }
 
+interface PendingDuplicatePrompt {
+  nameWarnings: SubmissionDuplicateWarning[];
+  locationWarnings: ScheduleDuplicateWarning[];
+}
+
+function hasDuplicateWarnings(prompt: PendingDuplicatePrompt) {
+  return prompt.nameWarnings.length > 0 || prompt.locationWarnings.length > 0;
+}
+
 export function EventSubmissionForm() {
+  const router = useRouter();
   const [formData, setFormData] = useState<EventSubmission>(EMPTY_EVENT_SUBMISSION);
   const [featurePlacement, setFeaturePlacement] = useState<FeaturedPlacementChoice>("none");
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
@@ -293,6 +282,8 @@ export function EventSubmissionForm() {
   const [submittedDuplicateWarnings, setSubmittedDuplicateWarnings] = useState<
     SubmissionDuplicateWarning[]
   >([]);
+  const [duplicatePrompt, setDuplicatePrompt] = useState<PendingDuplicatePrompt | null>(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
   const isMultiEventBatch = batchEvents.length >= 2;
   const isSameVenueBatch = !isMultiEventBatch && batchEventDates.length >= 2;
   const isScheduleFlyer = isMultiEventBatch && flyerLayoutType === "schedule";
@@ -775,7 +766,56 @@ export function EventSubmissionForm() {
     };
   }
 
-  async function handleSubmit() {
+  function resetFormToInitialState() {
+    setFormData(EMPTY_EVENT_SUBMISSION);
+    setFeaturePlacement("none");
+    setFlyerFile(null);
+    setIsUploadingFlyer(false);
+    setIsExtractingFlyer(false);
+    setFlyerExtractionMessage(null);
+    setInferredYearFields(EMPTY_FLYER_INFERRED_YEAR_FIELDS);
+    setBatchEventDates([]);
+    setBatchEvents([]);
+    setBatchEventsYearInferred([]);
+    setFlyerLayoutType("single");
+    setScheduleDuplicateWarnings([]);
+    setDuplicatePrompt(null);
+    setErrors({});
+    setSubmittedDuplicateWarnings([]);
+    setConfirmationNotice(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function fetchDuplicateWarnings(
+    sanitizedFormData: EventSubmission,
+    sanitizedBatchEvents: BatchEventEntry[],
+  ): Promise<PendingDuplicatePrompt> {
+    const response = await fetch("/api/events/submit/check-duplicates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...slimEventSubmissionForTransport(sanitizedFormData),
+        batchEvents: slimBatchEventsForTransport(sanitizedBatchEvents),
+      }),
+    });
+
+    const data = await parseJsonResponse<{
+      nameWarnings?: SubmissionDuplicateWarning[];
+      locationWarnings?: ScheduleDuplicateWarning[];
+      error?: string;
+    }>(response, "submit");
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "Duplicate check failed.");
+    }
+
+    return {
+      nameWarnings: data.nameWarnings ?? [],
+      locationWarnings: data.locationWarnings ?? [],
+    };
+  }
+
+  async function handleSubmit(options?: { bypassDuplicatePrompt?: boolean }) {
     if (isUploadingFlyer || isExtractingFlyer) {
       setErrors((current) => ({
         ...current,
@@ -816,6 +856,27 @@ export function EventSubmissionForm() {
       });
       requestAnimationFrame(() => scrollToFirstFormError(validationErrors));
       return;
+    }
+
+    if (!options?.bypassDuplicatePrompt) {
+      setIsCheckingDuplicates(true);
+      try {
+        const warnings = await fetchDuplicateWarnings(sanitizedFormData, sanitizedBatchEvents);
+        if (hasDuplicateWarnings(warnings)) {
+          setDuplicatePrompt(warnings);
+          return;
+        }
+      } catch (duplicateCheckError) {
+        setErrors({
+          submit:
+            duplicateCheckError instanceof Error
+              ? duplicateCheckError.message
+              : "Could not check for duplicate events.",
+        });
+        return;
+      } finally {
+        setIsCheckingDuplicates(false);
+      }
     }
 
     setIsSubmitting(true);
@@ -943,6 +1004,7 @@ export function EventSubmissionForm() {
       setSubmitted(true);
       setSubmittedEventCount(data.eventCount ?? 1);
       setSubmittedDuplicateWarnings(data.duplicateWarnings ?? []);
+      setDuplicatePrompt(null);
       setFormData(EMPTY_EVENT_SUBMISSION);
       setFeaturePlacement("none");
       setFlyerFile(null);
@@ -960,6 +1022,7 @@ export function EventSubmissionForm() {
           ? "The server returned an unexpected response. Please try again in a moment."
           : message,
       });
+      setDuplicatePrompt(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -1003,6 +1066,19 @@ export function EventSubmissionForm() {
 
   return (
     <div className="space-y-6">
+      <DuplicateSubmissionPrompt
+        open={duplicatePrompt !== null}
+        nameWarnings={duplicatePrompt?.nameWarnings ?? []}
+        locationWarnings={duplicatePrompt?.locationWarnings ?? []}
+        pending={isSubmitting}
+        onSubmitAnyway={() => {
+          void handleSubmit({ bypassDuplicatePrompt: true });
+        }}
+        onNevermind={() => {
+          resetFormToInitialState();
+          router.push("/submit");
+        }}
+      />
       <FormSection
         title="Event Flyer"
         description="Optional — upload your flyer and we'll read it to pre-fill the form below. JPEG, PNG, or PDF up to 10MB."
@@ -1458,10 +1534,12 @@ export function EventSubmissionForm() {
         <button
           type="button"
           onClick={() => void handleSubmit()}
-          disabled={isSubmitting || isUploadingFlyer || isExtractingFlyer}
+          disabled={isSubmitting || isCheckingDuplicates || isUploadingFlyer || isExtractingFlyer}
           className={`mt-5 w-full px-6 py-4 text-base disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${themePrimaryButtonClassName}`}
         >
-          {isSubmitting
+          {isCheckingDuplicates
+            ? "Checking for duplicates..."
+            : isSubmitting
             ? featurePlacement !== "none"
               ? "Submitting and starting checkout..."
               : "Submitting..."
