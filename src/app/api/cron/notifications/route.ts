@@ -10,15 +10,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
+  const dryRun = new URL(request.url).searchParams.get("dryRun") === "1";
+
   try {
     const [searchAlerts, archivedAlerts] = await Promise.all([
-      processSavedSearchAlerts(),
-      processArchivedEventNotifications(),
+      processSavedSearchAlerts({ dryRun }),
+      dryRun ? Promise.resolve({ sent: 0, checked: 0, skippedNoEmail: 0, errors: [] }) : processArchivedEventNotifications(),
     ]);
 
     return NextResponse.json({
-      searchAlertsSent: searchAlerts.sent,
-      archivedAlertsSent: archivedAlerts.sent,
+      dryRun,
+      searchAlerts,
+      archivedAlerts,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Notification job failed.";

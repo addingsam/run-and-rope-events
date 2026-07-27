@@ -71,7 +71,28 @@ export async function sendSavedSearchSavedConfirmation({
   });
 }
 
-export async function processSavedSearchAlerts() {
+export type SavedSearchAlertJobResult = {
+  sent: number;
+  checked: number;
+  skippedNotDue: number;
+  skippedNoNewEvents: number;
+  skippedNoEmail: number;
+  errors: Array<{ searchId: string; searchName: string; message: string }>;
+  wouldSend: Array<{
+    searchId: string;
+    searchName: string;
+    frequency: "daily" | "weekly";
+    email: string;
+    newEventCount: number;
+    newEventNames: string[];
+  }>;
+};
+
+export async function processSavedSearchAlerts({
+  dryRun = false,
+}: {
+  dryRun?: boolean;
+} = {}): Promise<SavedSearchAlertJobResult> {
   const supabase = getSupabaseAdminClient();
   const { data: searches, error } = await supabase
     .from("saved_searches")
@@ -84,59 +105,105 @@ export async function processSavedSearchAlerts() {
     throw new Error(error.message);
   }
 
-  let sent = 0;
+  const result: SavedSearchAlertJobResult = {
+    sent: 0,
+    checked: 0,
+    skippedNotDue: 0,
+    skippedNoNewEvents: 0,
+    skippedNoEmail: 0,
+    errors: [],
+    wouldSend: [],
+  };
 
   for (const search of searches ?? []) {
     const frequency = search.alert_frequency as SavedSearchAlertFrequency;
     if (!isDueForDigest(frequency, search.last_alert_sent_at)) {
+      result.skippedNotDue += 1;
       continue;
     }
 
-    const params = search.search_params as SavedSearchParams;
-    const mapOverlay = (search.map_overlay as SavedMapOverlay | null) ?? null;
-    const knownIds = new Set((search.known_event_ids ?? []) as string[]);
-    const response = await runSavedSearch(params, mapOverlay);
-    const currentEventIds = response.results
-      .filter((entry) => entry.kind === "event")
-      .map((entry) => entry.item.id);
-    const newEventIds = currentEventIds.filter((id) => !knownIds.has(id));
+    result.checked += 1;
 
-    if (newEventIds.length === 0) {
-      continue;
-    }
+    try {
+      const params = search.search_params as SavedSearchParams;
+      const mapOverlay = (search.map_overlay as SavedMapOverlay | null) ?? null;
+      const knownIds = new Set((search.known_event_ids ?? []) as string[]);
+      const response = await runSavedSearch(params, mapOverlay);
+      const currentEventIds = response.results
+        .filter((entry) => entry.kind === "event")
+        .map((entry) => entry.item.id);
+      const newEventIds = currentEventIds.filter((id) => !knownIds.has(id));
 
-    const email = await getProfileEmail(search.user_id);
-    if (!email) {
-      continue;
-    }
+      if (newEventIds.length === 0) {
+        result.skippedNoNewEvents += 1;
+        continue;
+      }
 
-    const newEvents = response.results.filter(
-      (entry) => entry.kind === "event" && newEventIds.includes(entry.item.id),
-    );
+      const email = await getProfileEmail(search.user_id);
+      if (!email) {
+        result.skippedNoEmail += 1;
+        continue;
+      }
 
-    if (frequency !== "daily" && frequency !== "weekly") {
-      continue;
-    }
+      const newEvents = response.results.filter(
+        (entry) => entry.kind === "event" && newEventIds.includes(entry.item.id),
+      );
 
-    await sendSavedSearchAlertEmail({
-      to: email,
-      searchName: search.name,
-      eventNames: newEvents.map((entry) =>
+      if (frequency !== "daily" && frequency !== "weekly") {
+        continue;
+      }
+
+      const eventNames = newEvents.map((entry) =>
         entry.kind === "event" ? entry.item.title : "",
-      ),
-      searchUrl: `${APP_URL}/events?${savedSearchToQueryString(params)}`,
-      alertFrequency: frequency,
-    });
+      );
 
-    await updateSavedSearchKnownEvents(search.id, currentEventIds);
-    await updateSavedSearchLastAlertSent(search.id);
-    sent += 1;
+      result.wouldSend.push({
+        searchId: search.id,
+        searchName: search.name,
+        frequency,
+        email,
+        newEventCount: newEventIds.length,
+        newEventNames: eventNames,
+      });
+
+      if (dryRun) {
+        continue;
+      }
+
+      await sendSavedSearchAlertEmail({
+        to: email,
+        searchName: search.name,
+        eventNames,
+        searchUrl: `${APP_URL}/events?${savedSearchToQueryString(params)}`,
+        alertFrequency: frequency,
+      });
+
+      await updateSavedSearchKnownEvents(search.id, currentEventIds);
+      await updateSavedSearchLastAlertSent(search.id);
+      result.sent += 1;
+    } catch (searchError) {
+      const message =
+        searchError instanceof Error ? searchError.message : "Saved search alert failed.";
+      console.error(`Saved search alert failed for ${search.id}:`, searchError);
+      result.errors.push({
+        searchId: search.id,
+        searchName: search.name,
+        message,
+      });
+    }
   }
 
-  return { sent };
+  return result;
 }
 
-export async function processArchivedEventNotifications() {
+export type ArchivedEventNotificationJobResult = {
+  sent: number;
+  checked: number;
+  skippedNoEmail: number;
+  errors: Array<{ savedEventId: string; message: string }>;
+};
+
+export async function processArchivedEventNotifications(): Promise<ArchivedEventNotificationJobResult> {
   const supabase = getSupabaseAdminClient();
   const { data: savedRows, error } = await supabase
     .from("saved_events")
@@ -147,7 +214,12 @@ export async function processArchivedEventNotifications() {
     throw new Error(error.message);
   }
 
-  let sent = 0;
+  const result: ArchivedEventNotificationJobResult = {
+    sent: 0,
+    checked: 0,
+    skippedNoEmail: 0,
+    errors: [],
+  };
   const inactiveStatuses = new Set(["rejected", "pending", "archived"]);
 
   for (const row of savedRows ?? []) {
@@ -156,24 +228,37 @@ export async function processArchivedEventNotifications() {
       continue;
     }
 
-    const email = await getProfileEmail(row.user_id);
-    if (!email) {
-      continue;
+    result.checked += 1;
+
+    try {
+      const email = await getProfileEmail(row.user_id);
+      if (!email) {
+        result.skippedNoEmail += 1;
+        continue;
+      }
+
+      await sendEventPassedEmail({
+        to: email,
+        eventName: event.event_name,
+        eventDate: event.event_date,
+        location: `${event.address_city}, ${event.address_state}`,
+      });
+
+      await supabase.from("saved_events").delete().eq("id", row.id);
+
+      result.sent += 1;
+    } catch (rowError) {
+      const message =
+        rowError instanceof Error ? rowError.message : "Archived event notification failed.";
+      console.error(`Archived event notification failed for ${row.id}:`, rowError);
+      result.errors.push({
+        savedEventId: row.id,
+        message,
+      });
     }
-
-    await sendEventPassedEmail({
-      to: email,
-      eventName: event.event_name,
-      eventDate: event.event_date,
-      location: `${event.address_city}, ${event.address_state}`,
-    });
-
-    await supabase.from("saved_events").delete().eq("id", row.id);
-
-    sent += 1;
   }
 
-  return { sent };
+  return result;
 }
 
 export async function baselineSavedSearchKnownEvents(

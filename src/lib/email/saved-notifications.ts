@@ -82,7 +82,7 @@ export async function sendSavedSearchConfirmationEmail({
       ? "Update emails: Off"
       : `Update emails: ${getAlertFrequencyLabel(alertFrequency)}`;
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from,
     to,
     subject: `Saved search confirmed: ${searchName}`,
@@ -116,6 +116,10 @@ export async function sendSavedSearchConfirmationEmail({
       emailFooterText(),
     ].join("\n"),
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function sendSavedSearchAlertEmail({
@@ -136,7 +140,7 @@ export async function sendSavedSearchAlertEmail({
   const listHtml = eventNames.map((name) => `<li>${escapeHtml(name)}</li>`).join("");
   const digestLabel = alertFrequency === "weekly" ? "Weekly" : "Daily";
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from,
     to,
     subject: `${digestLabel} update: new events for "${searchName}"`,
@@ -149,6 +153,10 @@ export async function sendSavedSearchAlertEmail({
     `,
     text: `${digestLabel} update for "${searchName}" on ${APP_NAME}: ${eventNames.join(", ")}. View: ${searchUrl}\n${emailFooterText()}`,
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function sendEventPassedEmail({
@@ -165,7 +173,7 @@ export async function sendEventPassedEmail({
   const resend = getResendClient();
   const from = getResendFromAddress();
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from,
     to,
     subject: `Event passed: ${eventName}`,
@@ -177,6 +185,10 @@ export async function sendEventPassedEmail({
     `,
     text: `${eventName} (${eventDate}, ${location}) has passed and was removed from your saved events on ${APP_NAME}.\n${emailFooterText()}`,
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function sendEventArchivedEmail({
