@@ -1,7 +1,9 @@
 import type { FlyerExtractionResult } from "@/types/flyer-extraction";
+import type { SubmissionDiscipline } from "@/types/event-submission";
 import { inferAmateurRodeoFromText } from "@/lib/events/amateur-rodeo-associations";
 import { inferOpenRodeoFromText } from "@/lib/events/open-rodeo-level";
 import { inferRanchRodeoFromText } from "@/lib/events/ranch-rodeo-level";
+import { inferTraditionalRodeoFromDisciplines } from "@/lib/events/submission-options";
 import { inferYouthPlaydayFromText } from "@/lib/events/youth-playday-level";
 
 const GENERIC_RODEO_PATTERN = /\brodeo\b/i;
@@ -26,6 +28,8 @@ export function inferRodeoFlyerFromText(
 export function inferRodeoFlyerFromExtraction(
   extracted: Pick<FlyerExtractionResult, "format" | "rodeoLevel" | "disciplines">,
   flyerSearchText: string,
+  disciplines: readonly SubmissionDiscipline[],
+  disciplineLabels: readonly string[],
 ): boolean {
   if (extracted.format === "Rodeo") {
     return true;
@@ -35,5 +39,13 @@ export function inferRodeoFlyerFromExtraction(
     return true;
   }
 
-  return inferRodeoFlyerFromText(flyerSearchText, ...(extracted.disciplines ?? []));
+  if (inferTraditionalRodeoFromDisciplines(disciplines)) {
+    return true;
+  }
+
+  return inferRodeoFlyerFromText(
+    flyerSearchText,
+    ...disciplineLabels,
+    ...(extracted.disciplines ?? []),
+  );
 }

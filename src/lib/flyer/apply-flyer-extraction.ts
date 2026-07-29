@@ -83,6 +83,29 @@ const RODEO_LEVEL_LABEL_TO_VALUE: Record<string, RodeoLevel> = {
   Ranch: "ranch",
 };
 
+const RODEO_LEVEL_VALUE_TO_LABEL: Record<RodeoLevel, "Youth" | "Amateur" | "Open" | "Ranch"> = {
+  youth: "Youth",
+  amateur: "Amateur",
+  open: "Open",
+  ranch: "Ranch",
+};
+
+export function alignFlyerExtractionWithSubmission(
+  extracted: FlyerExtractionResult,
+  submission: EventSubmission,
+): FlyerExtractionResult {
+  const primaryRodeoLevel = submission.rodeoLevels[0];
+
+  return {
+    ...extracted,
+    format: submission.format === "rodeo" ? "Rodeo" : "Jackpot",
+    rodeoLevel:
+      submission.format === "rodeo" && primaryRodeoLevel
+        ? RODEO_LEVEL_VALUE_TO_LABEL[primaryRodeoLevel]
+        : extracted.rodeoLevel,
+  };
+}
+
 function normalizeState(value: string | null) {
   if (!value) {
     return "";
@@ -334,8 +357,13 @@ export function applyFlyerExtractionToSubmission(
     sanitized.additionalNotes,
     sanitized.contactName,
   );
-  const rodeoLevelSourceTexts = [flyerSearchText, ...(sanitized.disciplines ?? [])] as const;
-  const isRodeoFlyer = inferRodeoFlyerFromExtraction(sanitized, flyerSearchText);
+  const rodeoLevelSourceTexts = [flyerSearchText, ...extractedDisciplines] as const;
+  const isRodeoFlyer = inferRodeoFlyerFromExtraction(
+    sanitized,
+    flyerSearchText,
+    disciplines,
+    extractedDisciplines,
+  );
   const isSingleDayNextGenEvent =
     Boolean(nextGenWebsite) &&
     sanitized.type === "single" &&
@@ -374,7 +402,9 @@ export function applyFlyerExtractionToSubmission(
     format === "rodeo"
       ? extractedLevel
         ? [extractedLevel]
-        : current.rodeoLevels
+        : isRodeoFlyer || resolvedRodeoLevelLabel
+          ? ["open"]
+          : current.rodeoLevels
       : [];
   const finalDisciplines = filterDisciplinesForFormat(disciplines, format);
   const zipFromAddress = parseZipFromAddress(sanitized.address);

@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import {
+  alignFlyerExtractionWithSubmission,
+  applyFlyerExtractionToSubmission,
+} from "@/lib/flyer/apply-flyer-extraction";
+import {
   extractFlyerFromFile,
   extractFlyerFromUrl,
 } from "@/lib/flyer/extract-flyer-with-claude";
+import { EMPTY_EVENT_SUBMISSION } from "@/types/event-submission";
+import type { FlyerExtractionResult } from "@/types/flyer-extraction";
 
 export const runtime = "nodejs";
 
@@ -25,6 +31,11 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
+function normalizeExtractedFlyer(extracted: FlyerExtractionResult) {
+  const applied = applyFlyerExtractionToSubmission(EMPTY_EVENT_SUBMISSION, extracted);
+  return alignFlyerExtractionWithSubmission(extracted, applied.submission);
+}
+
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get("content-type") ?? "";
@@ -37,7 +48,7 @@ export async function POST(request: Request) {
         return jsonError("A flyer file is required.", 400);
       }
 
-      const extracted = await extractFlyerFromFile(file);
+      const extracted = normalizeExtractedFlyer(await extractFlyerFromFile(file));
       return NextResponse.json({ extracted });
     }
 
@@ -52,7 +63,7 @@ export async function POST(request: Request) {
       return jsonError("flyerUrl must point to an uploaded flyer in storage.", 400);
     }
 
-    const extracted = await extractFlyerFromUrl(flyerUrl);
+    const extracted = normalizeExtractedFlyer(await extractFlyerFromUrl(flyerUrl));
     return NextResponse.json({ extracted });
   } catch (error) {
     const message =

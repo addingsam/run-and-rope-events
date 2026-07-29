@@ -38,7 +38,16 @@ export function collectFlyerExtractionSearchText(extracted: FlyerExtractionResul
   const parts: string[] = [];
 
   for (const [key, value] of Object.entries(extracted)) {
-    if (key === "events" || key === "eventDates" || key === "disciplines") {
+    if (key === "events" || key === "eventDates") {
+      continue;
+    }
+
+    if (key === "disciplines" && Array.isArray(value)) {
+      for (const discipline of value) {
+        if (typeof discipline === "string" && discipline.trim()) {
+          parts.push(discipline.trim());
+        }
+      }
       continue;
     }
 

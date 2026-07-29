@@ -49,6 +49,7 @@ const FLYER_EXTRACTION_EVENT_SCHEMA = `{
 const FLYER_EXTRACTION_FIELD_RULES = `Field rules:
 - type: "single" when the flyer is one event (optionally spanning multiple consecutive dates at the same location), or "schedule" when the flyer lists multiple distinct events with different dates and/or locations. Use eventDates for same-location separate days under type "single". Use events for type "schedule".
 - eventName, date, endDate, entryDeadline, time, venueName, address, city, state, zipCode, entryFee, prizePayoutInfo, classDivisionInfo, contactName, contactPhone, contactEmail, producerWebsite, additionalNotes: string or null.
+- eventName must include the flyer's main title or headline when visible (for example "OPEN RODEO" or "150th Annual Rosebud Wacipi, Fair and Rodeo"), not just the venue or city name.
 - eventDates: JSON array of strings for separate event days at the SAME location, or [] when not applicable.
 - events: JSON array of per-event objects (${FLYER_EXTRACTION_EVENT_SCHEMA}) for series schedules where each stop has its own date(s) and location. Use [] when not applicable.
 - disciplines: JSON array using only these labels: [${FLYER_DISCIPLINE_SCHEMA}].
