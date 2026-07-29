@@ -20,6 +20,7 @@ Use this when deploying **Jackpot & Rodeo Events** to Vercel.
 4. `vercel.json` already configures cron jobs:
    - `/api/cron/archive-events` — daily at midnight UTC
    - `/api/cron/notifications` — daily (saved search digests)
+   - `/api/cron/device-trust` — daily (expire 30-day trusted devices)
 
 ## Environment variables (Vercel → Settings → Environment Variables)
 
@@ -119,7 +120,8 @@ Configure these URLs using your production `NEXT_PUBLIC_APP_URL`:
 - [ ] Access `/events` as a subscriber
 - [ ] Submit a test event at `/submit` (flyer upload + Resend email)
 - [ ] Sign in as admin → review queue at `/admin`
-- [ ] Confirm Vercel cron runs (check Functions logs for `/api/cron/notifications`)
+- [ ] Confirm Vercel cron runs (check Functions logs for `/api/cron/notifications` and `/api/cron/device-trust`)
+- [ ] Clerk **Sessions** → inactivity timeout set to **30 days** (see `docs/clerk-setup.md`)
 
 ## Env var audit
 

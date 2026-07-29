@@ -57,23 +57,25 @@ Run the Supabase migration `supabase/migrations/20260709181000_clerk_user_ids.sq
 
 ### Persistent sign-in on known devices
 
-Users should stay signed in on a phone or browser they have already used, without repeating email verification every visit.
+Users should stay signed in on a phone or browser they have already used, without repeating two-step verification every visit.
+
+**30-day trusted device policy:** After a user verifies a new device (Clerk Client Trust email link or code), that device is trusted for **30 days**. During that window they should not be prompted again unless they sign out, clear cookies, or use a different browser/device. After 30 days, the app expires trust and signs them out so the next sign-in can re-verify.
 
 1. Open **Sessions** in the Clerk Dashboard.
-2. Set **Inactivity timeout** to a long duration (e.g. 30 days) or disable it.
+2. Enable **Inactivity timeout** and set it to **30 days** (matches the trusted-device window).
 3. Enable **Maximum lifetime** and set a long duration (e.g. 365 days).
 4. Leave **Multi-session handling** enabled so returning users keep their existing session instead of being forced through sign-in again.
 
-### New device verification (one-time per device)
+### New device verification (first sign-in on a device)
 
-Clerk **Client Trust** requires a second factor only the **first** time someone signs in with a password on a new device. Known devices are remembered automatically.
+Clerk **Client Trust** requires a second factor only the **first** time someone signs in with a password on a new device. Known devices are remembered by Clerk for subsequent sign-ins within the trust window.
 
 1. Open **Attack protection** → enable **Client Trust** (on by default for newer apps).
 2. Under Client Trust, choose **Email verification link** or **Email code** as the second factor.
 3. Ensure **Email** and/or **Password** sign-in is enabled under **User & authentication**.
 4. Optional: enable **New device sign-in emails** under **Email & SMS** so users are notified of unrecognized devices.
 
-Do **not** add custom app logic that revokes sessions on sign-in — that breaks persistent sessions and makes Client Trust treat every visit like a new device.
+Do **not** add custom app logic that revokes sessions on every sign-in — that breaks persistent sessions and makes Client Trust treat every visit like a new device. The app only revokes sessions when a device's 30-day trust window expires (daily cron at `/api/cron/device-trust`).
 
 ### Subscription access (Supabase `subscribers` table)
 
@@ -87,10 +89,10 @@ Subscriptions are activated via Stripe Checkout at `/subscribe`. See **Stripe su
 
 1. Open **Webhooks** → **Add endpoint**.
 2. URL: `https://your-domain.com/api/webhooks/clerk` (or use Clerk CLI tunnel locally).
-3. Subscribe to: `user.created`, `user.updated`.
+3. Subscribe to: `user.created`, `user.updated`, `session.created`.
 4. Copy the signing secret into `CLERK_WEBHOOK_SIGNING_SECRET`.
 
-The webhook creates or updates the Supabase `profiles` row when a Clerk user is created or updated. Session persistence and known-device trust are handled entirely by Clerk (Sessions + Client Trust settings above).
+The webhook creates or updates the Supabase `profiles` row when a Clerk user is created or updated. On `session.created`, it records the device in `trusted_devices` with a 30-day trust window. Session persistence and new-device verification are handled by Clerk (Sessions + Client Trust settings above); the daily device-trust cron expires sessions after 30 days.
 
 ## Protected routes
 

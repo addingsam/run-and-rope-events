@@ -42,7 +42,7 @@ export const clerkLocalization = {
       title: "Check your phone",
       subtitle: `Enter the verification code sent to your phone for ${APP_NAME}.`,
     },
-    newDeviceVerificationNotice: `We need to verify this device before you can sign in to ${APP_NAME}.`,
+    newDeviceVerificationNotice: `We need to verify this device before you can sign in to ${APP_NAME}. After verification, this device won't ask again for 30 days.`,
     alternativeMethods: {
       title: `Use another method to sign in to ${APP_NAME}`,
       subtitle: "Having trouble signing in? Try another option.",

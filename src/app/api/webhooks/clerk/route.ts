@@ -2,6 +2,7 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { WebhookEvent } from "@clerk/nextjs/webhooks";
 import { NextResponse, type NextRequest } from "next/server";
 import { ensureClerkProfile } from "@/lib/clerk/device-session";
+import { recordTrustedDevice } from "@/lib/clerk/trusted-devices";
 
 function getPrimaryEmail(data: WebhookEvent["data"]) {
   if (!("email_addresses" in data) || !Array.isArray(data.email_addresses)) {
@@ -27,6 +28,20 @@ export async function POST(request: NextRequest) {
       const { id } = event.data;
       const email = getPrimaryEmail(event.data);
       await ensureClerkProfile({ userId: id, email });
+    }
+
+    if (event.type === "session.created") {
+      const { user_id, client_id } = event.data;
+      if (user_id && client_id) {
+        try {
+          await recordTrustedDevice({
+            userId: user_id,
+            clientId: client_id,
+          });
+        } catch (deviceError) {
+          console.error("Failed to record trusted device:", deviceError);
+        }
+      }
     }
 
     return NextResponse.json({ received: true });
