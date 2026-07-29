@@ -1,7 +1,6 @@
 import { appendBlockedProducerValidationErrors } from "@/lib/events/blocked-producers";
 import { resolveVenueName } from "@/lib/events/resolve-venue-name";
 import type { BatchEventEntry, EventSubmission, SubmissionSource } from "@/types/event-submission";
-import { isJackpotOnlyDiscipline } from "@/lib/events/submission-options";
 import { isValidWebsiteUrl } from "@/lib/events/normalize-website-url";
 
 export type SubmissionValidationErrors = Record<string, string>;
@@ -17,13 +16,6 @@ export function validateEventSubmission(
   if (!data.format) errors.format = "Format is required.";
   if (data.format === "rodeo" && data.rodeoLevels.length === 0) {
     errors.rodeoLevels = "Select at least one rodeo level.";
-  }
-  if (
-    data.format === "rodeo" &&
-    data.disciplines.some((discipline) => isJackpotOnlyDiscipline(discipline))
-  ) {
-    errors.format =
-      "Cowboy Mounted Shooting, Ranch Horse, Obstacle & Trail, and Pole Bending events use Jackpot format.";
   }
   if (!data.startDate) errors.startDate = "Start date is required.";
   else {
