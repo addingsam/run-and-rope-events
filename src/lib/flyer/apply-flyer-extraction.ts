@@ -1,4 +1,4 @@
-import { sanitizeFlyerExtractionDates } from "@/lib/flyer/sanitize-flyer-dates";
+import { collectFlyerExtractionSearchText } from "@/lib/flyer/sanitize-entry-deadline";
 import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
   disciplineLabelsToValues,
@@ -14,9 +14,13 @@ import {
   inferAmateurRodeoFromText,
   resolveFlyerRodeoLevelLabel,
 } from "@/lib/events/amateur-rodeo-associations";
+import { inferOpenRodeoFromText } from "@/lib/events/open-rodeo-level";
 import { inferRanchRodeoFromText } from "@/lib/events/ranch-rodeo-level";
 import { inferYouthPlaydayFromText } from "@/lib/events/youth-playday-level";
-import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
+import {
+  filterDisciplinesForFormat,
+  resolveFormatFromDisciplines,
+} from "@/lib/events/submission-options";
 import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
 import {
   extractSgpEventsWebsiteFromText,
@@ -335,58 +339,50 @@ export function applyFlyerExtractionToSubmission(
     sanitized.additionalNotes,
     sanitized.contactName,
   );
+  const rodeoLevelSourceTexts = [
+    collectFlyerExtractionSearchText(sanitized),
+    ...(sanitized.disciplines ?? []),
+  ] as const;
+  const isOpenRodeoEvent =
+    (inferOpenRodeoFromText(...rodeoLevelSourceTexts) || sanitized.rodeoLevel === "Open") &&
+    !inferAmateurRodeoFromText(...rodeoLevelSourceTexts) &&
+    !inferRanchRodeoFromText(...rodeoLevelSourceTexts) &&
+    !inferYouthPlaydayFromText(...rodeoLevelSourceTexts);
   const isSingleDayNextGenEvent =
     Boolean(nextGenWebsite) &&
     sanitized.type === "single" &&
-    (sanitized.events?.length ?? 0) < 2;
+    (sanitized.events?.length ?? 0) < 2 &&
+    !isOpenRodeoEvent;
   const formatFallback =
     isSingleDayNextGenEvent && extractedFormat === "rodeo" ? "jackpot" : extractedFormat;
-  const format = resolveFormatFromDisciplines(disciplines, formatFallback);
+  let format = resolveFormatFromDisciplines(disciplines, formatFallback);
   const resolvedRodeoLevelLabel = resolveFlyerRodeoLevelLabel(
     sanitized.rodeoLevel,
-    sanitized.eventName,
-    sanitized.contactName,
-    sanitized.classDivisionInfo,
-    sanitized.prizePayoutInfo,
-    sanitized.additionalNotes,
-    sanitized.entryFee,
+    ...rodeoLevelSourceTexts,
   );
+  if (isOpenRodeoEvent || resolvedRodeoLevelLabel === "Open") {
+    format = "rodeo";
+  }
   const extractedLevel = resolvedRodeoLevelLabel
     ? RODEO_LEVEL_LABEL_TO_VALUE[resolvedRodeoLevelLabel] ?? null
-    : inferYouthPlaydayFromText(
-          sanitized.eventName,
-          sanitized.contactName,
-          sanitized.classDivisionInfo,
-          sanitized.prizePayoutInfo,
-          sanitized.additionalNotes,
-          sanitized.entryFee,
-        )
+    : inferYouthPlaydayFromText(...rodeoLevelSourceTexts)
       ? "youth"
-      : inferRanchRodeoFromText(
-          sanitized.eventName,
-          sanitized.contactName,
-          sanitized.classDivisionInfo,
-          sanitized.prizePayoutInfo,
-          sanitized.additionalNotes,
-          sanitized.entryFee,
-        )
-      ? "ranch"
-      : inferAmateurRodeoFromText(
-          sanitized.eventName,
-          sanitized.contactName,
-          sanitized.classDivisionInfo,
-          sanitized.prizePayoutInfo,
-          sanitized.additionalNotes,
-          sanitized.entryFee,
-        )
-      ? "amateur"
-      : null;
+      : inferRanchRodeoFromText(...rodeoLevelSourceTexts)
+        ? "ranch"
+        : inferAmateurRodeoFromText(...rodeoLevelSourceTexts)
+          ? "amateur"
+          : inferOpenRodeoFromText(...rodeoLevelSourceTexts)
+            ? "open"
+            : null;
   const rodeoLevels =
     format === "rodeo"
       ? extractedLevel
         ? [extractedLevel]
-        : current.rodeoLevels
+        : isOpenRodeoEvent || resolvedRodeoLevelLabel === "Open"
+          ? ["open"]
+          : current.rodeoLevels
       : [];
+  const finalDisciplines = filterDisciplinesForFormat(disciplines, format);
   const zipFromAddress = parseZipFromAddress(sanitized.address);
   const entryDeadline = normalizeFlyerDate(sanitized.entryDeadline, referenceDate);
   const resolvedDates = resolveFlyerEventDates(
@@ -417,7 +413,7 @@ export function applyFlyerExtractionToSubmission(
       eventName: sanitized.eventName ?? current.eventName,
       format,
       rodeoLevels,
-      disciplines,
+      disciplines: finalDisciplines,
       additionalOfferings: format === "rodeo" ? current.additionalOfferings : [],
       startDate: toHtmlDateInputValue(
         useBatchEvents

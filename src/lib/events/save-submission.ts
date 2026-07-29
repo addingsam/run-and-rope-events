@@ -5,6 +5,7 @@ import {
 } from "@/lib/events/submission-options";
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
 import { resolveSubmissionRodeoLevels } from "@/lib/events/amateur-rodeo-associations";
+import { resolveOpenRodeoLevels } from "@/lib/events/open-rodeo-level";
 import { resolveRanchRodeoLevels } from "@/lib/events/ranch-rodeo-level";
 import { resolveYouthPlaydayLevels } from "@/lib/events/youth-playday-level";
 import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
@@ -134,10 +135,13 @@ export function mapSubmissionToEventRecord(submission: EventSubmission): EventRe
   ] as const;
   const rodeoLevels =
     normalizedSubmission.format === "rodeo"
-      ? resolveYouthPlaydayLevels(
-          resolveRanchRodeoLevels(
-            resolveSubmissionRodeoLevels(
-              normalizedSubmission.rodeoLevels,
+      ? resolveSubmissionRodeoLevels(
+          resolveYouthPlaydayLevels(
+            resolveRanchRodeoLevels(
+              resolveOpenRodeoLevels(
+                normalizedSubmission.rodeoLevels,
+                ...rodeoLevelTexts,
+              ),
               ...rodeoLevelTexts,
             ),
             ...rodeoLevelTexts,

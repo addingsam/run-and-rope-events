@@ -82,7 +82,7 @@ Rules:
 - Use eventDates OR events, never both. type "schedule" requires events with two or more entries at different dates and/or locations. type "single" uses top-level fields and optionally eventDates for same-venue separate performance days.
 - Rodeo series schedules (multiple cities/arenas, shared rules and producer) should use events with format "Rodeo" and the appropriate rodeoLevel.
 - These producer associations are Amateur rodeos, not Open: ${amateurRodeoAssociationPromptLines()}. When the flyer names one of these associations (full name or abbreviation), set rodeoLevel to "Amateur".
-- Open rodeos are general open-entry rodeos not produced under one of the amateur associations listed above.
+- Open rodeos are general open-entry rodeos not produced under one of the amateur associations listed above. When the flyer title or text says "Open Rodeo" (or similar), set format to "Rodeo" and rodeoLevel to "Open". Open rodeos are Rodeo events, not Jackpot events.
 - When the flyer title or text says "Ranch Rodeo" (or similar), set rodeoLevel to "Ranch".
 - When the flyer says "Playday", "Play Day", or "Play-Day", set rodeoLevel to "Youth".
 - When only one event or one event day appears on the flyer, return eventDates as [] and events as []. Do not duplicate the same date in both date and eventDates.
@@ -94,7 +94,7 @@ Rules:
 - disciplines must use only allowed labels. Include every distinct jackpot structure or discipline clearly listed on the flyer, such as both Team Roping and Breakaway Roping when both appear.
 - Map discipline abbreviations and organization names to the allowed labels when confident. Examples: CMSA or Cowboy Mounted Shooting Association -> "Cowboy Mounted Shooting"; BB or Bareback -> "Bareback Riding (BB)"; SB or Saddle Bronc -> "Saddle Bronc (SB)"; BR or Bull Riding -> "Bull Riding (BR)"; RB or Ranch Bronc -> "Ranch Bronc Riding (RB)"; CBR or CGBR -> "Barrel Racing (CBR/CGBR)"; SW, BD, or Bull Dogging -> "Steer Wrestling / Bull Dogging (SW/BD)"; BA, CBA, BAW, or CGBKR -> "Breakaway Roping (BA/CBA/BAW/CGBKR)"; SR or SRADM -> "Steer Roping (SR/SRADM)"; CR, TD, Tie Down, or Tie Down Roping -> "Calf Roping / Tie Down Roping (CR/TD)".
 - format must be exactly "Jackpot" or "Rodeo" or null.
-- Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail are jackpot events, not rodeos. When any of those disciplines apply, set format to "Jackpot".
+- Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail are jackpot events, not rodeos. When any of those disciplines apply, set format to "Jackpot". Youth pole bending or similar side events on a full Open Rodeo flyer do not make the event a Jackpot — use format "Rodeo" and rodeoLevel "Open".
 - Ranch Bronc Riding (RB), Bareback (BB), Saddle Bronc (SB), and Bull Riding (BR) may appear on either Jackpot or Rodeo events. Do not treat Ranch Bronc Riding as rodeo-only.
 - NextGen Rodeo single-day performances with multiple disciplines at one location (for example BB, BR, SB, RB, and CBR on the same date) are Jackpot events — set format to "Jackpot" even when the flyer mentions IPRA, NCPRA, or other rodeo associations.
 - rodeoLevel must be exactly one of Youth, Amateur, Open, Ranch, Pro, or null.

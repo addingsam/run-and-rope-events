@@ -1,9 +1,8 @@
 import type { FlyerExtractionRodeoLevelLabel } from "@/types/flyer-extraction";
 import type { RodeoLevel } from "@/types/event-submission";
+import { resolveOpenRodeoLevelLabel } from "@/lib/events/open-rodeo-level";
 import { inferRanchRodeoFromText, resolveRanchRodeoLevelLabel } from "@/lib/events/ranch-rodeo-level";
-import {
-  inferYouthPlaydayFromText,
-} from "@/lib/events/youth-playday-level";
+import { inferYouthPlaydayFromText } from "@/lib/events/youth-playday-level";
 
 export const AMATEUR_RODEO_ASSOCIATIONS = [
   { name: "American Cowboy Rodeo Association", abbrev: "ACRA" },
@@ -59,15 +58,15 @@ export function resolveFlyerRodeoLevelLabel(
     return ranchResolved;
   }
 
-  if (!inferAmateurRodeoFromText(...texts)) {
-    return ranchResolved;
+  if (inferAmateurRodeoFromText(...texts)) {
+    if (ranchResolved === "Youth" || ranchResolved === "Pro") {
+      return ranchResolved;
+    }
+
+    return "Amateur";
   }
 
-  if (ranchResolved === "Youth" || ranchResolved === "Pro") {
-    return ranchResolved;
-  }
-
-  return "Amateur";
+  return resolveOpenRodeoLevelLabel(ranchResolved, ...texts);
 }
 
 export function resolveSubmissionRodeoLevels(
