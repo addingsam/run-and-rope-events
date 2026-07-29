@@ -72,7 +72,6 @@ export const JACKPOT_ONLY_DISCIPLINES = [
   "cowboy_mounted_shooting",
   "ranch_horse",
   "obstacle_trail",
-  "pole_bending",
 ] as const satisfies readonly SubmissionDiscipline[];
 
 export function isJackpotOnlyDiscipline(discipline: SubmissionDiscipline) {
