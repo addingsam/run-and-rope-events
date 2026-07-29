@@ -14,6 +14,8 @@ import {
   inferAmateurRodeoFromText,
   resolveFlyerRodeoLevelLabel,
 } from "@/lib/events/amateur-rodeo-associations";
+import { inferRanchRodeoFromText } from "@/lib/events/ranch-rodeo-level";
+import { inferYouthPlaydayFromText } from "@/lib/events/youth-playday-level";
 import { resolveFormatFromDisciplines } from "@/lib/events/submission-options";
 import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
 import {
@@ -329,7 +331,25 @@ export function applyFlyerExtractionToSubmission(
   );
   const extractedLevel = resolvedRodeoLevelLabel
     ? RODEO_LEVEL_LABEL_TO_VALUE[resolvedRodeoLevelLabel] ?? null
-    : inferAmateurRodeoFromText(
+    : inferYouthPlaydayFromText(
+          sanitized.eventName,
+          sanitized.contactName,
+          sanitized.classDivisionInfo,
+          sanitized.prizePayoutInfo,
+          sanitized.additionalNotes,
+          sanitized.entryFee,
+        )
+      ? "youth"
+      : inferRanchRodeoFromText(
+          sanitized.eventName,
+          sanitized.contactName,
+          sanitized.classDivisionInfo,
+          sanitized.prizePayoutInfo,
+          sanitized.additionalNotes,
+          sanitized.entryFee,
+        )
+      ? "ranch"
+      : inferAmateurRodeoFromText(
           sanitized.eventName,
           sanitized.contactName,
           sanitized.classDivisionInfo,

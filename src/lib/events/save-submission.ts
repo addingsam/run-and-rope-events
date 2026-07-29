@@ -5,6 +5,8 @@ import {
 } from "@/lib/events/submission-options";
 import { serializeRodeoLevels } from "@/lib/events/rodeo-levels";
 import { resolveSubmissionRodeoLevels } from "@/lib/events/amateur-rodeo-associations";
+import { resolveRanchRodeoLevels } from "@/lib/events/ranch-rodeo-level";
+import { resolveYouthPlaydayLevels } from "@/lib/events/youth-playday-level";
 import { extractNextGenRodeoWebsiteFromText } from "@/lib/events/nextgen-rodeo-website";
 import {
   extractSgpEventsWebsiteFromText,
@@ -101,15 +103,24 @@ function resolveSubmissionWebsite(submission: EventSubmission) {
 
 export function mapSubmissionToEventRecord(submission: EventSubmission): EventRecordInsert {
   const normalizedSubmission = normalizeEventSubmissionVenue(submission);
+  const rodeoLevelTexts = [
+    normalizedSubmission.eventName,
+    normalizedSubmission.producerName,
+    normalizedSubmission.classDivisionInfo,
+    normalizedSubmission.description,
+    normalizedSubmission.prizePayoutInfo,
+  ] as const;
   const rodeoLevels =
     normalizedSubmission.format === "rodeo"
-      ? resolveSubmissionRodeoLevels(
-          normalizedSubmission.rodeoLevels,
-          normalizedSubmission.eventName,
-          normalizedSubmission.producerName,
-          normalizedSubmission.classDivisionInfo,
-          normalizedSubmission.description,
-          normalizedSubmission.prizePayoutInfo,
+      ? resolveYouthPlaydayLevels(
+          resolveRanchRodeoLevels(
+            resolveSubmissionRodeoLevels(
+              normalizedSubmission.rodeoLevels,
+              ...rodeoLevelTexts,
+            ),
+            ...rodeoLevelTexts,
+          ),
+          ...rodeoLevelTexts,
         )
       : [];
 

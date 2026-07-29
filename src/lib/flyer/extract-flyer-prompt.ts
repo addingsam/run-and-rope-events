@@ -83,6 +83,8 @@ Rules:
 - Rodeo series schedules (multiple cities/arenas, shared rules and producer) should use events with format "Rodeo" and the appropriate rodeoLevel.
 - These producer associations are Amateur rodeos, not Open: ${amateurRodeoAssociationPromptLines()}. When the flyer names one of these associations (full name or abbreviation), set rodeoLevel to "Amateur".
 - Open rodeos are general open-entry rodeos not produced under one of the amateur associations listed above.
+- When the flyer title or text says "Ranch Rodeo" (or similar), set rodeoLevel to "Ranch".
+- When the flyer says "Playday", "Play Day", or "Play-Day", set rodeoLevel to "Youth".
 - When only one event or one event day appears on the flyer, return eventDates as [] and events as []. Do not duplicate the same date in both date and eventDates.
 - Do not treat sponsor dates, copyright years, entry-fee due dates, or other non-event dates as eventDates.
 - When a date on the flyer omits the year (for example "March 15" or "9/12"), return it without a year using formats like "March 15", "03-15", or "9/12". Do not infer or guess a year — the submitter's form will add the current calendar year for verification.
