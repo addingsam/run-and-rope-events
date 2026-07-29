@@ -3,7 +3,7 @@ import type { SanctioningBody } from "@/types/pro-rodeo-record";
 
 export type SearchFormat = "jackpot" | "rodeo" | "either";
 
-export type SearchRodeoLevel = "youth" | "open" | "amateur" | "pro";
+export type SearchRodeoLevel = "youth" | "open" | "amateur" | "ranch" | "pro";
 
 export type SearchRadiusMiles = 25 | 50 | 100 | 200;
 

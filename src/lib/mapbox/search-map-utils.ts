@@ -38,6 +38,8 @@ export function getRodeoLevelBadge(level: string | null) {
       return "O";
     case "amateur":
       return "A";
+    case "ranch":
+      return "Rch";
     case "pro":
       return "Pro";
     default:

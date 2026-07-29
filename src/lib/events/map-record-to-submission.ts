@@ -37,7 +37,7 @@ export function mapEventRecordToSubmission(record: EventRecord): EventSubmission
     eventName: record.event_name,
     format: (record.event_format as SubmissionFormat) ?? "jackpot",
     rodeoLevels: parseStoredRodeoLevels(record.rodeo_level).filter((level): level is RodeoLevel =>
-      level === "youth" || level === "open" || level === "amateur",
+      level === "youth" || level === "open" || level === "amateur" || level === "ranch",
     ),
     disciplines: (record.disciplines ?? []) as SubmissionDiscipline[],
     additionalOfferings: record.additional_offerings ?? [],

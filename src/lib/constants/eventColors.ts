@@ -29,12 +29,13 @@ export const DISCIPLINE_COLORS: Record<SubmissionDiscipline, string> = {
 };
 
 /**
- * Supabase `events.rodeo_level` stores text slugs: youth, open, amateur, pro.
+ * Supabase `events.rodeo_level` stores text slugs: youth, open, amateur, ranch, pro.
  */
 export const RODEO_LEVEL_COLORS: Record<string, string> = {
   youth: "#EAB308",
   amateur: "#14B8A6",
   open: "#6366F1",
+  ranch: "#92400E",
   pro: "#B91C1C",
 };
 

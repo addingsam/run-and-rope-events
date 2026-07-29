@@ -13,6 +13,7 @@ export const FLYER_EXTRACTION_RODEO_LEVEL_LABELS = [
   "Youth",
   "Amateur",
   "Open",
+  "Ranch",
   "Pro",
 ] as const;
 

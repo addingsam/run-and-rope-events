@@ -9,6 +9,7 @@ export const RODEO_LEVEL_OPTIONS = [
   { value: "youth", label: "Youth Rodeo" },
   { value: "open", label: "Open Rodeo" },
   { value: "amateur", label: "Amateur Rodeo" },
+  { value: "ranch", label: "Ranch Rodeo" },
 ] as const satisfies readonly { value: RodeoLevel; label: string }[];
 
 export const DISCIPLINE_OPTIONS = [

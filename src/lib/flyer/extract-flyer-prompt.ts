@@ -53,7 +53,7 @@ const FLYER_EXTRACTION_FIELD_RULES = `Field rules:
 - events: JSON array of per-event objects (${FLYER_EXTRACTION_EVENT_SCHEMA}) for series schedules where each stop has its own date(s) and location. Use [] when not applicable.
 - disciplines: JSON array using only these labels: [${FLYER_DISCIPLINE_SCHEMA}].
 - format: "Jackpot", "Rodeo", or null.
-- rodeoLevel: "Youth", "Amateur", "Open", "Pro", or null.`;
+- rodeoLevel: "Youth", "Amateur", "Open", "Ranch", "Pro", or null.`;
 
 export const FLYER_EXTRACTION_SYSTEM_PROMPT = `You extract structured event details from rodeo and jackpot event flyers for a US event directory.
 
@@ -95,7 +95,7 @@ Rules:
 - Cowboy Mounted Shooting, Ranch Horse, and Obstacle & Trail are jackpot events, not rodeos. When any of those disciplines apply, set format to "Jackpot".
 - Ranch Bronc Riding (RB), Bareback (BB), Saddle Bronc (SB), and Bull Riding (BR) may appear on either Jackpot or Rodeo events. Do not treat Ranch Bronc Riding as rodeo-only.
 - NextGen Rodeo single-day performances with multiple disciplines at one location (for example BB, BR, SB, RB, and CBR on the same date) are Jackpot events — set format to "Jackpot" even when the flyer mentions IPRA, NCPRA, or other rodeo associations.
-- rodeoLevel must be exactly one of Youth, Amateur, Open, Pro, or null.
+- rodeoLevel must be exactly one of Youth, Amateur, Open, Ranch, Pro, or null.
 - Put prize money, added money, payout percentages, or payout structure in prizePayoutInfo.
 - Put class, division, age group, or side-pot details in classDivisionInfo.
 - For contactName, contactPhone, and contactEmail, extract the EVENT PRODUCER/ORGANIZER only — the entity hosting, presenting, or producing the event. On rodeo flyers, Stock Contractor is equivalent to Producer — use either label when identifying who is running the event. Look for phrases like "produced by," "presented by," "stock contractor," "in conjunction with," a company name near the top of the flyer, or a logo described as the host organization.

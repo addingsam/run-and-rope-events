@@ -27,6 +27,7 @@ export const UPCOMING_RODEO_LEVEL_OPTIONS = [
   { value: "youth", label: "Youth" },
   { value: "open", label: "Open" },
   { value: "amateur", label: "Amateur" },
+  { value: "ranch", label: "Ranch" },
   { value: "pro", label: "Pro" },
 ] as const satisfies readonly { value: RodeoLevel | "pro"; label: string }[];
 

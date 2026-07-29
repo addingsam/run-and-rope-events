@@ -69,6 +69,7 @@ const RODEO_LEVEL_LABEL_TO_VALUE: Record<string, RodeoLevel> = {
   Youth: "youth",
   Amateur: "amateur",
   Open: "open",
+  Ranch: "ranch",
 };
 
 function normalizeState(value: string | null) {

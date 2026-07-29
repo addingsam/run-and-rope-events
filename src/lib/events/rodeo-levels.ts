@@ -2,8 +2,8 @@ import { getRodeoLevelLabel } from "@/lib/events/submission-options";
 import type { RodeoLevel } from "@/types/event-submission";
 import type { SearchRodeoLevel } from "@/types/event-search";
 
-const KNOWN_SUBMISSION_LEVELS = new Set<RodeoLevel>(["youth", "open", "amateur"]);
-const KNOWN_SEARCH_LEVELS = new Set<SearchRodeoLevel>(["youth", "open", "amateur", "pro"]);
+const KNOWN_SUBMISSION_LEVELS = new Set<RodeoLevel>(["youth", "open", "amateur", "ranch"]);
+const KNOWN_SEARCH_LEVELS = new Set<SearchRodeoLevel>(["youth", "open", "amateur", "ranch", "pro"]);
 
 export function parseStoredRodeoLevels(value: string | null | undefined): string[] {
   if (!value?.trim()) {

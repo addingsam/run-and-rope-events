@@ -140,7 +140,7 @@ function getRodeoLevelBadgeLabel(level: string) {
     return "Pro Rodeo";
   }
 
-  if (level === "youth" || level === "open" || level === "amateur") {
+  if (level === "youth" || level === "open" || level === "amateur" || level === "ranch") {
     return getRodeoLevelLabel(level as RodeoLevel);
   }
 
@@ -168,7 +168,7 @@ export function RodeoLevelColorBadge({ level, className = "" }: RodeoLevelColorB
     >
       {level === "pro"
         ? "Pro Rodeo"
-        : level === "youth" || level === "open" || level === "amateur"
+        : level === "youth" || level === "open" || level === "amateur" || level === "ranch"
           ? getRodeoLevelLabel(level as RodeoLevel)
           : level.replaceAll("_", " ")}
     </span>

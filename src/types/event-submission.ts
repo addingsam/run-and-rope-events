@@ -2,7 +2,7 @@ export type SubmissionFormat = "jackpot" | "rodeo";
 
 export type SubmissionSource = "flyer" | "scrape";
 
-export type RodeoLevel = "youth" | "open" | "amateur";
+export type RodeoLevel = "youth" | "open" | "amateur" | "ranch";
 
 export type SubmissionDiscipline =
   | "bareback_riding"
