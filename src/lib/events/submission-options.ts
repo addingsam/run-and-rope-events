@@ -26,6 +26,11 @@ export const DISCIPLINE_OPTIONS = [
     label: "Barrel Racing (CBR/CGBR)",
     displayLabel: "Barrel Racing",
   },
+  {
+    value: "pole_bending",
+    label: "Pole Bending (Poles)",
+    displayLabel: "Pole Bending",
+  },
   { value: "team_roping", label: "Team Roping", displayLabel: "Team Roping" },
   {
     value: "calf_roping",
@@ -50,11 +55,6 @@ export const DISCIPLINE_OPTIONS = [
   },
   { value: "ranch_horse", label: "Ranch Horse", displayLabel: "Ranch Horse" },
   { value: "obstacle_trail", label: "Obstacle & Trail", displayLabel: "Obstacle & Trail" },
-  {
-    value: "pole_bending",
-    label: "Pole Bending (Poles)",
-    displayLabel: "Pole Bending",
-  },
 ] as const satisfies readonly {
   value: SubmissionDiscipline;
   label: string;
@@ -73,6 +73,8 @@ export const JACKPOT_ONLY_DISCIPLINES = [
   "ranch_horse",
   "obstacle_trail",
 ] as const satisfies readonly SubmissionDiscipline[];
+
+/** Disciplines such as barrel racing and pole bending are valid on both jackpot and rodeo events. */
 
 export function isJackpotOnlyDiscipline(discipline: SubmissionDiscipline) {
   return (JACKPOT_ONLY_DISCIPLINES as readonly SubmissionDiscipline[]).includes(discipline);
