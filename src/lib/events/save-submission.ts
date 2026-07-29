@@ -12,6 +12,10 @@ import {
   extractSgpEventsWebsiteFromText,
   rewriteSgpEventsWebsite,
 } from "@/lib/events/sgp-events-website";
+import {
+  extractSaddlebookWebsiteFromText,
+  rewriteSaddlebookWebsite,
+} from "@/lib/events/saddlebook-website";
 import { extractWebsiteFromText, normalizeWebsiteUrl } from "@/lib/events/normalize-website-url";
 import { normalizeEventSubmissionVenue } from "@/lib/events/resolve-venue-name";
 import {
@@ -78,14 +82,28 @@ function resolveSubmissionWebsite(submission: EventSubmission) {
     return sgpFromField;
   }
 
+  const saddlebookFromField = rewriteSaddlebookWebsite(submission.producerWebsite);
+  if (saddlebookFromField) {
+    return saddlebookFromField;
+  }
+
   const normalizedExisting = normalizeWebsiteUrl(submission.producerWebsite);
   if (normalizedExisting) {
-    return rewriteSgpEventsWebsite(normalizedExisting) ?? normalizedExisting;
+    return (
+      rewriteSgpEventsWebsite(normalizedExisting) ??
+      rewriteSaddlebookWebsite(normalizedExisting) ??
+      normalizedExisting
+    );
   }
 
   const sgpWebsite = extractSgpEventsWebsiteFromText(...sourceTexts);
   if (sgpWebsite) {
     return sgpWebsite;
+  }
+
+  const saddlebookWebsite = extractSaddlebookWebsiteFromText(...sourceTexts);
+  if (saddlebookWebsite) {
+    return saddlebookWebsite;
   }
 
   const nextGenWebsite = extractNextGenRodeoWebsiteFromText(...sourceTexts);
@@ -95,7 +113,11 @@ function resolveSubmissionWebsite(submission: EventSubmission) {
 
   const websiteFromText = extractWebsiteFromText(...sourceTexts);
   if (websiteFromText) {
-    return rewriteSgpEventsWebsite(websiteFromText) ?? websiteFromText;
+    return (
+      rewriteSgpEventsWebsite(websiteFromText) ??
+      rewriteSaddlebookWebsite(websiteFromText) ??
+      websiteFromText
+    );
   }
 
   return "";

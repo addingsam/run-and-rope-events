@@ -23,6 +23,10 @@ import {
   rewriteSgpEventsWebsite,
 } from "@/lib/events/sgp-events-website";
 import {
+  extractSaddlebookWebsiteFromText,
+  rewriteSaddlebookWebsite,
+} from "@/lib/events/saddlebook-website";
+import {
   extractWebsiteFromText,
   normalizeWebsiteUrl,
 } from "@/lib/events/normalize-website-url";
@@ -149,15 +153,29 @@ function resolveProducerWebsite(extracted: FlyerExtractionResult) {
       return sgpWebsite;
     }
 
+    const saddlebookWebsite = rewriteSaddlebookWebsite(extracted.producerWebsite);
+    if (saddlebookWebsite) {
+      return saddlebookWebsite;
+    }
+
     const normalized = normalizeWebsiteUrl(extracted.producerWebsite);
     if (normalized) {
-      return rewriteSgpEventsWebsite(normalized) ?? normalized;
+      return (
+        rewriteSgpEventsWebsite(normalized) ??
+        rewriteSaddlebookWebsite(normalized) ??
+        normalized
+      );
     }
   }
 
   const sgpWebsite = extractSgpEventsWebsiteFromText(...sourceTexts);
   if (sgpWebsite) {
     return sgpWebsite;
+  }
+
+  const saddlebookWebsite = extractSaddlebookWebsiteFromText(...sourceTexts);
+  if (saddlebookWebsite) {
+    return saddlebookWebsite;
   }
 
   const nextGenWebsite = extractNextGenRodeoWebsiteFromText(...sourceTexts);
@@ -167,7 +185,11 @@ function resolveProducerWebsite(extracted: FlyerExtractionResult) {
 
   const websiteFromText = extractWebsiteFromText(...sourceTexts);
   if (websiteFromText) {
-    return rewriteSgpEventsWebsite(websiteFromText) ?? websiteFromText;
+    return (
+      rewriteSgpEventsWebsite(websiteFromText) ??
+      rewriteSaddlebookWebsite(websiteFromText) ??
+      websiteFromText
+    );
   }
 
   return "";
