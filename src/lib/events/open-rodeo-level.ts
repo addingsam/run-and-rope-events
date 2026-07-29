@@ -1,7 +1,7 @@
 import type { FlyerExtractionRodeoLevelLabel } from "@/types/flyer-extraction";
 import type { RodeoLevel } from "@/types/event-submission";
 
-const OPEN_RODEO_PATTERNS = [/\bopen rodeos?\b/i, /\bopen-rodeo\b/i];
+const OPEN_RODEO_PATTERNS = [/\bopen[\s-]+rodeos?\b/i, /\bopen-rodeo\b/i];
 
 export function inferOpenRodeoFromText(
   ...texts: Array<string | null | undefined>

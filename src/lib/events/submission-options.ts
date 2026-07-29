@@ -83,6 +83,26 @@ export function isRodeoRoughStockDiscipline(discipline: SubmissionDiscipline) {
   return (RODEO_ROUGH_STOCK_DISCIPLINES as readonly SubmissionDiscipline[]).includes(discipline);
 }
 
+export function inferTraditionalRodeoFromDisciplines(
+  disciplines: readonly SubmissionDiscipline[],
+): boolean {
+  if (disciplines.length === 0) {
+    return false;
+  }
+
+  const roughStockCount = disciplines.filter(isRodeoRoughStockDiscipline).length;
+  const timedEventCount = disciplines.filter(
+    (discipline) =>
+      !isJackpotOnlyDiscipline(discipline) && !isRodeoRoughStockDiscipline(discipline),
+  ).length;
+
+  if (roughStockCount >= 2) {
+    return true;
+  }
+
+  return roughStockCount >= 1 && timedEventCount >= 1;
+}
+
 export function getDisciplineOptionsForFormat(format: SubmissionFormat) {
   const options =
     format === "rodeo"
@@ -110,6 +130,10 @@ export function resolveFormatFromDisciplines(
   disciplines: SubmissionDiscipline[],
   fallback: SubmissionFormat,
 ): SubmissionFormat {
+  if (inferTraditionalRodeoFromDisciplines(disciplines)) {
+    return "rodeo";
+  }
+
   if (disciplines.some(isJackpotOnlyDiscipline)) {
     return "jackpot";
   }
