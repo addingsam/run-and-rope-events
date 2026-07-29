@@ -2,7 +2,7 @@ import { collectFlyerExtractionSearchText } from "@/lib/flyer/sanitize-entry-dea
 import { sanitizeFlyerExtractionLocation } from "@/lib/flyer/sanitize-flyer-location";
 import {
   disciplineLabelsToValues,
-  inferFlyerDisciplinesFromText,
+  resolveFlyerDisciplineLabels,
 } from "@/lib/flyer/flyer-disciplines";
 import {
   normalizeFlyerDate,
@@ -318,17 +318,11 @@ export function applyFlyerExtractionToSubmission(
   const extractedFormat = sanitized.format
     ? FORMAT_LABEL_TO_VALUE[sanitized.format]
     : current.format;
-  const extractedDisciplines =
-    (sanitized.disciplines ?? []).length > 0
-      ? sanitized.disciplines ?? []
-      : inferFlyerDisciplinesFromText(
-          sanitized.eventName,
-          sanitized.classDivisionInfo,
-          sanitized.entryFee,
-          sanitized.prizePayoutInfo,
-          sanitized.additionalNotes,
-          sanitized.contactName,
-        );
+  const flyerSearchText = collectFlyerExtractionSearchText(sanitized);
+  const extractedDisciplines = resolveFlyerDisciplineLabels(
+    sanitized.disciplines,
+    flyerSearchText,
+  );
   const extractedDisciplineValues = disciplineLabelsToValues(extractedDisciplines);
   const disciplines =
     extractedDisciplineValues.length > 0 ? extractedDisciplineValues : current.disciplines;
@@ -340,10 +334,7 @@ export function applyFlyerExtractionToSubmission(
     sanitized.additionalNotes,
     sanitized.contactName,
   );
-  const rodeoLevelSourceTexts = [
-    collectFlyerExtractionSearchText(sanitized),
-    ...(sanitized.disciplines ?? []),
-  ] as const;
+  const rodeoLevelSourceTexts = [flyerSearchText, ...(sanitized.disciplines ?? [])] as const;
   const isTraditionalRodeo = inferTraditionalRodeoFromDisciplines(disciplines);
   const isOpenRodeoTextMatch =
     inferOpenRodeoFromText(...rodeoLevelSourceTexts) || sanitized.rodeoLevel === "Open";
@@ -367,7 +358,11 @@ export function applyFlyerExtractionToSubmission(
     sanitized.rodeoLevel,
     ...rodeoLevelSourceTexts,
   );
-  if (isOpenRodeoClassification || resolvedRodeoLevelLabel === "Open") {
+  if (
+    sanitized.format === "Rodeo" ||
+    isOpenRodeoClassification ||
+    resolvedRodeoLevelLabel === "Open"
+  ) {
     format = "rodeo";
   }
   const extractedLevel = resolvedRodeoLevelLabel

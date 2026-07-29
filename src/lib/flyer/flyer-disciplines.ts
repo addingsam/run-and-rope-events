@@ -123,6 +123,16 @@ export function normalizeFlyerDisciplines(value: unknown): FlyerExtractionDiscip
   return single ? [single] : [];
 }
 
+export function resolveFlyerDisciplineLabels(
+  disciplines: FlyerExtractionDisciplineLabel[] | null | undefined,
+  ...texts: Array<string | null | undefined>
+): FlyerExtractionDisciplineLabel[] {
+  const fromAi = Array.isArray(disciplines) ? dedupeDisciplineLabels(disciplines) : [];
+  const fromText = inferFlyerDisciplinesFromText(...texts);
+
+  return dedupeDisciplineLabels([...fromAi, ...fromText]);
+}
+
 const DISCIPLINE_INFERENCE_PATTERNS: Array<{
   pattern: RegExp;
   label: FlyerExtractionDisciplineLabel;
